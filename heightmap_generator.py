@@ -57,7 +57,7 @@ class HeightmapGenerator:
 
     def decode_terrain(self, code: int) -> str:
         terrain_mapping = {
-            0: 'deep_water',
+            0: 'strong_water',
             1: 'water',
             2: 'plains',
             3: 'hills',
