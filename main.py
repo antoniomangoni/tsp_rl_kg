@@ -1,6 +1,6 @@
+# main.py
 from renderer import TerrainRenderer
 from heightmap_generator import HeightmapGenerator
-from river import RiverPathFinder
 import numpy as np
 
 if __name__ == '__main__':
@@ -9,13 +9,6 @@ if __name__ == '__main__':
 
     heightmap_generator = HeightmapGenerator(800, 800, 350.0, thresholds, 6, 0.6, 1.8)
     heightmap = heightmap_generator.generate()
-    # print("The type of the heightmap is", type(heightmap))
-    # print("The unique values in the heightmap are", np.unique(heightmap))
     
-    river_path_finder = RiverPathFinder(heightmap)
-    river_path_finder.find_river_path_with_adam()
-    river_path_finder.mark_river_path()
-    updated_heightmap = river_path_finder.heightmap
-
-    renderer = TerrainRenderer(updated_heightmap, colors)
+    renderer = TerrainRenderer(heightmap, colors)
     renderer.real_time_update()
