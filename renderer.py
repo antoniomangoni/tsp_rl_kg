@@ -3,18 +3,19 @@ import pygame
 import numpy as np
 from typing import Dict
 from heightmap_generator import HeightmapGenerator
-from pixel_art import Tree
+from entities import Tree
 import random
 
 class TerrainRenderer:
-    def __init__(self, heightmap: np.ndarray, colors: Dict[int, tuple]):
+    def __init__(self, heightmap: np.ndarray, colors: Dict[int, tuple], tile_size=10):
         pygame.init()
         self.heightmap = heightmap
         self.colors = colors
         self.width, self.height = self.heightmap.shape
+        self.tile_size = tile_size
         self.surface = pygame.display.set_mode((self.width, self.height))
-
-        self.tree_group = pygame.sprite.Group()
+        self.tree_image = pygame.image.load('Pixel_Art/tree_1.png')  # Load the tree image
+        self.tree_instances = []  # Create an empty list to store tree instances
         self.populate_tiles()
 
     def populate_tiles(self):
@@ -22,22 +23,22 @@ class TerrainRenderer:
             for y in range(self.height):
                 terrain = self.heightmap[x, y]
                 if terrain == 3 and random.random() < 0.25:
-                    tree = Tree(x, y, self.tree_image, pixel_size=100)
-                    self.tree_group.add(tree)
+                    tree = Tree(x * 10, y * 10, self.tree_image, pixel_size=self.tile_size )  # Adjust the pixel_size and coordinates multiplication factor as needed
+                    self.tree_instances.append(tree)
 
     def render(self):
+        self.surface.fill((0, 0, 0))  # Clear the surface before rendering
         for x in range(self.width):
             for y in range(self.height):
                 terrain = self.heightmap[x, y]
                 color = self.colors[terrain]
-                self.surface.set_at((x, y), color)
-
-                if terrain == 3:
-                # Use a condition to control the density of trees
-                    if random.random() < 0.25:  
-                        self.surface.blit(self.tree_image, (x, y))
-
+                pygame.draw.rect(self.surface, color, (x * self.tile_size , y * self.tile_size , self.tile_size , self.tile_size ))  # Draw a rectangle to represent each tile; adjust the size and coordinates multiplication factor as needed
+                
+        for tree in self.tree_instances:  # Render tree instances
+            self.surface.blit(tree.image, tree.rect.topleft)
+        
         pygame.display.flip()
+
 
     def update_heightmap(self, new_heightmap: np.ndarray):
         self.heightmap = new_heightmap
@@ -56,12 +57,3 @@ class TerrainRenderer:
             
         pygame.quit()
 
-if __name__ == '__main__':
-    thresholds = {'deep_water': 0.15, 'water': 0.30, 'plains': 0.5, 'hills': 0.7, 'mountains': 0.85, 'snow': 1.0}
-    colors = {0: (0, 0, 128), 1: (0, 0, 255), 2: (0, 255, 0), 3: (0, 128, 0), 4: (128, 128, 128), 5: (255, 255, 255), 6: (80, 127, 255)}
-
-    generator = HeightmapGenerator(800, 800, 350.0, thresholds, 6, 0.6, 1.8)
-    heightmap = generator.generate()
-    # generator.find_river_path(heightmap)  # This will be part of the `river.py`
-    renderer = TerrainRenderer(heightmap, colors)
-    renderer.real_time_update()
