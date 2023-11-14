@@ -23,8 +23,9 @@ class TerrainRenderer:
             for y in range(self.height):
                 terrain = self.heightmap[x, y]
                 if terrain == 3 and random.random() < 0.25:
-                    tree = Tree(x * 10, y * 10, self.tree_image, pixel_size=self.tile_size )  # Adjust the pixel_size and coordinates multiplication factor as needed
+                    tree = Tree(x * self.tile_size, y * self.tile_size, self.tree_image, pixel_size=self.tile_size)
                     self.tree_instances.append(tree)
+
 
     def render(self):
         self.surface.fill((0, 0, 0))  # Clear the surface before rendering

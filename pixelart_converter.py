@@ -2,7 +2,7 @@ from tkinter import filedialog
 from tkinter import Tk
 from PIL import Image
 
-def process_tree_image(file_path, output_path, new_size=(100, 100)):
+def process_tree_image(file_path, output_path, new_size=(600, 1000)):
     # Step 1: Open an image file
     with Image.open(file_path) as img:
         # Step 2: Convert image to RGBA
@@ -21,7 +21,7 @@ def process_tree_image(file_path, output_path, new_size=(100, 100)):
         img.putdata(new_data)
         
         # Step 4: Resize the image
-        img = img.resize(new_size, Image.ANTIALIAS)
+        # img = img.resize(new_size, Image.ANTIALIAS)
         
         # Step 5: Save the image
         img.save(output_path, 'PNG')
