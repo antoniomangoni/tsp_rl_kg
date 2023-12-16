@@ -3,7 +3,7 @@ import pygame
 import numpy as np
 from typing import Dict
 from heightmap_generator import HeightmapGenerator
-from entities import Tree
+from entities import Tree, Rock, Player
 import random
 
 class TerrainRenderer:
@@ -15,6 +15,9 @@ class TerrainRenderer:
         self.tile_size = tile_size
         self.surface = pygame.display.set_mode((self.width, self.height))
         self.tree_image = pygame.image.load('Pixel_Art/tree_1.png')  # Load the tree image
+        self.rock_moss_image = pygame.image.load('Pixel_Art/rock_moss.png')  # Load the rock moss image
+        self.rock_snow_image = pygame.image.load('Pixel_Art/rock_snow.png')  # Load the rock snow image
+        self.player_image = pygame.image.load('Pixel_Art/player_image.png')  # Load the player image
         self.tree_instances = []  # Create an empty list to store tree instances
         self.populate_tiles()
 
@@ -22,10 +25,17 @@ class TerrainRenderer:
         for x in range(self.width):
             for y in range(self.height):
                 terrain = self.heightmap[x, y]
+                if terrain == 2 and random.random() < 0.1:
+                    tree = Rock(x * self.tile_size, y * self.tile_size, self.rock_moss_image, pixel_size=self.tile_size)
+                    self.tree_instances.append(tree)
                 if terrain == 3 and random.random() < 0.25:
                     tree = Tree(x * self.tile_size, y * self.tile_size, self.tree_image, pixel_size=self.tile_size)
                     self.tree_instances.append(tree)
-
+                if terrain == 4 and random.random() < 0.25:
+                    tree = Rock(x * self.tile_size, y * self.tile_size, self.rock_snow_image, pixel_size=self.tile_size)
+                    self.tree_instances.append(tree)
+                # if x == self.width // 2 and y == self.height // 2:
+                #     self.agent = Player(x * self.tile_size, y * self.tile_size, self.player_image, pixel_size=self.tile_size)
 
     def render(self):
         self.surface.fill((0, 0, 0))  # Clear the surface before rendering
@@ -58,3 +68,5 @@ class TerrainRenderer:
             
         pygame.quit()
 
+    def save_image(self, file_path: str):
+        pygame.image.save(self.surface, file_path)

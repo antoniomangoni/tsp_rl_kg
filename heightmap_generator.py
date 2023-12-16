@@ -13,6 +13,7 @@ class HeightmapGenerator:
         self.octaves = octaves
         self.persistence = persistence
         self.lacunarity = lacunarity
+        self.seed = random.randint(0, 100)
 
     def save_heightmap(self, file_path: str):
         np.save(file_path, self.generate())
@@ -35,7 +36,7 @@ class HeightmapGenerator:
                                         lacunarity=self.lacunarity, 
                                         repeatx=self.width, 
                                         repeaty=self.height, 
-                                        base=42)
+                                        base=self.seed)
                 height = (height + 1) / 2  # Normalize to [0, 1]
                 heightmap[x, y] = height
                 min_val = min(min_val, height)
@@ -67,3 +68,6 @@ class HeightmapGenerator:
             6: 'river'
         }
         return terrain_mapping.get(code, "unknown")
+
+    def printHeightmap(self):
+        print(self.heightmap)
