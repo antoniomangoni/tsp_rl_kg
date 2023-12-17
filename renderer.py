@@ -12,7 +12,8 @@ class TerrainRenderer:
         self.heightmap = heightmap
         self.colors = colors
         self.width, self.height = self.heightmap.shape
-        self.tile_size = tile_size
+        self.tile_size = int(tile_size)
+        self.game_world = np.zeros((2, int(self.width / self.tile_size), int(self.height / self.tile_size)), dtype=int)
         self.surface = pygame.display.set_mode((self.width, self.height))
         self.tree_image = pygame.image.load('Pixel_Art/tree_1.png')  # Load the tree image
         self.rock_moss_image = pygame.image.load('Pixel_Art/rock_moss.png')  # Load the rock moss image
@@ -22,6 +23,7 @@ class TerrainRenderer:
         self.populate_tiles()
 
     def populate_tiles(self):
+        print(self.heightmap.shape)
         for x in range(self.width):
             for y in range(self.height):
                 terrain = self.heightmap[x, y]
@@ -34,8 +36,6 @@ class TerrainRenderer:
                 if terrain == 4 and random.random() < 0.25:
                     tree = Rock(x * self.tile_size, y * self.tile_size, self.rock_snow_image, pixel_size=self.tile_size)
                     self.tree_instances.append(tree)
-                # if x == self.width // 2 and y == self.height // 2:
-                #     self.agent = Player(x * self.tile_size, y * self.tile_size, self.player_image, pixel_size=self.tile_size)
 
     def render(self):
         self.surface.fill((0, 0, 0))  # Clear the surface before rendering
@@ -46,10 +46,9 @@ class TerrainRenderer:
                 pygame.draw.rect(self.surface, color, (x * self.tile_size , y * self.tile_size , self.tile_size , self.tile_size ))  # Draw a rectangle to represent each tile; adjust the size and coordinates multiplication factor as needed
                 
         for tree in self.tree_instances:  # Render tree instances
-            self.surface.blit(tree.image, tree.rect.topleft)
+            self.surface.blit(tree.image, tree.rect.topleft)        
         
         pygame.display.flip()
-
 
     def update_heightmap(self, new_heightmap: np.ndarray):
         self.heightmap = new_heightmap

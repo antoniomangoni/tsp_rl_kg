@@ -11,10 +11,9 @@ if __name__ == '__main__':
 
     heightmap_generator = HeightmapGenerator(width=350, height=350, scale=5, thresholds=thresholds, octaves=3, persistence=0.2, lacunarity=1.0)
     heightmap = heightmap_generator.generate()
-    #print(np.unique(heightmap))
     print(heightmap.shape)
-    print(heightmap)
     renderer = TerrainRenderer(heightmap, colors, tile_size=50)
+    print(renderer.game_world)
     renderer.real_time_update()
 
     # for i in range(10):
