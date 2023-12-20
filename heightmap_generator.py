@@ -54,7 +54,7 @@ class HeightmapGenerator:
             mask = (heightmap >= last_threshold) & (heightmap < threshold)
             int_heightmap[mask] = index
             last_threshold = threshold
-        int_heightmap[heightmap >= last_threshold] = len(self.thresholds)  # Snow by default
+        int_heightmap[heightmap >= last_threshold] = len(self.thresholds) - 1 # Snow by default
         return int_heightmap
 
     def decode_terrain(self, code: int) -> str:

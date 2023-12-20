@@ -14,7 +14,7 @@ def process_tree_image(file_path, output_path, new_size=(600, 1000)):
         for item in data:
             # Change all white (also shades of whites)
             # pixels to transparent
-            if item[0] in list(range(230, 256)):
+            if item[0] in list(range(250, 256)):
                 new_data.append((item[0], item[1], item[2], 0))
             else:
                 new_data.append(item)
