@@ -1,23 +1,24 @@
 from renderer import TerrainRenderer
 from heightmap_generator import HeightmapGenerator
 import numpy as np
+from entities import Tree, MossyRock, SnowyRock, Fish
 
 if __name__ == '__main__':
     thresholds = {'strong_water': 0.2, 'water': 0.38, 'plains': 0.5, 'hills': 0.7, 'mountains': 0.9, 'snow': 1.0}
     colors = {0: (0, 0, 128), 1: (0, 0, 255), 2: (0, 255, 0), 3: (0, 128, 0), 4: (128, 128, 128), 5: (255, 255, 255)}
     entity_map = {'fish': 0, 'tree': 1, 'mossy rock': 2, 'snowy rock': 3}
     entity_spawn_probabilities = {'fish': 0.2, 'tree': 0.5, 'mossy rock': 0.2, 'snowy rock': 0.5}
+    entity_class_map = {'fish': Fish, 'tree': Tree, 'mossy rock': MossyRock, 'snowy rock': SnowyRock}
 
-    heightmap_generator = HeightmapGenerator(width=3, height=3, scale=10, thresholds=thresholds, octaves=3, persistence=0.2, lacunarity=1.0)
+    heightmap_generator = HeightmapGenerator(width=7, height=7, scale=10, thresholds=thresholds, octaves=3, persistence=0.2, lacunarity=1.0)
     heightmap = heightmap_generator.generate()
 
     adjusted_heightmap = np.rot90(heightmap, k=1)
     print('Heightmap is: ')
     print(adjusted_heightmap)
 
-    renderer = TerrainRenderer(heightmap, colors, entity_map, entity_spawn_probabilities, tile_size=50)
+    renderer = TerrainRenderer(heightmap, colors, entity_map, entity_class_map, entity_spawn_probabilities, tile_size=30)
     print('game world is: ')
-    print(renderer.entity_array)
     renderer.real_time_update()
     
     # for i in range(10):

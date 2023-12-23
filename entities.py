@@ -1,35 +1,37 @@
 import pygame
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, image, pixel_size=100):
+class Entity(pygame.sprite.Sprite):
+    def __init__(self, x, y, art='Pixel_Art/red.png', pixel_size=100):
         super().__init__()
-        # just a red rectangle for now
-        self.image = pygame.transform.scale(image, (pixel_size, pixel_size))
+        self.image = pygame.transform.scale(pygame.image.load(art), (pixel_size, pixel_size))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
 
+class Player(Entity):
+    def __init__(self, x, y, art, pixel_size=100):
+        super().__init__(x, y, art, pixel_size)
 
-class Tree(pygame.sprite.Sprite):
-    def __init__(self, x, y, image, pixel_size=100):
-        super().__init__()
-        self.image = pygame.transform.scale(image, (pixel_size, pixel_size))
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+    def move(self, dx, dy):
+        self.rect.x += dx
+        self.rect.y += dy
 
-class Rock(pygame.sprite.Sprite):
-    def __init__(self, x, y, image, pixel_size=100):
-        super().__init__()
-        self.image = pygame.transform.scale(image, (pixel_size, pixel_size))
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+class Tree(Entity):
+    def __init__(self, x, y, pixel_size=100):
+        super().__init__(x, y, art='Pixel_Art/tree_1.png', pixel_size=pixel_size)
 
-class Fish(pygame.sprite.Sprite):
-    def __init__(self, x, y, image, pixel_size=100):
-        super().__init__()
-        self.image = pygame.transform.scale(image, (pixel_size, pixel_size))
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+class Rock(Entity):
+    def __init__(self, x, y, art, pixel_size=100):
+        super().__init__(x, y, art, pixel_size)
+
+class MossyRock(Rock):
+    def __init__(self, x, y, pixel_size=100):
+        super().__init__(x, y, art='Pixel_Art/rock_moss.png', pixel_size=pixel_size)
+
+class SnowyRock(Rock):
+    def __init__(self, x, y, pixel_size=100):
+        super().__init__(x, y, art='Pixel_Art/rock_snow.png', pixel_size=pixel_size)
+
+class Fish(Entity):
+    def __init__(self, x, y, pixel_size=100):
+        super().__init__(x, y, art='Pixel_Art/fish.png', pixel_size=pixel_size)
