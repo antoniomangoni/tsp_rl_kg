@@ -5,11 +5,11 @@ from typing import Dict
 import random
 
 class HeightmapGenerator:
-    def __init__(self, width: int, height: int, scale: float, thresholds: Dict[str, float], octaves: int, persistence: float, lacunarity: float):
+    def __init__(self, width: int, height: int, scale: float, terrain_thresholds: np.ndarray, octaves: int, persistence: float, lacunarity: float):
         self.width = width
         self.height = height
         self.scale = scale
-        self.thresholds = thresholds
+        self.terrain_thresholds = terrain_thresholds
         self.octaves = octaves
         self.persistence = persistence
         self.lacunarity = lacunarity
@@ -49,25 +49,18 @@ class HeightmapGenerator:
 
     def classify_heightmap(self, heightmap: np.ndarray) -> np.ndarray:
         int_heightmap = np.zeros(heightmap.shape, dtype=int)
-        last_threshold = 0
-        for index, (terrain, threshold) in enumerate(sorted(self.thresholds.items(), key=lambda x: x[1])):
-            mask = (heightmap >= last_threshold) & (heightmap < threshold)
+        num_thresholds = len(self.terrain_thresholds)
+
+        for index, threshold in enumerate(self.terrain_thresholds):
+            if index == 0:
+                mask = heightmap < threshold
+            elif index == num_thresholds - 1:
+                mask = heightmap >= self.terrain_thresholds[index - 1]
+            else:
+                mask = (heightmap >= self.terrain_thresholds[index - 1]) & (heightmap < threshold)
+            
             int_heightmap[mask] = index
-            last_threshold = threshold
-        int_heightmap[heightmap >= last_threshold] = len(self.thresholds) - 1 # Snow by default
+
         return int_heightmap
 
-    def decode_terrain(self, code: int) -> str:
-        terrain_mapping = {
-            0: 'strong_water',
-            1: 'water',
-            2: 'plains',
-            3: 'hills',
-            4: 'mountains',
-            5: 'snow',
-            6: 'river'
-        }
-        return terrain_mapping.get(code, "unknown")
 
-    def printHeightmap(self):
-        print(self.heightmap)
