@@ -35,8 +35,8 @@ if __name__ == '__main__':
     }
 
     heightmap_generator = HeightmapGenerator(
-        width=7, 
-        height=7,
+        width=4, 
+        height=4,
         scale=10,
         terrain_thresholds=terrain_thresholds,
         octaves=3, 
@@ -45,7 +45,6 @@ if __name__ == '__main__':
     )
     
     heightmap = heightmap_generator.generate()
-    print(heightmap)
     
     renderer = TerrainRenderer(heightmap, terrain_colors,
                                entity_map, entity_classes,
@@ -53,4 +52,6 @@ if __name__ == '__main__':
                                terrain_entity_map,
                                tile_size=50)
     
+    renderer.print()
+
     renderer.real_time_update()

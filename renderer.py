@@ -15,12 +15,12 @@ class TerrainRenderer:
         
         pygame.init()
         self.heightmap = heightmap
-        self.terrain_colors = {i: color for i, color in enumerate(terrain_colors)}
+        self.entity_locations = np.full((heightmap.shape), -1)
+        self.terrain_colors = terrain_colors
         self.entity_map = entity_map
         self.entity_classes = entity_classes
         self.spawn_probs = entity_spawn_probabilities
         self.terrain_entity_map = terrain_entity_map
-
         self.width, self.height = self.heightmap.shape
         self.tile_size = tile_size
         self.surface = pygame.display.set_mode((self.width * self.tile_size, self.height * self.tile_size))
@@ -35,6 +35,7 @@ class TerrainRenderer:
         entity_class = self.entity_classes[entity_type]
         entity = entity_class(pixel_x, pixel_y, pixel_size=self.tile_size)
         self.entity_group.add(entity)
+        self.entity_locations[x, y] = entity_type
 
     def populate_tiles(self):
         self.entity_group.empty()
@@ -50,7 +51,7 @@ class TerrainRenderer:
         for x in range(self.width):
             for y in range(self.height):
                 terrain = self.heightmap[x, y]
-                color = self.terrain_colors.get(terrain, (0, 0, 0))
+                color = self.terrain_colors[terrain]
                 pygame.draw.rect(self.surface, color, (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size))
         
         self.entity_group.draw(self.surface)
@@ -73,3 +74,9 @@ class TerrainRenderer:
 
     def save_image(self, file_path: str):
         pygame.image.save(self.surface, file_path)
+
+    def print(self):
+        print('Terrain:')
+        print(np.transpose(self.heightmap))
+        print('Entities:')
+        print(np.transpose(self.entity_locations))
