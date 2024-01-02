@@ -1,7 +1,11 @@
-from renderer import TerrainRenderer
+# from renderer import TerrainRenderer
 from heightmap_generator import HeightmapGenerator
 import numpy as np
 from entities import Tree, MossyRock, SnowyRock, Fish, Player
+
+from terrain_manager import TerrainManager
+from entity_manager import EntityManager
+from renderer import Renderer
 
 if __name__ == '__main__':
     terrain_map = {
@@ -47,12 +51,9 @@ if __name__ == '__main__':
     
     heightmap = heightmap_generator.generate()
     
-    renderer = TerrainRenderer(heightmap, terrain_colors,
-                               entity_map, entity_classes,
-                               entity_spawn_probabilities,
-                               terrain_entity_map,
-                               tile_size=50)
-    
-    renderer.print()
+    terrain_manager = TerrainManager(heightmap, terrain_colors)
+    entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map, entity_classes, entity_spawn_probabilities, tile_size=50)
+    renderer = Renderer(terrain_manager, entity_manager, tile_size=50)
 
+    # Real-time update loop
     renderer.real_time_update()

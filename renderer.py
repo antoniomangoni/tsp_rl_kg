@@ -3,73 +3,26 @@ import numpy as np
 import random
 from typing import Dict, Tuple, Type
 
-class TerrainRenderer:
-    def __init__(
-            self, heightmap: np.ndarray,
-            terrain_colors: np.ndarray,
-            entity_map: Dict[str, int],
-            entity_classes: np.ndarray,
-            entity_spawn_probabilities: np.ndarray,
-            terrain_entity_map: Dict[int, int],
-            tile_size: int = 50):
-        
-        pygame.init()
-        self.heightmap = heightmap
-        self.entity_locations = np.full((heightmap.shape), -1)
-        self.terrain_colors = terrain_colors
-        self.entity_map = entity_map
-        self.entity_classes = entity_classes
-        self.spawn_probs = entity_spawn_probabilities
-        self.terrain_entity_map = terrain_entity_map
-        self.width, self.height = self.heightmap.shape
+from terrain_manager import TerrainManager
+from entity_manager import EntityManager
+
+class Renderer:
+    def __init__(self, terrain_manager: TerrainManager, entity_manager: EntityManager, tile_size: int = 50):
+        self.terrain_manager = terrain_manager
+        self.entity_manager = entity_manager
         self.tile_size = tile_size
-        self.surface = pygame.display.set_mode((self.width * self.tile_size, self.height * self.tile_size))
-        self.entity_group = pygame.sprite.Group()
-        self.populate_tiles()
-        self.add_player()
-
-    def create_entity(self, entity_type: int, x: int, y: int):
-        if random.random() > self.spawn_probs[entity_type]:
-            return
-
-        pixel_x, pixel_y = x * self.tile_size, y * self.tile_size
-        entity_class = self.entity_classes[entity_type]
-        entity = entity_class(pixel_x, pixel_y, pixel_size=self.tile_size)
-        self.entity_group.add(entity)
-        self.entity_locations[x, y] = entity_type
-
-    def populate_tiles(self):
-        self.entity_group.empty()
-        for x in range(self.width):
-            for y in range(self.height):
-                terrain_code = self.heightmap[x, y]
-                entity_type = self.terrain_entity_map.get(terrain_code)
-                if entity_type is not None:
-                    self.create_entity(entity_type, x, y)
-
-    def add_player(self):
-        empty_tiles = np.argwhere(self.entity_locations == -1)
-        print(f'Empty tiles: {empty_tiles}')
-        player_location = random.choice(empty_tiles)
-        print(f'Player location: {player_location}')
-        self.create_entity(self.entity_map['player'], player_location[0], player_location[1])
-        print('Player added')
+        self.surface = pygame.display.set_mode((terrain_manager.width * tile_size, terrain_manager.height * tile_size))
 
     def render(self):
-        self.surface.fill((0, 0, 0))                                                
-        for x in range(self.width):
-            for y in range(self.height):
-                terrain = self.heightmap[x, y]
-                color = self.terrain_colors[terrain]
+        self.surface.fill((0, 0, 0))
+        for x in range(self.terrain_manager.width):
+            for y in range(self.terrain_manager.height):
+                terrain = self.terrain_manager.heightmap[x, y]
+                color = self.terrain_manager.get_terrain_color(terrain)
                 pygame.draw.rect(self.surface, color, (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size))
-        
-        self.entity_group.draw(self.surface)
+
+        self.entity_manager.entity_group.draw(self.surface)
         pygame.display.flip()
-
-    def update_heightmap(self, new_heightmap: np.ndarray):
-        self.heightmap = new_heightmap
-        self.populate_tiles()
-
 
     def real_time_update(self, update_interval=50):
         clock = pygame.time.Clock()
@@ -82,11 +35,3 @@ class TerrainRenderer:
             clock.tick(update_interval)
         pygame.quit()
 
-    def save_image(self, file_path: str):
-        pygame.image.save(self.surface, file_path)
-
-    def print(self):
-        print('Terrain:')
-        print(np.transpose(self.heightmap))
-        print('Entities:')
-        print(np.transpose(self.entity_locations))
