@@ -9,8 +9,14 @@ class Entity(pygame.sprite.Sprite):
         self.rect.y = y
 
 class Player(Entity):
-    def __init__(self, x, y, art, pixel_size=100):
-        super().__init__(x, y, art, pixel_size)
+    def __init__(self, x, y, pixel_size=100):
+        super().__init__(x, y, pixel_size=pixel_size)
+        # Create a transparent surface
+        self.image = pygame.Surface((pixel_size, pixel_size), pygame.SRCALPHA)
+        # Draw a red circle on the surface
+        pygame.draw.circle(self.image, (255, 0, 0), (pixel_size // 2, pixel_size // 2), pixel_size // 2)
+        # Set the rect attribute for the sprite
+        self.rect = self.image.get_rect(topleft=(x, y))
 
     def move(self, dx, dy):
         self.rect.x += dx

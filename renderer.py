@@ -26,6 +26,7 @@ class TerrainRenderer:
         self.surface = pygame.display.set_mode((self.width * self.tile_size, self.height * self.tile_size))
         self.entity_group = pygame.sprite.Group()
         self.populate_tiles()
+        self.add_player()
 
     def create_entity(self, entity_type: int, x: int, y: int):
         if random.random() > self.spawn_probs[entity_type]:
@@ -45,7 +46,15 @@ class TerrainRenderer:
                 entity_type = self.terrain_entity_map.get(terrain_code)
                 if entity_type is not None:
                     self.create_entity(entity_type, x, y)
-     
+
+    def add_player(self):
+        empty_tiles = np.argwhere(self.entity_locations == -1)
+        print(f'Empty tiles: {empty_tiles}')
+        player_location = random.choice(empty_tiles)
+        print(f'Player location: {player_location}')
+        self.create_entity(self.entity_map['player'], player_location[0], player_location[1])
+        print('Player added')
+
     def render(self):
         self.surface.fill((0, 0, 0))                                                
         for x in range(self.width):
@@ -60,6 +69,7 @@ class TerrainRenderer:
     def update_heightmap(self, new_heightmap: np.ndarray):
         self.heightmap = new_heightmap
         self.populate_tiles()
+
 
     def real_time_update(self, update_interval=50):
         clock = pygame.time.Clock()

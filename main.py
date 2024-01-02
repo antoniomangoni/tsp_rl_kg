@@ -1,7 +1,7 @@
 from renderer import TerrainRenderer
 from heightmap_generator import HeightmapGenerator
 import numpy as np
-from entities import Tree, MossyRock, SnowyRock, Fish
+from entities import Tree, MossyRock, SnowyRock, Fish, Player
 
 if __name__ == '__main__':
     terrain_map = {
@@ -19,11 +19,12 @@ if __name__ == '__main__':
         'fish': 0,
         'tree': 1,
         'mossy rock': 2,
-        'snowy rock': 3
+        'snowy rock': 3,
+        'player': 4
     }
 
-    entity_spawn_probabilities = np.array([0.2, 0.4, 0.4, 0.5])
-    entity_classes = np.array([Fish, Tree, MossyRock, SnowyRock])
+    entity_spawn_probabilities = np.array([0.2, 0.4, 0.4, 0.5, 1.0])
+    entity_classes = np.array([Fish, Tree, MossyRock, SnowyRock, Player])
 
     terrain_entity_map = {
         terrain_map['strong water']: entity_map['fish'],
@@ -35,8 +36,8 @@ if __name__ == '__main__':
     }
 
     heightmap_generator = HeightmapGenerator(
-        width=4, 
-        height=4,
+        width=7, 
+        height=7,
         scale=10,
         terrain_thresholds=terrain_thresholds,
         octaves=3, 
