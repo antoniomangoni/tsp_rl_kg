@@ -1,6 +1,8 @@
-# from renderer import TerrainRenderer
-from heightmap_generator import HeightmapGenerator
 import numpy as np
+import os
+import pygame
+
+from heightmap_generator import HeightmapGenerator
 from entities import Tree, MossyRock, SnowyRock, Fish, Player
 
 from terrain_manager import TerrainManager
@@ -27,7 +29,7 @@ if __name__ == '__main__':
         'player': 4
     }
 
-    entity_spawn_probabilities = np.array([0.2, 0.4, 0.4, 0.5, 1.0])
+    entity_spawn_probabilities = np.array([0.15, 0.35, 0.4, 0.4, 1.0])
     entity_classes = np.array([Fish, Tree, MossyRock, SnowyRock, Player])
 
     terrain_entity_map = {
@@ -39,7 +41,16 @@ if __name__ == '__main__':
         terrain_map['snow']: entity_map['snowy rock']
     }
 
-    heightmap_generator = HeightmapGenerator(
+    dataset_dir = "/media/antoniomangoni/DATA/Data/7x7_dataset"
+
+    os.makedirs(os.path.join(dataset_dir, "Images"), exist_ok=True)
+    os.makedirs(os.path.join(dataset_dir, "Terrain"), exist_ok=True)
+    os.makedirs(os.path.join(dataset_dir, "Entities"), exist_ok=True)
+
+    import time
+    start = time.time()
+    for i in range(10000):
+        heightmap_generator = HeightmapGenerator(
         width=7, 
         height=7,
         scale=10,
@@ -47,13 +58,23 @@ if __name__ == '__main__':
         octaves=3, 
         persistence=0.2, 
         lacunarity=1.0
-    )
-    
-    heightmap = heightmap_generator.generate()
-    
-    terrain_manager = TerrainManager(heightmap, terrain_colors)
-    entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map, entity_classes, entity_spawn_probabilities, tile_size=50)
-    renderer = Renderer(terrain_manager, entity_manager, tile_size=50)
+        )
 
-    # Real-time update loop
-    renderer.real_time_update()
+        heightmap = heightmap_generator.generate()
+        terrain_manager = TerrainManager(heightmap, terrain_colors)
+        entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map, entity_classes, entity_spawn_probabilities, tile_size=50)
+        renderer = Renderer(terrain_manager, entity_manager, tile_size=50)
+
+        # Render the scene
+        renderer.render()
+
+        # Save the rendered image
+        image_path = os.path.join(dataset_dir, "Images", f"world_{i}.png")
+        pygame.image.save(renderer.surface, image_path)
+
+        # Save terrain and entity arrays
+        np.save(os.path.join(dataset_dir, "Terrain", f"terrain_{i}.npy"), heightmap)
+        np.save(os.path.join(dataset_dir, "Entities", f"entities_{i}.npy"), entity_manager.entity_locations)
+    
+    end = time.time()
+    print(f"Time elapsed: {end - start} seconds")
