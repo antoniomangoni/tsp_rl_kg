@@ -41,17 +41,15 @@ if __name__ == '__main__':
         terrain_map['snow']: entity_map['snowy rock']
     }
 
-    dataset_dir = "/media/antoniomangoni/DATA/Data/AICS_Project/Dataset"
+    dataset_dir = "/media/antoniomangoni/DATA/Data/7x7_dataset"
 
     os.makedirs(os.path.join(dataset_dir, "Images"), exist_ok=True)
-    os.makedirs(os.path.join(dataset_dir, "Arrays"), exist_ok=True)
-
-    dataset_size = 10000
-    dataset = np.zeros((dataset_size, 7, 7, 2), dtype=np.uint8)
+    os.makedirs(os.path.join(dataset_dir, "Terrain"), exist_ok=True)
+    os.makedirs(os.path.join(dataset_dir, "Entities"), exist_ok=True)
 
     import time
     start = time.time()
-    for i in range(dataset_size):
+    for i in range(10000):
         heightmap_generator = HeightmapGenerator(
         width=7, 
         height=7,
@@ -70,14 +68,13 @@ if __name__ == '__main__':
         # Render the scene
         renderer.render()
 
-        dataset[i, :, :, 0] = heightmap.transpose()
-        dataset[i, :, :, 1] = entity_manager.entity_locations.transpose()
-
         # Save the rendered image
         image_path = os.path.join(dataset_dir, "Images", f"world_{i}.png")
         pygame.image.save(renderer.surface, image_path)
+
+        # Save terrain and entity arrays
+        np.save(os.path.join(dataset_dir, "Terrain", f"terrain_{i}.npy"), heightmap)
+        np.save(os.path.join(dataset_dir, "Entities", f"entities_{i}.npy"), entity_manager.entity_locations)
     
     end = time.time()
     print(f"Time elapsed: {end - start} seconds")
-
-    np.save(os.path.join(dataset_dir, "dataset.npy"), dataset)
