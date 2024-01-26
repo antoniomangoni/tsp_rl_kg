@@ -3,8 +3,10 @@ import random
 import pygame
 from typing import Dict, Type
 from terrain_manager import TerrainManager
+from helper_functions import time_function
 
 class EntityManager:
+    @time_function
     def __init__(self, terrain_manager: TerrainManager,
                  entity_map: Dict[str, int],
                  terrain_entity_map: Dict[int, int],
@@ -26,20 +28,22 @@ class EntityManager:
         self.populate_tiles()
         self.add_player()
 
+    @time_function
     def populate_tiles(self):
         self.entity_group.empty()
         for x in range(self.width):
             for y in range(self.height):
                 terrain_code = self.terrain_manager.heightmap[x, y]  # Use heightmap from TerrainManager
                 entity_type = self.terrain_entity_map.get(terrain_code)
-                if entity_type is not None:
+                if entity_type is not None and random.random() < self.spawn_probs[entity_type]:
                     self.create_entity(entity_type, x, y)
-
+                    
+    @time_function
     def create_entity(self, entity_type: int, x: int, y: int):
         r = self.spawn_probs[entity_type]
         # print(f'Creating entity {entity_type} at ({x}, {y}) with probability {r}')
-        if random.random() > self.spawn_probs[entity_type]:
-            return
+        # if random.random() > self.spawn_probs[entity_type]:
+        #     return
 
         pixel_x, pixel_y = x * self.tile_size, y * self.tile_size
         entity_class = self.entity_classes[entity_type]
@@ -47,6 +51,7 @@ class EntityManager:
         self.entity_group.add(entity)
         self.entity_locations[x, y] = entity_type
 
+    @time_function
     def add_player(self):
         empty_tiles = np.argwhere(self.entity_locations == -1)
         if empty_tiles.size == 0:

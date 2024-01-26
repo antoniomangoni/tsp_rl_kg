@@ -40,44 +40,42 @@ if __name__ == '__main__':
         terrain_map['mountains']: entity_map['mossy rock'],
         terrain_map['snow']: entity_map['snowy rock']
     }
-
-    dataset_dir = "/media/antoniomangoni/DATA/Data/AICS_Project/Dataset"
-
-    os.makedirs(os.path.join(dataset_dir, "Images"), exist_ok=True)
-    os.makedirs(os.path.join(dataset_dir, "Arrays"), exist_ok=True)
-
-    dataset_size = 10000
-    dataset = np.zeros((dataset_size, 7, 7, 2), dtype=np.uint8)
-
-    import time
-    start = time.time()
-    for i in range(dataset_size):
-        heightmap_generator = HeightmapGenerator(
-        width=7, 
-        height=7,
+    heightmap_generator = HeightmapGenerator(
+        width=5, 
+        height=5,
         scale=10,
         terrain_thresholds=terrain_thresholds,
         octaves=3, 
         persistence=0.2, 
         lacunarity=1.0
-        )
+    )
 
-        heightmap = heightmap_generator.generate()
-        terrain_manager = TerrainManager(heightmap, terrain_colors)
-        entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map, entity_classes, entity_spawn_probabilities, tile_size=50)
-        renderer = Renderer(terrain_manager, entity_manager, tile_size=50)
+    heightmap = heightmap_generator.generate()
+    terrain_manager = TerrainManager(heightmap, terrain_colors)
+    entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map,
+                                   entity_classes, entity_spawn_probabilities, tile_size=50)
+    renderer = Renderer(terrain_manager, entity_manager, tile_size=50)
 
-        # Render the scene
-        renderer.render()
+    PLAYER_MOVED = pygame.USEREVENT + 1
+    ENVIRONMENT_CHANGED = pygame.USEREVENT + 2
 
-        dataset[i, :, :, 0] = heightmap.transpose()
-        dataset[i, :, :, 1] = entity_manager.entity_locations.transpose()
+    # Initialize pygame
+    pygame.init()
+    screen = pygame.display.set_mode((800, 800))
 
-        # Save the rendered image
-        image_path = os.path.join(dataset_dir, "Images", f"world_{i}.png")
-        pygame.image.save(renderer.surface, image_path)
-    
-    end = time.time()
-    print(f"Time elapsed: {end - start} seconds")
+    running = True
+    renderer.render()
+    while running:
+        should_redraw = False
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                pygame.quit()
+            elif event.type == PLAYER_MOVED or event.type == ENVIRONMENT_CHANGED:
+                should_redraw = True
+        if should_redraw:
+            renderer.render()
+            should_redraw = False
 
-    np.save(os.path.join(dataset_dir, "dataset.npy"), dataset)
+    height_array = heightmap.transpose()
+    entity_array = entity_manager.entity_locations.transpose() + 1

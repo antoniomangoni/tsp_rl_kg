@@ -4,7 +4,10 @@ import numpy as np
 from typing import Dict
 import random
 
+from helper_functions import time_function
+
 class HeightmapGenerator:
+    @time_function
     def __init__(self, width: int, height: int, scale: float, terrain_thresholds: np.ndarray, octaves: int, persistence: float, lacunarity: float):
         self.width = width
         self.height = height
@@ -18,11 +21,13 @@ class HeightmapGenerator:
     def save_heightmap(self, file_path: str):
         np.save(file_path, self.generate())
 
+    @time_function
     def generate(self) -> np.ndarray:
         heightmap, min_val, max_val = self.generate_raw_heightmap()
         self.normalize_heightmap(heightmap, min_val, max_val)
         return self.classify_heightmap(heightmap)
 
+    @time_function
     def generate_raw_heightmap(self) -> np.ndarray:
         heightmap = np.zeros((self.width, self.height), dtype=float)
         min_val = 1.0
@@ -47,6 +52,7 @@ class HeightmapGenerator:
         heightmap -= min_val
         heightmap /= (max_val - min_val)
 
+    @time_function
     def classify_heightmap(self, heightmap: np.ndarray) -> np.ndarray:
         int_heightmap = np.zeros(heightmap.shape, dtype=int)
         num_thresholds = len(self.terrain_thresholds)

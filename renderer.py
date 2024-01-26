@@ -1,14 +1,17 @@
 import pygame
 from terrain_manager import TerrainManager
 from entity_manager import EntityManager
+from helper_functions import time_function
 
 class Renderer:
+    @time_function
     def __init__(self, terrain_manager: TerrainManager, entity_manager: EntityManager, tile_size: int = 50):
         self.terrain_manager = terrain_manager
         self.entity_manager = entity_manager
         self.tile_size = tile_size
         self.surface = pygame.display.set_mode((terrain_manager.width * tile_size, terrain_manager.height * tile_size))
 
+    @time_function
     def render(self):
         self.surface.fill((0, 0, 0))
         for x in range(self.terrain_manager.width):
@@ -18,7 +21,7 @@ class Renderer:
                 pygame.draw.rect(self.surface, color, (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size))
 
         self.entity_manager.entity_group.draw(self.surface)
-        # pygame.display.flip()
+        pygame.display.flip()
 
     def real_time_update(self, update_interval=50):
         clock = pygame.time.Clock()
