@@ -22,11 +22,12 @@ if __name__ == '__main__':
     terrain_colors = np.array([(0, 0, 128), (0, 0, 255), (0, 255, 0), (0, 128, 0), (128, 128, 128), (255, 255, 255)])
 
     entity_map = {
-        'fish': 0,
-        'tree': 1,
-        'mossy rock': 2,
-        'snowy rock': 3,
-        'player': 4
+        'empty': 0,  # Empty tile
+        'fish': 1,
+        'tree': 2,
+        'mossy rock': 3,
+        'snowy rock': 4,
+        'player': 5
     }
 
     entity_spawn_probabilities = np.array([0.15, 0.35, 0.4, 0.4, 1.0])
@@ -41,8 +42,8 @@ if __name__ == '__main__':
         terrain_map['snow']: entity_map['snowy rock']
     }
     heightmap_generator = HeightmapGenerator(
-        width=5, 
-        height=5,
+        width=30, 
+        height=30,
         scale=10,
         terrain_thresholds=terrain_thresholds,
         octaves=3, 
@@ -52,16 +53,18 @@ if __name__ == '__main__':
 
     heightmap = heightmap_generator.generate()
     terrain_manager = TerrainManager(heightmap, terrain_colors)
+    tile_size = 30
     entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map,
-                                   entity_classes, entity_spawn_probabilities, tile_size=50)
-    renderer = Renderer(terrain_manager, entity_manager, tile_size=50)
+                                   entity_classes, entity_spawn_probabilities, tile_size=tile_size)
+    renderer = Renderer(terrain_manager, entity_manager, tile_size=tile_size)
 
     PLAYER_MOVED = pygame.USEREVENT + 1
     ENVIRONMENT_CHANGED = pygame.USEREVENT + 2
 
     # Initialize pygame
     pygame.init()
-    screen = pygame.display.set_mode((800, 800))
+    screen = pygame.display
+    # screen = pygame.display.set_mode((800, 800))
 
     running = True
     renderer.render()

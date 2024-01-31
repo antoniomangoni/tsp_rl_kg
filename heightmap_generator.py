@@ -1,4 +1,3 @@
-# heightmap_generator.py
 import noise
 import numpy as np
 from typing import Dict

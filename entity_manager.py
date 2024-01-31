@@ -3,7 +3,8 @@ import random
 import pygame
 from typing import Dict, Type
 from terrain_manager import TerrainManager
-from helper_functions import time_function
+from helper_functions import time_function, debug_function
+from entities import Entity, Player
 
 class EntityManager:
     @time_function
@@ -17,11 +18,12 @@ class EntityManager:
         self.terrain_manager = terrain_manager
         self.width = terrain_manager.width
         self.height = terrain_manager.height
-        self.entity_locations = np.full((self.width, self.height), -1)
+        self.entity_locations = np.full((self.width, self.height), 0, dtype=np.uint8)
         self.entity_map = entity_map
         self.terrain_entity_map = terrain_entity_map
         self.entity_classes = entity_classes
         self.spawn_probs = spawn_probs
+        print(f'Spawn probabilities: {self.spawn_probs}')
         self.entity_group = pygame.sprite.Group()
         self.tile_size = tile_size
 
@@ -33,29 +35,29 @@ class EntityManager:
         self.entity_group.empty()
         for x in range(self.width):
             for y in range(self.height):
-                terrain_code = self.terrain_manager.heightmap[x, y]  # Use heightmap from TerrainManager
-                entity_type = self.terrain_entity_map.get(terrain_code)
-                if entity_type is not None and random.random() < self.spawn_probs[entity_type]:
-                    self.create_entity(entity_type, x, y)
-                    
-    @time_function
-    def create_entity(self, entity_type: int, x: int, y: int):
-        r = self.spawn_probs[entity_type]
-        # print(f'Creating entity {entity_type} at ({x}, {y}) with probability {r}')
-        # if random.random() > self.spawn_probs[entity_type]:
-        #     return
+                # Use heightmap from TerrainManager to get terrain code
+                terrain_code = self.terrain_manager.heightmap[x, y]
+                # Get the entity type which spawns on this terrain
+                entity_type = self.terrain_entity_map.get(terrain_code) -1
+                if entity_type is not None and random.random() < self.spawn_probs[entity_type]: 
+                    # Add entity type to the entity locations array for processing
+                    self.entity_locations[x, y] = entity_type
+                    # Get entity type from its one hot encoding and spawn it
+                    self.create_entity(self.entity_classes[entity_type], x, y)
 
+    @time_function
+    def create_entity(self, entity_class: Entity, x: int, y: int):
+        # print(f'Creating entity {entity_type} at ({x}, {y}))
         pixel_x, pixel_y = x * self.tile_size, y * self.tile_size
-        entity_class = self.entity_classes[entity_type]
         entity = entity_class(pixel_x, pixel_y, self.tile_size)
-        self.entity_group.add(entity)
-        self.entity_locations[x, y] = entity_type
+        self.entity_group.add(entity) # Add entity to the sprite group for rendering
 
     @time_function
     def add_player(self):
-        empty_tiles = np.argwhere(self.entity_locations == -1)
+        empty_tiles = np.argwhere(self.entity_locations == 0)
         if empty_tiles.size == 0:
             raise ValueError("No space to add the player.")
+        # print(f'Entity locations: {self.entity_locations}')
         player_location = random.choice(empty_tiles)
-        self.create_entity(self.entity_map['player'], player_location[0], player_location[1])
-
+        self.entity_locations[player_location[0], player_location[1]] = self.entity_map['player']
+        self.create_entity(Player, player_location[0], player_location[1])

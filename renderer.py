@@ -33,4 +33,3 @@ class Renderer:
             self.render()
             clock.tick(update_interval)
         pygame.quit()
-
