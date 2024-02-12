@@ -22,7 +22,7 @@ class Renderer:
                 for y in range(self.terrain_manager.height):
                     terrain = self.terrain_manager.heightmap[x, y]
                     color = self.terrain_manager.get_terrain_color(terrain)
-                    # print(f"Terrain color at ({x}, {y}): {color}")
+                    print(f"Terrain color at ({x}, {y}): {color}")
                     pygame.draw.rect(self.terrain_surface, color, (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size))
             self.terrain_needs_update = False
 
@@ -32,17 +32,3 @@ class Renderer:
         print(f"Number of entities to render: {len(self.entity_manager.entity_group)}")
         self.entity_manager.entity_group.draw(self.surface)
         pygame.display.flip()
-
-    def update_tile(self, x, y):
-        # Redraw the terrain tile
-        terrain = self.terrain_manager.heightmap[x, y]
-        color = self.terrain_manager.get_terrain_color(terrain)
-        pygame.draw.rect(self.terrain_surface, color, (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size))
-
-        # Redraw the entity if present
-        entity_code = self.entity_manager.entity_locations[x, y]
-        if entity_code != 0:
-            # Assuming entities have a method to redraw themselves at a given position
-            entity = self.entity_manager.get_entity_by_code(entity_code)
-            entity.draw(self.surface, x * self.tile_size, y * self.tile_size)
-

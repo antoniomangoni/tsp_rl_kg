@@ -1,10 +1,8 @@
 import numpy as np
-import os
 import pygame
 
 from heightmap_generator import HeightmapGenerator
 from entities import Tree, MossyRock, SnowyRock, Fish, Player
-
 from terrain_manager import TerrainManager
 from entity_manager import EntityManager
 from renderer import Renderer
@@ -41,9 +39,11 @@ if __name__ == '__main__':
         terrain_map['mountains']: entity_map['mossy rock'],
         terrain_map['snow']: entity_map['snowy rock']
     }
+
+    map_size = 30
     heightmap_generator = HeightmapGenerator(
-        width=30, 
-        height=30,
+        width=map_size, 
+        height=map_size,
         scale=10,
         terrain_thresholds=terrain_thresholds,
         octaves=3, 
@@ -56,6 +56,7 @@ if __name__ == '__main__':
     tile_size = 30
     entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map,
                                    entity_classes, entity_spawn_probabilities, tile_size=tile_size)
+    
     renderer = Renderer(terrain_manager, entity_manager, tile_size=tile_size)
 
     PLAYER_MOVED = pygame.USEREVENT + 1
@@ -63,11 +64,13 @@ if __name__ == '__main__':
 
     # Initialize pygame
     pygame.init()
-    screen = pygame.display
-    # screen = pygame.display.set_mode((800, 800))
-
+    screen = pygame.display.set_mode((map_size * tile_size, map_size * tile_size))   
+    pygame.display.set_caption("Game World")
     running = True
+
+    renderer.render_terrain()
     renderer.render()
+
     while running:
         should_redraw = False
         for event in pygame.event.get():
@@ -76,9 +79,16 @@ if __name__ == '__main__':
                 pygame.quit()
             elif event.type == PLAYER_MOVED or event.type == ENVIRONMENT_CHANGED:
                 should_redraw = True
+                renderer.terrain_needs_update = True  # If terrain needs to be updated
         if should_redraw:
             renderer.render()
             should_redraw = False
-
+    
     height_array = heightmap.transpose()
-    entity_array = entity_manager.entity_locations.transpose() + 1
+    entity_array = entity_manager.entity_locations.transpose()
+
+    print('Heightmap:')
+    print(height_array)
+    print('Entity locations:')
+    print(entity_array)
+    print('Game closed')

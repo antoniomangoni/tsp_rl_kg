@@ -11,8 +11,8 @@ class EntityManager:
     def __init__(self, terrain_manager: TerrainManager,
                  entity_map: Dict[str, int],
                  terrain_entity_map: Dict[int, int],
-                 entity_classes: Dict[str, Type[pygame.sprite.Sprite]],
-                 spawn_probs: np.ndarray,
+                 entity_classes: np.ndarray[Type[Entity]],
+                 spawn_probs: np.ndarray[float],
                  tile_size: int = 50):
         
         self.terrain_manager = terrain_manager
@@ -23,7 +23,6 @@ class EntityManager:
         self.terrain_entity_map = terrain_entity_map
         self.entity_classes = entity_classes
         self.spawn_probs = spawn_probs
-        print(f'Spawn probabilities: {self.spawn_probs}')
         self.entity_group = pygame.sprite.Group()
         self.tile_size = tile_size
 
@@ -38,7 +37,7 @@ class EntityManager:
                 # Use heightmap from TerrainManager to get terrain code
                 terrain_code = self.terrain_manager.heightmap[x, y]
                 # Get the entity type which spawns on this terrain
-                entity_type = self.terrain_entity_map.get(terrain_code) -1
+                entity_type = self.terrain_entity_map.get(terrain_code) -1 
                 if entity_type is not None and random.random() < self.spawn_probs[entity_type]: 
                     # Add entity type to the entity locations array for processing
                     self.entity_locations[x, y] = entity_type
