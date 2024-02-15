@@ -25,7 +25,8 @@ if __name__ == '__main__':
         'tree': 2,
         'mossy rock': 3,
         'snowy rock': 4,
-        'player': 5
+        'player': 5,
+        'outpost': 6,
     }
 
     entity_spawn_probabilities = np.array([0.15, 0.35, 0.4, 0.4, 1.0])
@@ -40,7 +41,7 @@ if __name__ == '__main__':
         terrain_map['snow']: entity_map['snowy rock']
     }
 
-    map_size = 30
+    map_size = 20
     heightmap_generator = HeightmapGenerator(
         width=map_size, 
         height=map_size,
@@ -53,9 +54,10 @@ if __name__ == '__main__':
 
     heightmap = heightmap_generator.generate()
     terrain_manager = TerrainManager(heightmap, terrain_colors)
-    tile_size = 30
+    tile_size = 50
     entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map,
-                                   entity_classes, entity_spawn_probabilities, tile_size=tile_size)
+                                   entity_classes, entity_spawn_probabilities, tile_size=tile_size,
+                                   number_of_outposts=4, outpost_terrain=[2, 3])
     
     renderer = Renderer(terrain_manager, entity_manager, tile_size=tile_size)
 

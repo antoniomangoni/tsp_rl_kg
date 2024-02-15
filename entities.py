@@ -22,6 +22,10 @@ class Player(Entity):
         self.rect.x += dx
         self.rect.y += dy
 
+class Outpost(Entity):
+    def __init__(self, x, y, pixel_size=100):
+        super().__init__(x, y, art='Pixel_Art/outpost.png', pixel_size=pixel_size)
+
 class Tree(Entity):
     def __init__(self, x, y, pixel_size=100):
         super().__init__(x, y, art='Pixel_Art/tree_1.png', pixel_size=pixel_size)
