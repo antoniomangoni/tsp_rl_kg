@@ -55,8 +55,23 @@ class EntityManager:
     def add_player(self):
         empty_tiles = np.argwhere(self.entity_locations == 0)
         if empty_tiles.size == 0:
-            raise ValueError("No space to add the player.")
+            self.replace_entity_for_player([2, 3, 4])
+            return
+        # get empty tiles where the terrain_code > 1
+        empty_tiles = [tile for tile in empty_tiles if self.terrain_manager.heightmap[tile[0], tile[1]] > 1]
+
         # print(f'Entity locations: {self.entity_locations}')
         player_location = random.choice(empty_tiles)
         self.entity_locations[player_location[0], player_location[1]] = self.entity_map['player']
         self.create_entity(Player, player_location[0], player_location[1])
+
+    @time_function
+    def replace_entity_for_player(self, entity_type: list[int]):
+        for entity in entity_type:
+                # get the first occurence of the entity type in the entity locations array
+            entity_location = np.argwhere(self.entity_locations == entity)[0]
+            if entity_location.size > 0:
+                break
+
+            self.entity_locations[entity_location[0], entity_location[1]] = 0
+            self.create_entity(Player, entity_location[0], entity_location[1])
