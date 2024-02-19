@@ -24,7 +24,7 @@ class Player(Entity):
 
 class Outpost(Entity):
     def __init__(self, x, y, pixel_size=100):
-        super().__init__(x, y, art='Pixel_Art/outpost.png', pixel_size=pixel_size)
+        super().__init__(x, y, art='Pixel_Art/outpost_2.png', pixel_size=pixel_size)
 
 class Tree(Entity):
     def __init__(self, x, y, pixel_size=100):
