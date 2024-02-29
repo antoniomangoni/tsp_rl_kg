@@ -46,6 +46,16 @@ class HeightmapGenerator:
                 min_val = min(min_val, height)
                 max_val = max(max_val, height)
         return heightmap, min_val, max_val
+    
+    @time_function
+    def get_heightmap_slope(self, heightmap: np.ndarray) -> np.ndarray:
+        slope = np.zeros(heightmap.shape, dtype=float)
+        for x in range(self.width):
+            for y in range(self.height):
+                slope_x = heightmap[(x + 1) % self.width, y] - heightmap[x, y]
+                slope += slope_x ** 2
+
+                
 
     def normalize_heightmap(self, heightmap: np.ndarray, min_val: float, max_val: float):
         heightmap -= min_val
