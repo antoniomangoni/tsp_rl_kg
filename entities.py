@@ -10,17 +10,30 @@ class Entity(pygame.sprite.Sprite):
 
 class Player(Entity):
     def __init__(self, x, y, pixel_size=100):
-        super().__init__(x, y, pixel_size=pixel_size)
-        # Create a transparent surface
-        self.image = pygame.Surface((pixel_size, pixel_size), pygame.SRCALPHA)
-        # Draw a red circle on the surface
-        pygame.draw.circle(self.image, (255, 0, 0), (pixel_size // 2, pixel_size // 2), pixel_size // 2)
-        # Set the rect attribute for the sprite
-        self.rect = self.image.get_rect(topleft=(x, y))
+        self.down_image = pygame.transform.scale(pygame.image.load('Pixel_Art/player-down.png'), (pixel_size, pixel_size))
+        self.up_image = pygame.transform.scale(pygame.image.load('Pixel_Art/player-up.png'), (pixel_size, pixel_size))
+        self.left_image = pygame.transform.scale(pygame.image.load('Pixel_Art/player-left.png'), (pixel_size, pixel_size))
+        self.right_image = pygame.transform.scale(pygame.image.load('Pixel_Art/player-right.png'), (pixel_size, pixel_size))
+        self.sleep_image = pygame.transform.scale(pygame.image.load('Pixel_Art/player-sleep.png'), (pixel_size, pixel_size))
+        super().__init__(x, y, art= 'Pixel_Art/player.png', pixel_size=pixel_size)
 
+    # Can only move in 4 directions
     def move(self, dx, dy):
         self.rect.x += dx
         self.rect.y += dy
+        
+        if dx == 1:
+            self.image = self.right_image
+            return
+        elif dx == -1:
+            self.image = self.left_image
+            return
+        elif dy == 1:
+            self.image = self.down_image
+            return
+        elif dy == -1:
+            self.image = self.up_image
+            return
 
 class Outpost(Entity):
     def __init__(self, x, y, pixel_size=100):
