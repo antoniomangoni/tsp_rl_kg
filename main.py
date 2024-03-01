@@ -41,7 +41,7 @@ if __name__ == '__main__':
         terrain_map['snow']: entity_map['snowy rock']
     }
 
-    map_size = 20
+    map_size = 5
     heightmap_generator = HeightmapGenerator(
         width=map_size, 
         height=map_size,
@@ -54,12 +54,23 @@ if __name__ == '__main__':
 
     heightmap = heightmap_generator.generate()
     terrain_manager = TerrainManager(heightmap, terrain_colors)
-    tile_size = 50
+    tile_size = 1000 // map_size
     entity_manager = EntityManager(terrain_manager, entity_map, terrain_entity_map,
                                    entity_classes, entity_spawn_probabilities, tile_size=tile_size,
                                    number_of_outposts=4, outpost_terrain=[2, 3])
     
     renderer = Renderer(terrain_manager, entity_manager, tile_size=tile_size)
+
+    def handle_input():
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            pygame.event.post(pygame.event.Event(PLAYER_MOVED, {"direction": "LEFT"}))
+        elif keys[pygame.K_RIGHT]:
+            pygame.event.post(pygame.event.Event(PLAYER_MOVED, {"direction": "RIGHT"}))
+        elif keys[pygame.K_UP]:
+            pygame.event.post(pygame.event.Event(PLAYER_MOVED, {"direction": "UP"}))
+        elif keys[pygame.K_DOWN]:
+            pygame.event.post(pygame.event.Event(PLAYER_MOVED, {"direction": "DOWN"}))
 
     PLAYER_MOVED = pygame.USEREVENT + 1
     ENVIRONMENT_CHANGED = pygame.USEREVENT + 2
@@ -73,18 +84,22 @@ if __name__ == '__main__':
     renderer.render_terrain()
     renderer.render()
 
+    render_flag = False
+    # In the main game loop
     while running:
-        should_redraw = False
-        for event in pygame.event.get():
+        handle_input()
+        events = pygame.event.get()
+        for event in events:
             if event.type == pygame.QUIT:
                 running = False
-                pygame.quit()
-            elif event.type == PLAYER_MOVED or event.type == ENVIRONMENT_CHANGED:
-                should_redraw = True
-                renderer.terrain_needs_update = True  # If terrain needs to be updated
-        if should_redraw:
+            elif event.type == PLAYER_MOVED:
+                direction = event.dict['direction']
+                render_flag = entity_manager.move_player(direction)
+
+        if render_flag:
             renderer.render()
-            should_redraw = False
+            render_flag = False
+
     
     height_array = heightmap.transpose()
     entity_array = entity_manager.entity_locations.transpose()
@@ -93,4 +108,5 @@ if __name__ == '__main__':
     print(height_array)
     print('Entity locations:')
     print(entity_array)
+
     print('Game closed')

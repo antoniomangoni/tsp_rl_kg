@@ -32,10 +32,55 @@ class EntityManager:
         self.min_outpost_distance = max(self.width, self.height) // self.number_of_outposts  # Adjust this formula as needed
         self.failed = False
 
+        self.player = Player
+
         self.populate_tiles()
         self.add_player()
         self.add_outposts(self.min_outpost_distance)
+        print(self.player)
         
+    @time_function
+    def update(self, events):
+        self.player.update(events)
+
+    @time_function
+    def move_player(self, direction: str):
+        dx, dy = 0, 0
+        if direction == "LEFT":
+            dx = -1
+        elif direction == "RIGHT":
+            dx = 1
+        elif direction == "UP":
+            dy = -1
+        elif direction == "DOWN":
+            dy = 1
+        
+        next_x, next_y = self.player.x + dx, self.player.y + dy
+        
+        # Check if the next position is within the bounds of the game world
+        if self.check_location_viability(self.player.x, self.player.y, dx, dy):
+            print('Moving player')
+            self.player.move(dx, dy)
+            self.entity_locations[self.player.y, self.player.x] = 0
+            self.entity_locations[next_y, next_x] = self.entity_map['player']
+            self.player.x, self.player.y = next_x, next_y
+
+            return True
+        else:
+            print("Cannot move out of bounds")
+            return False
+    @time_function
+    def check_location_viability(self, x, y, dx, dy):
+        if 0 <= x + dx < self.width and 0 <= y + dy < self.height:
+            print('In bounds')
+            return self.entity_locations[y + dy, x + dx] == 0
+        return False
+
+    @time_function
+    def destroy_entity(self, x, y):
+        entity_type = self.entity_locations[x, y]
+        self.entity_locations[x, y] = 0
+        self.entity_group.remove(self.entity_group.sprites()[entity_type])
 
     @time_function
     def populate_tiles(self):
@@ -58,6 +103,7 @@ class EntityManager:
         pixel_x, pixel_y = x * self.tile_size, y * self.tile_size
         entity = entity_class(pixel_x, pixel_y, self.tile_size)
         self.entity_group.add(entity) # Add entity to the sprite group for rendering
+        return entity
 
     @time_function
     def add_player(self):
@@ -71,7 +117,7 @@ class EntityManager:
         # print(f'Entity locations: {self.entity_locations}')
         player_location = random.choice(empty_tiles)
         self.entity_locations[player_location[0], player_location[1]] = self.entity_map['player']
-        self.create_entity(Player, player_location[0], player_location[1])
+        self.player = self.create_entity(Player, player_location[0], player_location[1])
 
     @time_function
     def replace_entity_for_player(self, entity_type: list[int]):
@@ -82,11 +128,11 @@ class EntityManager:
                 break
 
             self.entity_locations[entity_location[0], entity_location[1]] = 0
-            self.create_entity(Player, entity_location[0], entity_location[1])
+            self.player = self.create_entity(Player, entity_location[0], entity_location[1])
 
     @time_function
     def add_outposts(self, min_distance: int = 5):
-        print(f'Adding {self.number_of_outposts} outposts at least {min_distance} tiles apart.')
+        # print(f'Adding {self.number_of_outposts} outposts at least {min_distance} tiles apart.')
         outpost_locations = []
 
         empty_tiles = np.argwhere((self.entity_locations == 0) & np.isin(self.terrain_manager.heightmap, self.outpost_terrain))
@@ -123,48 +169,8 @@ class EntityManager:
         for location in outpost_locations:
             self.entity_locations[location[0], location[1]] = self.entity_map['outpost']
             self.create_entity(Outpost, location[0], location[1])
-            print(f'Outpost added at {location}')
+            # print(f'Outpost added at {location}')
 
-    @time_function
-    def add_outposts2(self):
-        print(f'Adding {self.number_of_outposts} outposts')
-        minimum_distance = int((self.width + self.height) / self.number_of_outposts)
-        minimum_distance = 2
-        outpost_locations = []
-
-        empty_tiles = np.argwhere(self.entity_locations == 0)
-        empty_tiles = [tile for tile in empty_tiles if self.terrain_manager.heightmap[tile[0], tile[1]] in self.outpost_terrain]
-
-        if len(empty_tiles) < self.number_of_outposts:
-            self.failed = True
-            return
-        
-        outpost_locations.append(random.choice(empty_tiles))
-        print(f'Outpost added at {outpost_locations[-1]}')
-        i = 0
-        while len(outpost_locations) < self.number_of_outposts:
-            if i > 100:
-                self.failed = True
-                print('Failed to add outposts')
-                return
-            # find a new empty tile that is at least minimum_distance away from the other outposts
-            empty_tiles = [tile for tile in empty_tiles if np.linalg.norm(outpost_locations[-1] - tile) > minimum_distance]
-            i += 1
-
-        for location in outpost_locations:
-            self.entity_locations[location[0], location[1]] = self.entity_map['outpost']
-            self.create_entity(Outpost, location[0], location[1])
-            print(f'Outpost added at {location}')
-
-        # for _ in range(self.number_of_outposts):
-        #     empty_tiles = np.argwhere(self.entity_locations == 0)
-        #     empty_tiles = [tile for tile in empty_tiles if self.terrain_manager.heightmap[tile[0], tile[1]] in self.outpost_terrain]
-
-        #     if len(empty_tiles) < self.number_of_outposts:
-        #         self.failed = True
-        #         return
-            
-        #     outpost_location = random.choice(empty_tiles)
-        #     self.entity_locations[outpost_location[0], outpost_location[1]] = self.entity_map['outpost']
-        #     self.create_entity(Outpost, outpost_location[0], outpost_location[1])
-        #     print(f'Outpost added at {outpost_location}')
+    # @time_function
+    # def move_player(self, direction: str):
+    #    self.player.move(*self.player.handle_player_moved(direction))
