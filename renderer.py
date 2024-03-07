@@ -1,32 +1,27 @@
 import pygame
+
 from terrain_manager import TerrainManager
 from entity_manager import EntityManager
-from helper_functions import time_function
 
 class Renderer:
-    @time_function
-    def __init__(self, terrain_manager: TerrainManager, entity_manager: EntityManager, tile_size: int = 50):
+    def __init__(self, terrain_manager: TerrainManager, entity_manager: EntityManager):
         self.terrain_manager = terrain_manager
         self.entity_manager = entity_manager
-        self.tile_size = tile_size
-        self.surface = pygame.display.set_mode((terrain_manager.width * tile_size, terrain_manager.height * tile_size))
+        self.tile_size = terrain_manager.tile_size
+        self.surface = pygame.display.set_mode((terrain_manager.width * self.tile_size, terrain_manager.height * self.tile_size))
         self.terrain_surface = pygame.Surface(self.surface.get_size())
         self.terrain_surface.set_alpha(None)
         self.terrain_needs_update = True
 
-    @time_function
     def render_terrain(self):
         if self.terrain_needs_update:
             print("Rendering terrain")
             for x in range(self.terrain_manager.width):
                 for y in range(self.terrain_manager.height):
-                    terrain = self.terrain_manager.heightmap[x, y]
-                    color = self.terrain_manager.get_terrain_color(terrain)
-                    # print(f"Terrain color at ({x}, {y}): {color}")
-                    pygame.draw.rect(self.terrain_surface, color, (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size))
+                    terrain_tile = self.terrain_manager.terrain_grid[x, y]
+                    self.terrain_surface.blit(terrain_tile.image, (x * self.tile_size, y * self.tile_size))
             self.terrain_needs_update = False
 
-    @time_function
     def render(self):
         self.surface.blit(self.terrain_surface, (0, 0))
         print(f"Number of entities to render: {len(self.entity_manager.entity_group)}")
@@ -34,15 +29,11 @@ class Renderer:
         pygame.display.flip()
 
     def update_tile(self, x, y):
-        # Redraw the terrain tile
-        terrain = self.terrain_manager.heightmap[x, y]
-        color = self.terrain_manager.get_terrain_color(terrain)
-        pygame.draw.rect(self.terrain_surface, color, (x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size))
+        # Directly access and redraw the terrain tile
+        terrain_tile = self.terrain_manager.terrain_grid[x, y]
+        self.terrain_surface.blit(terrain_tile.image, (x * self.tile_size, y * self.tile_size))
 
-        # Redraw the entity if present
-        entity_code = self.entity_manager.entity_locations[x, y]
-        if entity_code != 0:
-            # Assuming entities have a method to redraw themselves at a given position
-            entity = self.entity_manager.get_entity_by_code(entity_code)
-            entity.draw(self.surface, x * self.tile_size, y * self.tile_size)
-
+        # Redraw the entity if present on this tile
+        if terrain_tile.entity_on_tile is not None:
+            entity = terrain_tile.entity_on_tile
+            self.surface.blit(entity.image, (x * self.tile_size, y * self.tile_size))

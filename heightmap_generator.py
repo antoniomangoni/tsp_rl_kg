@@ -1,6 +1,5 @@
 import noise
 import numpy as np
-from typing import Dict
 import random
 
 from helper_functions import time_function
@@ -54,8 +53,6 @@ class HeightmapGenerator:
             for y in range(self.height):
                 slope_x = heightmap[(x + 1) % self.width, y] - heightmap[x, y]
                 slope += slope_x ** 2
-
-                
 
     def normalize_heightmap(self, heightmap: np.ndarray, min_val: float, max_val: float):
         heightmap -= min_val
