@@ -10,6 +10,7 @@ class EntityManager:
         self.terrain_manager = terrain_manager
         self.width, self.height = terrain_manager.width, terrain_manager.height
         self.tile_size = terrain_manager.tile_size
+        assert self.tile_size == 200, "Entity Manager"
         self.entity_group = pygame.sprite.Group()
         self.number_of_outposts = number_of_outposts
         self.outpost_terrain = [Plains, Hills]

@@ -7,7 +7,7 @@ class Entity(pygame.sprite.Sprite):
     def __init__(self, x, y, art, tile_size):
         super().__init__()
         # Ensure the image is loaded
-        print(f'Tile size in Entity: {tile_size}')
+        assert tile_size == 200, "Entity"
         if art not in self._images:
             full_path = f'Pixel_Art/{art}'
             if os.path.exists(full_path):  
