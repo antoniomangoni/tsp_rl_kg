@@ -2,22 +2,21 @@ import numpy as np
 import pygame
 from heightmap_generator import HeightmapGenerator
 from entities import Tree, MossyRock, SnowyRock, Fish, Player, Outpost, WoodPath
-from terrain_manager import TerrainManager
-from entity_manager import EntityManager
+from environment import Environment
 from renderer import Renderer
 
 class GameManager:
     def __init__(self, map_size=3, tile_size=200):
         self.map_size = map_size
-        self.tile_size = tile_size
-        self.terrain_manager = None
-        self.entity_manager = None
+        self.tile_size = 1000 // map_size # 1000 is the maximum window size, so we want to scale the tile size to fit the window
+        self.environment = None
         self.renderer = None
         self.running = True
 
         self.init_pygame()
         self.load_resources()
         self.initialize_components()
+        # self.test()
 
     def init_pygame(self):
         pygame.init()
@@ -38,11 +37,18 @@ class GameManager:
         )
         heightmap = heightmap_generator.generate()
 
-        self.terrain_manager = TerrainManager(heightmap, self.tile_size)
-        self.entity_manager = EntityManager(self.terrain_manager, number_of_outposts=4)
-        self.renderer = Renderer(self.terrain_manager, self.entity_manager, tile_size=self.tile_size)
+        self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
+
+        self.renderer = Renderer(self.environment)
 
         self.screen = pygame.display.set_mode((self.map_size * self.tile_size, self.map_size * self.tile_size))
+
+    def test(self):
+        for i in range(100):
+            try:
+                self.initialize_components()
+            except Exception as e:
+                print(e)
 
     def handle_events(self):
         for event in pygame.event.get():

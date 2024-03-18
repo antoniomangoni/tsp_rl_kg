@@ -7,7 +7,6 @@ class Entity(pygame.sprite.Sprite):
     def __init__(self, x, y, art, tile_size):
         super().__init__()
         # Ensure the image is loaded
-        assert tile_size == 200, "Entity"
         if art not in self._images:
             full_path = f'Pixel_Art/{art}'
             if os.path.exists(full_path):  
@@ -16,58 +15,52 @@ class Entity(pygame.sprite.Sprite):
                 raise FileNotFoundError(f"Image file {art} not found in Pixel_Art directory.")
         
         self.image = self._images[art]
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        self.tile_x = x // tile_size
-        self.tile_y = y // tile_size
+        self.grid_x = x
+        self.grid_y = y
         self.tile_size = tile_size
-
-        self.entity_type = None
-        print(f"Size of entity image: {self.image.get_size()}")
-
-    def move(self, dx, dy):
-        self.rect.x += dx * self.tile_size
-        self.rect.y += dy * self.tile_size
-        self.tile_x += dx
-        self.tile_y += dy
+        self.screen_x = x * tile_size
+        self.screen_y = y * tile_size
+        self.rect = self.image.get_rect()
+        self.rect.x = self.screen_x
+        self.rect.y = self.screen_y
+        self.id = None
 
     def move(self, dx, dy):
-        """
-        Moves the entity by dx, dy tiles, rather than pixel coordinates.
-        """
-        # Update the pixel position
-        self.rect.x += dx * self.tile_size
-        self.rect.y += dy * self.tile_size
-        # Update the logical tile position
-        self.tile_x += dx
-        self.tile_y += dy
+        # Update the logical grid position
+        self.grid_x += dx
+        self.grid_y += dy
+        # Update the screen (pixel) position based on the new grid position
+        self.screen_x = self.grid_x * self.tile_size
+        self.screen_y = self.grid_y * self.tile_size
+        # Update the rect position for drawing and collision detection
+        self.rect.x = self.screen_x
+        self.rect.y = self.screen_y
 
 
 class Player(Entity):
     def __init__(self, x, y, tile_size):
         super().__init__(x, y, art='player.png', tile_size=tile_size)
-        self.tile_size = tile_size
-        self.x = x // tile_size
-        self.y = y // tile_size
-
-    def move(self, dx, dy):
-        self.rect.x += dx * self.tile_size 
-        self.rect.y += dy * self.tile_size
-        self.x += dx
-        self.y += dy
+        self.id = 7
 
 class Outpost(Entity):
     def __init__(self, x, y, tile_size):
         super().__init__(x, y, art='outpost_2.png', tile_size=tile_size)
+        self.id = 5
 
 class WoodPath(Entity):
     def __init__(self, x, y, tile_size):
         super().__init__(x, y, art='wood_path.png', tile_size=tile_size)
+        self.id = 6
+
+class Fish(Entity):
+    def __init__(self, x, y, tile_size):
+        super().__init__(x, y, art='fish.png', tile_size=tile_size)
+        self.id = 1
 
 class Tree(Entity):
     def __init__(self, x, y, tile_size):
         super().__init__(x, y, art='tree_1.png', tile_size=tile_size)
+        self.id = 2
 
 class Rock(Entity):
     def __init__(self, x, y, art, tile_size):
@@ -76,11 +69,11 @@ class Rock(Entity):
 class MossyRock(Rock):
     def __init__(self, x, y, tile_size):
         super().__init__(x, y, art='rock_moss.png', tile_size=tile_size)
+        self.id = 3
 
 class SnowyRock(Rock):
     def __init__(self, x, y, tile_size):
         super().__init__(x, y, art='rock_snow.png', tile_size=tile_size)
+        self.id = 4
 
-class Fish(Entity):
-    def __init__(self, x, y, tile_size):
-        super().__init__(x, y, art='fish.png', tile_size=tile_size)
+
