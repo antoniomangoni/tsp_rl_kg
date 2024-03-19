@@ -10,6 +10,8 @@ class GameManager:
         self.map_size = map_size
         self.tile_size = 1000 // map_size # 1000 is the maximum window size, so we want to scale the tile size to fit the window
         self.environment = None
+        self.player = None
+
         self.renderer = None
         self.running = True
 
@@ -36,46 +38,36 @@ class GameManager:
             octaves=3, persistence=0.2, lacunarity=2.0
         )
         heightmap = heightmap_generator.generate()
-
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
-
+        self.player = self.environment.player
         self.renderer = Renderer(self.environment)
-
         self.screen = pygame.display.set_mode((self.map_size * self.tile_size, self.map_size * self.tile_size))
 
     def test(self):
-        for i in range(100):
+        for _ in range(100):
             try:
                 self.initialize_components()
             except Exception as e:
                 print(e)
 
-    def handle_events(self):
+    def handle_keyboard(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    self.entity_manager.move_player("LEFT")
-                elif event.key == pygame.K_RIGHT:
-                    self.entity_manager.move_player("RIGHT")
-                elif event.key == pygame.K_UP:
-                    self.entity_manager.move_player("UP")
-                elif event.key == pygame.K_DOWN:
-                    self.entity_manager.move_player("DOWN")
 
     def update(self):
-        # This is where you could update game states
-        pass
+        self.player.random_move()
+        self.renderer.update_changed_tiles()
 
     def render(self):
-        self.renderer.render_terrain()  # Consider optimizing to avoid re-rendering static terrain
         self.renderer.render()
         pygame.display.flip()
 
     def run(self):
+        self.renderer.render_terrain()
+        # self.render()
         while self.running:
-            self.handle_events()
+            self.handle_keyboard()
             self.update()
             self.render()
 

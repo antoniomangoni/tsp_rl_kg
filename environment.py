@@ -30,9 +30,7 @@ class Environment:
 
         self.initialize_environment()
         self.add_outposts()
-        self.add_player()
-        print(f"Terrain index grid: {self.terrain_index_grid}")
-        print(f"Entity index grid: {self.entity_index_grid}")
+        self.player = self.add_player()
 
     def initialize_environment(self):
         for (x, y), terrain_code in np.ndenumerate(self.heightmap):
@@ -88,9 +86,8 @@ class Environment:
         player = Player(location[0], location[1], self.tile_size)
         self.entity_group.add(player)
         self.entity_index_grid[location[0], location[1]] = player.id
- 
-    def is_move_valid(self, x: int, y: int) -> bool:
-        return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable
+        return player
+
     
     def update_terrain_passability(self, x, y, entity):
         terrain = self.terrain_object_grid[x, y]
@@ -100,3 +97,18 @@ class Environment:
 
     def mark_tile_as_changed(self, x, y):
         self.changed_tiles_grid[x, y] = True
+    
+    def move_entity(self, entity, new_x, new_y):
+        if not self.is_move_valid(new_x, new_y):
+            return
+        old_x, old_y = entity.x, entity.y
+        self.terrain_object_grid[old_x, old_y] = 0
+        self.entity_index_grid[old_x, old_y] = 0
+        entity.move(new_x, new_y)
+        self.terrain_object_grid[new_x, new_y] = entity
+        self.entity_index_grid[new_x, new_y] = entity.id
+        self.mark_tile_as_changed(old_x, old_y)
+        self.mark_tile_as_changed(new_x, new_y)
+
+    def is_move_valid(self, x: int, y: int) -> bool:
+        return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable
