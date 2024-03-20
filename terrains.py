@@ -24,6 +24,11 @@ class Terrain:
         image.fill(self.colour)
         return image
     
+    def add_player(self, player):
+        self.entity_on_tile = player
+        self.entity_index = player.id
+        
+    
     def add_entity(self, entity):
         self.entity_on_tile = entity
         self.entity_index = entity.id

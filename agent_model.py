@@ -5,11 +5,11 @@ import numpy as np
 from environment import Environment
 
 class AgentModel:
-    def __init__(self):
-        self.environment = Environment()
+    def __init__(self, environment : Environment):
+        self.environment = environment
         self.agent = self.environment.player
         self.running = True
 
-    def random_move(self):
-        new_coords = self.environment.player.random_move()
-        self.environment.move_entity(self.agent, *new_coords)
+    def agent_move(self):
+        (dx, dy) = choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+        self.environment.move_entity(self.agent, dx, dy)

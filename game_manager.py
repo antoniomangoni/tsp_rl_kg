@@ -1,8 +1,8 @@
 import numpy as np
 import pygame
 from heightmap_generator import HeightmapGenerator
-from entities import Tree, MossyRock, SnowyRock, Fish, Player, Outpost, WoodPath
 from environment import Environment
+from agent_model import AgentModel
 from renderer import Renderer
 
 class GameManager:
@@ -10,7 +10,10 @@ class GameManager:
         self.map_size = map_size
         self.tile_size = 1000 // map_size # 1000 is the maximum window size, so we want to scale the tile size to fit the window
         self.environment = None
-        self.player = None
+        # self.player = None
+
+        self.agent_model = None
+        self.agent = None
 
         self.renderer = None
         self.running = True
@@ -39,7 +42,8 @@ class GameManager:
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
-        self.player = self.environment.player
+        self.agent_model = AgentModel(self.environment)
+        self.agent = self.agent_model.agent
         self.renderer = Renderer(self.environment)
         self.screen = pygame.display.set_mode((self.map_size * self.tile_size, self.map_size * self.tile_size))
 
@@ -56,7 +60,7 @@ class GameManager:
                 self.running = False
 
     def update(self):
-        self.player.random_move()
+        self.agent.random_move()   
         self.renderer.update_changed_tiles()
 
     def render(self):
@@ -67,6 +71,7 @@ class GameManager:
         self.renderer.render_terrain()
         # self.render()
         while self.running:
+            pygame.time.delay(300)
             self.handle_keyboard()
             self.update()
             self.render()

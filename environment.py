@@ -30,7 +30,8 @@ class Environment:
 
         self.initialize_environment()
         self.add_outposts()
-        self.player = self.add_player()
+        self.player = self.init_player()
+        self.environment_changed_flag = False
 
     def initialize_environment(self):
         for (x, y), terrain_code in np.ndenumerate(self.heightmap):
@@ -42,12 +43,12 @@ class Environment:
                 # Instantiate the terrain with its corresponding properties
                 self.terrain_object_grid[x, y] = terrain_class(x, y, self.tile_size, entity_prob)
                 # Add entity to terrain if entity_prob is met
-                self.add_entity(self.terrain_object_grid[x, y], x, y)
+                self.init_entity(self.terrain_object_grid[x, y], x, y)
 
             else:
                 raise ValueError(f"Invalid terrain code: {terrain_code}")
     
-    def add_entity(self, terrain, x, y):
+    def init_entity(self, terrain, x, y):
         if random.random() < terrain.entity_prob:
             entity_type = terrain.entity_type
             entity = entity_type(x, y, self.tile_size)
@@ -67,10 +68,8 @@ class Environment:
         for x, y in selected_locations:
             outpost = Outpost(x, y, self.tile_size)
             self.entity_group.add(outpost)
-            self.terrain_object_grid[x, y].entity_on_tile = outpost
-            self.terrain_object_grid[x, y].passable = False
+            self.terrain_object_grid[x, y].add_entity(outpost)
             self.outpost_locations.append((x, y))
-            self.entity_index_grid[x, y] = outpost.id
 
             # remove the location from the list of suitable locations
             if (x, y) in self.suitable_terrain_locations['Plains']:
@@ -81,22 +80,18 @@ class Environment:
         print(f"Added {len(self.outpost_locations)} outposts.")
         return possible_locations
 
-    def add_player(self):
+    def init_player(self):
         location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
         player = Player(location[0], location[1], self.tile_size)
         self.entity_group.add(player)
         self.entity_index_grid[location[0], location[1]] = player.id
         return player
-
     
     def update_terrain_passability(self, x, y, entity):
         terrain = self.terrain_object_grid[x, y]
         if isinstance(entity, WoodPath):
             terrain.passable = True
             terrain.energy_requirement = max(0, terrain.energy_requirement - 2)
-
-    def mark_tile_as_changed(self, x, y):
-        self.changed_tiles_grid[x, y] = True
     
     def move_entity(self, entity, new_x, new_y):
         if not self.is_move_valid(new_x, new_y):
@@ -107,8 +102,26 @@ class Environment:
         entity.move(new_x, new_y)
         self.terrain_object_grid[new_x, new_y] = entity
         self.entity_index_grid[new_x, new_y] = entity.id
-        self.mark_tile_as_changed(old_x, old_y)
-        self.mark_tile_as_changed(new_x, new_y)
+        self.environment_changed(old_x, old_y, new_x, new_y)
 
+    def move_entity(self, entity, dx, dy):
+        new_x, new_y = entity.x + dx, entity.y + dy
+        if not self.is_move_valid(new_x, new_y):
+            return
+        old_x, old_y = entity.x, entity.y
+        self.terrain_object_grid[old_x, old_y].remove_entity()
+        entity.move(dx, dy)
+        self.terrain_object_grid[new_x, new_y].add_entity(entity)
+        self.environment_changed(old_x, old_y, new_x, new_y)
+
+    def is_move_valid(self, entity: object, dx: int, dy: int) -> bool:
+        x, y = entity.x + dx, entity.y + dy
+        return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable
+    
     def is_move_valid(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable
+
+    def environment_changed(self, old_x, old_y, new_x, new_y):
+        self.changed_tiles_grid[old_x, old_y] = True
+        self.changed_tiles_grid[new_x, new_y] = True
+        self.environment_changed_flag = True
