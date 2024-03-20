@@ -61,20 +61,18 @@ class GameManager:
 
     def update(self):
         self.agent_model.agent_move()   
-        self.renderer.update_changed_tiles()
 
     def render(self):
         self.renderer.render()
         pygame.display.flip()
 
     def run(self):
-        self.renderer.init_terrain()
-        # self.render()
+        self.renderer.init_render()
         while self.running:
-            pygame.time.delay(50)
+            # pygame.time.delay(50)
             self.handle_keyboard()
             self.update()
-            self.render()
+            self.renderer.render_updated_tiles()
 
         pygame.quit()
         print('Game closed')
