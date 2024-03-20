@@ -92,31 +92,18 @@ class Environment:
         if isinstance(entity, WoodPath):
             terrain.passable = True
             terrain.energy_requirement = max(0, terrain.energy_requirement - 2)
-    
-    def move_entity(self, entity, new_x, new_y):
-        if not self.is_move_valid(new_x, new_y):
-            return
-        old_x, old_y = entity.x, entity.y
-        self.terrain_object_grid[old_x, old_y] = 0
-        self.entity_index_grid[old_x, old_y] = 0
-        entity.move(new_x, new_y)
-        self.terrain_object_grid[new_x, new_y] = entity
-        self.entity_index_grid[new_x, new_y] = entity.id
-        self.environment_changed(old_x, old_y, new_x, new_y)
 
     def move_entity(self, entity, dx, dy):
-        new_x, new_y = entity.x + dx, entity.y + dy
+        new_x, new_y = entity.grid_x + dx, entity.grid_y + dy
         if not self.is_move_valid(new_x, new_y):
             return
-        old_x, old_y = entity.x, entity.y
+        old_x, old_y = entity.grid_x, entity.grid_y
+
         self.terrain_object_grid[old_x, old_y].remove_entity()
         entity.move(dx, dy)
         self.terrain_object_grid[new_x, new_y].add_entity(entity)
+        # We never remove the entity from the entity_group, so no need to re-add it
         self.environment_changed(old_x, old_y, new_x, new_y)
-
-    def is_move_valid(self, entity: object, dx: int, dy: int) -> bool:
-        x, y = entity.x + dx, entity.y + dy
-        return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable
     
     def is_move_valid(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable

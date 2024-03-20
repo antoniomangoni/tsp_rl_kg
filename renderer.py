@@ -10,16 +10,12 @@ class Renderer:
         self.surface = pygame.display.set_mode((environment.width * self.tile_size, environment.height * self.tile_size))
         self.terrain_surface = pygame.Surface(self.surface.get_size())
         self.terrain_surface.set_alpha(None)
-        self.terrain_needs_update = True
 
-    def render_terrain(self):
-        if self.terrain_needs_update:
-            print("Rendering terrain")
-            for x in range(self.environment.width):
-                for y in range(self.environment.height):
-                    terrain_tile = self.environment.terrain_object_grid[x, y]
-                    self.terrain_surface.blit(terrain_tile.image, (x * self.tile_size, y * self.tile_size))
-            self.terrain_needs_update = False
+    def init_terrain(self):
+        for x in range(self.environment.width):
+            for y in range(self.environment.height):
+                terrain_tile = self.environment.terrain_object_grid[x, y]
+                self.terrain_surface.blit(terrain_tile.image, (x * self.tile_size, y * self.tile_size))
 
     def render(self):
         self.surface.blit(self.terrain_surface, (0, 0))

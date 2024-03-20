@@ -60,7 +60,7 @@ class GameManager:
                 self.running = False
 
     def update(self):
-        self.agent.random_move()   
+        self.agent_model.agent_move()   
         self.renderer.update_changed_tiles()
 
     def render(self):
@@ -68,10 +68,10 @@ class GameManager:
         pygame.display.flip()
 
     def run(self):
-        self.renderer.render_terrain()
+        self.renderer.init_terrain()
         # self.render()
         while self.running:
-            pygame.time.delay(300)
+            pygame.time.delay(50)
             self.handle_keyboard()
             self.update()
             self.render()
