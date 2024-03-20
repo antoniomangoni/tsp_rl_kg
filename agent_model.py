@@ -3,12 +3,79 @@ import pygame
 import numpy as np
 
 from environment import Environment
+from entities import Fish, Tree, MossyRock, SnowyRock
+from terrains import DeepWater, Water
 
 class AgentModel:
     def __init__(self, environment : Environment):
         self.environment = environment
         self.agent = self.environment.player
         self.running = True
+
+        self.energy = 100 # Decrease when moving or collecting resources, increase when resting
+        self.hunger = 0 # Eat fish to derease
+        self.thirst = 0 # Drink water to decrease
+        self.wood = 0
+        self.stone = 0
+        self.fish = 0
+        self.water = 0
+
+    def rest(self):
+        self.energy += 20
+        self.energy = min(100, self.energy)
+
+    def build_path(self):
+        if self.wood >= 1:
+            self.wood -= 1
+            self.environment.place_path(self.agent.grid_x, self.agent.grid_y)
+
+    def place_rock(self):
+        if self.stone >= 1:
+            self.stone -= 1
+            self.environment.place_rock(self.agent.grid_x, self.agent.grid_y)
+
+    def collect_resource(self, dx, dy):
+        x, y = self.agent.grid_x + dx, self.agent.grid_y + dy
+        resource = self.environment.terrain_object_grid[x, y].entity_on_tile
+        collected = False
+        if isinstance(resource, Fish):
+            if self.fish < 5:
+                self.fish += 1
+                collected = True
+        elif isinstance(resource, Tree):
+            if self.wood < 5:
+                self.wood += 1
+                collected = True
+        elif isinstance(resource, MossyRock):
+            if self.stone < 5:
+                self.stone += 1
+                collected = True
+        elif isinstance(resource, SnowyRock):
+            if self.stone < 5:
+                self.stone += 1
+                collected = True
+        if collected:
+            self.environment.delete_entity(x, y)
+            self.energy -= self.environment.terrain_object_grid[x, y].energy_requirement
+        
+
+    def collect_water(self):
+        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
+            self.water += 1
+        elif isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
+            self.water += 2
+
+    def drink(self):
+        self.rest()
+        if self.water > 0:
+            self.water -= 1
+            self.thirst = max(0, self.thirst - 5)
+
+    def eat(self):
+        self.rest()
+        if self.fish > 0:
+            self.fish -= 1
+            self.hunger = max(0, self.hunger - 5)
 
     def agent_move(self):
         (dx, dy) = choice([(0, 1), (0, -1), (1, 0), (-1, 0)])

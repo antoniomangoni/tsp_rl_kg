@@ -11,7 +11,6 @@ class Environment:
         self.terrain_index_grid = np.zeros_like(self.heightmap)
         self.entity_index_grid = np.zeros_like(self.heightmap)
         self.terrain_object_grid = np.zeros_like(self.heightmap, dtype=object)
-        self.changed_tiles_grid = np.full_like(self.heightmap, False)
         self.tile_size = tile_size
         self.width, self.height = heightmap.shape
         self.number_of_outposts = number_of_outposts
@@ -32,6 +31,7 @@ class Environment:
         self.add_outposts()
         self.player = self.init_player()
         self.environment_changed_flag = False
+        self.changed_tiles_list = []
 
     def initialize_environment(self):
         for (x, y), terrain_code in np.ndenumerate(self.heightmap):
@@ -105,10 +105,35 @@ class Environment:
         # We never remove the entity from the entity_group, so no need to re-add it
         self.environment_changed(old_x, old_y, new_x, new_y)
     
+    def delete_entity(self, entity):
+        x, y = entity.grid_x, entity.grid_y
+        self.terrain_object_grid[x, y].remove_entity()
+        self.entity_group.remove(entity)
+        self.entity_index_grid[x, y] = 0
+        self.environment_changed(x, y)
+
     def is_move_valid(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable
 
     def environment_changed(self, old_x, old_y, new_x, new_y):
-        self.changed_tiles_grid[old_x, old_y] = True
-        self.changed_tiles_grid[new_x, new_y] = True
         self.environment_changed_flag = True
+        self.changed_tiles_list.append((old_x, old_y))
+        self.changed_tiles_list.append((new_x, new_y))
+
+    def single_environment_changed(self, x, y):
+        self.environment_changed_flag = True
+        self.changed_tiles_list.append(x, y)
+
+    def place_path(self, x, y):
+        wood_path = WoodPath(x, y, self.tile_size)
+        self.entity_group.add(wood_path)
+        self.entity_index_grid[x, y] = wood_path.id
+        self.terrain_object_grid[x, y].add_entity(wood_path)
+        self.single_environment_changed(x, y)
+
+    def place_rock(self, x, y):
+        if isinstance(self.terrain_object_grid[x, y], DeepWater):
+            self.terrain_object_grid[x, y].shallow()
+        if isinstance(self.terrain_object_grid[x, y], Water):
+            self.terrain_object_grid[x, y].land_fill()
+        self.single_environment_changed(x, y)

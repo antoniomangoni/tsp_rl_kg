@@ -32,8 +32,9 @@ class Renderer:
             self.surface.blit(terrain_tile.entity_on_tile.image, (x * self.tile_size, y * self.tile_size))
 
     def update_changed_tiles(self):
-        for (x, y), changed in np.ndenumerate(self.environment.changed_tiles_grid):
-            if changed:
+        if self.environment.environment_changed_flag:
+            # go through the list of changed tiles and update them
+            for x, y in self.environment.changed_tiles_list:
                 self.update_tile(x, y)
-                self.environment.changed_tiles_grid[x, y] = False
-
+            self.environment.environment_changed_flag = False
+            self.environment.changed_tiles_list = []

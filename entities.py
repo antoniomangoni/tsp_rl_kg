@@ -1,6 +1,5 @@
 import pygame
 import os
-from random import choice
 
 class Entity(pygame.sprite.Sprite):
     _images = {}
@@ -42,9 +41,6 @@ class Player(Entity):
     def __init__(self, x, y, tile_size):
         super().__init__(x, y, art='player.png', tile_size=tile_size)
         self.id = 7
-
-    def random_move(self):
-        self.move(*choice([(1, 0), (-1, 0), (0, 1), (0, -1)]))
 
 class Outpost(Entity):
     def __init__(self, x, y, tile_size):

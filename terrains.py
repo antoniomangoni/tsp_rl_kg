@@ -55,6 +55,14 @@ class DeepWater(Terrain):
         self.entity_type = Fish
         self.entity_prob = entity_prob
 
+    def shallow(self):
+        self.__class__ = Water
+        self.colour = (0, 0, 255)
+        self.image = self.create_image()
+        self.elevation = 1
+        self.energy_requirement = 6
+        self.entity_type = Fish
+
 class Water(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
@@ -64,6 +72,14 @@ class Water(Terrain):
         self.energy_requirement = 6
         self.entity_type = Fish
         self.entity_prob = entity_prob
+
+    def land_fill(self):
+        self.__class__ = Plains
+        self.colour = (0, 255, 0)
+        self.image = self.create_image()
+        self.elevation = 2
+        self.energy_requirement = 2
+        self.entity_type = Tree
 
 class Plains(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
