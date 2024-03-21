@@ -35,10 +35,10 @@ class AgentModel:
     def agent_action(self, action):
         action = choice(range(11))
         # print(f'Action: {action}')
-        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
-            if self.stone >= 1:
-                action = 3
-                print("Placing rock")
+        # if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
+        #     if self.stone >= 1:
+        #         action = 3
+        #         print("Placing rock")
         if action == 0:
             self.agent_move()
         elif action == 1:
@@ -61,7 +61,7 @@ class AgentModel:
             self.drink()
         elif action == 10:
             self.eat()
-    
+
     def agent_move(self):
         (dx, dy) = choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
         self.environment.move_entity(self.agent, dx, dy)
@@ -90,11 +90,12 @@ class AgentModel:
         else:
             return
         self.stone -= 1
+        # print(f'Placing - Stone inventory: {self.stone}')
         self.environment.drop_rock_in_water(self.agent.grid_x, self.agent.grid_y, place)
 
     def collect_resource(self, dx, dy):
         x, y = self.agent.grid_x + dx, self.agent.grid_y + dy
-        if (x < 0 or x >= self.environment.width) or (y < 0 or y >= self.environment.height):
+        if self.environment.within_bounds(x, y) is False:
             return
         resource = self.environment.terrain_object_grid[x, y].entity_on_tile
         if resource is None:
@@ -112,6 +113,7 @@ class AgentModel:
                 if self.stone >= self.resouce_max:
                     return
                 self.stone += 1
+                # print(f'Collecting - Stone inventory: {self.stone}')
             elif isinstance(resource, SnowyRock):
                 if self.stone >= self.resouce_max:
                     return

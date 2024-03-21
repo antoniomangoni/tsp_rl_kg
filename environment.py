@@ -2,7 +2,7 @@ import random
 import pygame
 import numpy as np
 
-from entities import Player, Outpost, WoodPath
+from entities import Player, Outpost, WoodPath, Fish, Tree, MossyRock, SnowyRock
 from terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
 
 class Environment:
@@ -113,8 +113,11 @@ class Environment:
         self.single_environment_changed(x, y)
 
     def is_move_valid(self, x: int, y: int) -> bool:
-        return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable
+        return self.within_bounds(x, y) and self.terrain_object_grid[x, y].passable
 
+    def within_bounds(self, x, y):
+        return 0 <= x < self.width and 0 <= y < self.height
+    
     def environment_changed(self, old_x, old_y, new_x, new_y):
         self.environment_changed_flag = True
         self.changed_tiles_list.append((old_x, old_y))
@@ -134,8 +137,43 @@ class Environment:
     def drop_rock_in_water(self, x, y, fill_type):
         if fill_type == 0:
             self.terrain_object_grid[x, y].shallow()
-            # print("Shallowing water")
         elif fill_type == 1:
             self.terrain_object_grid[x, y].land_fill()
-            # print("Land filling water")
         self.single_environment_changed(x, y)
+
+    def environment_gamestate(self):
+        return self.terrain_index_grid, self.entity_index_grid
+    
+    def print_entities(self):
+        number_of_fish = 0
+        number_of_trees = 0
+        number_of_mossy_rocks = 0
+        number_of_snowy_rocks = 0
+        number_of_outposts = 0
+        number_of_wood_paths = 0
+        number_of_players = 0
+
+        for entity in self.entity_group:
+            if isinstance(entity, Player):
+                number_of_players += 1
+            elif isinstance(entity, Outpost):
+                number_of_outposts += 1
+            elif isinstance(entity, WoodPath):
+                number_of_wood_paths += 1
+            elif isinstance(entity, Fish):
+                number_of_fish += 1
+            elif isinstance(entity, Tree):
+                number_of_trees += 1
+            elif isinstance(entity, MossyRock):
+                number_of_mossy_rocks += 1
+            elif isinstance(entity, SnowyRock):
+                number_of_snowy_rocks += 1
+
+        print(f"Players: {number_of_players}")
+        print(f"Outposts: {number_of_outposts}")
+        print(f"Wood Paths: {number_of_wood_paths}")
+        print(f"Fish: {number_of_fish}")
+        print(f"Trees: {number_of_trees}")
+        print(f"Mossy Rocks: {number_of_mossy_rocks}")
+        print(f"Snowy Rocks: {number_of_snowy_rocks}")
+        

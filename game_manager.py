@@ -77,7 +77,7 @@ class GameManager:
 
         pygame.quit()
         print('Game closed')
-        print(f'Stone inventory: {self.agent_model.stone}')
+        self.environment.print_entities()
 
 if __name__ == '__main__':
     game_manager = GameManager()
