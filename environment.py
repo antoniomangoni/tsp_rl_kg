@@ -110,7 +110,7 @@ class Environment:
         self.terrain_object_grid[x, y].remove_entity()
         self.entity_group.remove(entity)
         self.entity_index_grid[x, y] = 0
-        self.environment_changed(x, y)
+        self.single_environment_changed(x, y)
 
     def is_move_valid(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height and self.terrain_object_grid[x, y].passable
@@ -122,18 +122,23 @@ class Environment:
 
     def single_environment_changed(self, x, y):
         self.environment_changed_flag = True
-        self.changed_tiles_list.append(x, y)
+        self.changed_tiles_list.append((x, y))
 
     def place_path(self, x, y):
         wood_path = WoodPath(x, y, self.tile_size)
         self.entity_group.add(wood_path)
         self.entity_index_grid[x, y] = wood_path.id
         self.terrain_object_grid[x, y].add_entity(wood_path)
+        self.terrain_object_grid[x, y].passable = True
+        self.terrain_object_grid[x, y].energy_requirement = max(0, self.terrain_object_grid[x, y].energy_requirement - 2)
         self.single_environment_changed(x, y)
+        print(f"This path tile is passable: {self.terrain_object_grid[x, y].passable}")
 
     def place_rock(self, x, y):
         if isinstance(self.terrain_object_grid[x, y], DeepWater):
             self.terrain_object_grid[x, y].shallow()
+            print("Shallowing water")
         if isinstance(self.terrain_object_grid[x, y], Water):
             self.terrain_object_grid[x, y].land_fill()
+            print("Land filling water")
         self.single_environment_changed(x, y)

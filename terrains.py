@@ -27,7 +27,8 @@ class Terrain:
     def add_entity(self, entity):
         self.entity_on_tile = entity
         self.entity_index = entity.id
-        self.adjust_for_entity(entity)
+        self.passable = False
+        # self.adjust_for_entity(entity)
 
     def adjust_for_entity(self, entity):
         if isinstance(entity, WoodPath):
@@ -43,7 +44,6 @@ class Terrain:
             self.energy_requirement += 2
         self.entity_on_tile = None
         self.passable = True
-
 
 class DeepWater(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):

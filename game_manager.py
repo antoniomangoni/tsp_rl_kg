@@ -47,7 +47,7 @@ class GameManager:
         self.renderer = Renderer(self.environment)
         self.screen = pygame.display.set_mode((self.map_size * self.tile_size, self.map_size * self.tile_size))
 
-    def test(self):
+    def test_terrain_generation(self):
         for _ in range(100):
             try:
                 self.initialize_components()
@@ -60,7 +60,8 @@ class GameManager:
                 self.running = False
 
     def update(self):
-        self.agent_model.agent_move()   
+        self.agent_model.agent_action(11)
+        # self.agent_model.agent_move()
 
     def render(self):
         self.renderer.render()
@@ -69,7 +70,7 @@ class GameManager:
     def run(self):
         self.renderer.init_render()
         while self.running:
-            # pygame.time.delay(50)
+            # pygame.time.delay(500)
             self.handle_keyboard()
             self.update()
             self.renderer.render_updated_tiles()
