@@ -28,7 +28,12 @@ class Terrain:
         self.entity_on_tile = entity
         self.entity_index = entity.id
         self.passable = False
-        # self.adjust_for_entity(entity)
+
+    def add_path(self, path):
+        self.entity_on_tile = path
+        self.entity_index = path.id
+        self.passable = True
+        self.energy_requirement = max(0, self.energy_requirement - 2)
 
     def adjust_for_entity(self, entity):
         if isinstance(entity, WoodPath):

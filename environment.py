@@ -128,11 +128,8 @@ class Environment:
         wood_path = WoodPath(x, y, self.tile_size)
         self.entity_group.add(wood_path)
         self.entity_index_grid[x, y] = wood_path.id
-        self.terrain_object_grid[x, y].add_entity(wood_path)
-        self.terrain_object_grid[x, y].passable = True
-        self.terrain_object_grid[x, y].energy_requirement = max(0, self.terrain_object_grid[x, y].energy_requirement - 2)
+        self.terrain_object_grid[x, y].add_path(wood_path)
         self.single_environment_changed(x, y)
-        print(f"This path tile is passable: {self.terrain_object_grid[x, y].passable}")
 
     def place_rock(self, x, y):
         if isinstance(self.terrain_object_grid[x, y], DeepWater):

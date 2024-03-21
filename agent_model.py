@@ -68,7 +68,9 @@ class AgentModel:
         self.energy = min(100, self.energy)
 
     def build_path(self):
-        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], (Water or DeepWater)):
+        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
+            return
+        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
             return
         if self.wood >= 1:
             self.wood -= 1
