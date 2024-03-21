@@ -131,11 +131,11 @@ class Environment:
         self.terrain_object_grid[x, y].add_path(wood_path)
         self.single_environment_changed(x, y)
 
-    def place_rock(self, x, y):
-        if isinstance(self.terrain_object_grid[x, y], DeepWater):
+    def drop_rock_in_water(self, x, y, fill_type):
+        if fill_type == 0:
             self.terrain_object_grid[x, y].shallow()
-            print("Shallowing water")
-        if isinstance(self.terrain_object_grid[x, y], Water):
+            # print("Shallowing water")
+        elif fill_type == 1:
             self.terrain_object_grid[x, y].land_fill()
-            print("Land filling water")
+            # print("Land filling water")
         self.single_environment_changed(x, y)

@@ -12,6 +12,9 @@ class AgentModel:
         self.agent = self.environment.player
         self.running = True
 
+        self.energy_max = 100
+        self.resouce_max = 5
+
         self.energy = 100 # Decrease when moving or collecting resources, increase when resting
         self.hunger = 0 # Eat fish to derease
         self.thirst = 0 # Drink water to decrease
@@ -65,7 +68,7 @@ class AgentModel:
 
     def rest(self):
         self.energy += 20
-        self.energy = min(100, self.energy)
+        self.energy = min(self.energy_max, self.energy)
 
     def build_path(self):
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
@@ -77,35 +80,43 @@ class AgentModel:
             self.environment.place_path(self.agent.grid_x, self.agent.grid_y)
 
     def place_rock(self):
-        if self.stone >= 1:
-            self.stone -= 1
-            self.environment.place_rock(self.agent.grid_x, self.agent.grid_y)
+        if self.stone < 1:
+            return
+        place = -1
+        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
+            place = 0
+        elif isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
+            place = 1
+        else:
+            return
+        self.stone -= 1
+        self.environment.drop_rock_in_water(self.agent.grid_x, self.agent.grid_y, place)
 
     def collect_resource(self, dx, dy):
         x, y = self.agent.grid_x + dx, self.agent.grid_y + dy
         if (x < 0 or x >= self.environment.width) or (y < 0 or y >= self.environment.height):
             return
         resource = self.environment.terrain_object_grid[x, y].entity_on_tile
-        collected = False
-        if isinstance(resource, Fish):
-            if self.fish < 5:
+        if resource is None:
+            return
+        else:
+            if isinstance(resource, Fish):
+                if self.fish >= self.resouce_max:
+                    return
                 self.fish += 1
-                collected = True
-        elif isinstance(resource, Tree):
-            if self.wood < 5:
+            elif isinstance(resource, Tree):
+                if self.wood >= self.resouce_max:
+                    return
                 self.wood += 1
-                collected = True
-        elif isinstance(resource, MossyRock):
-            if self.stone < 5:
+            elif isinstance(resource, MossyRock):
+                if self.stone >= self.resouce_max:
+                    return
                 self.stone += 1
-                collected = True
-        elif isinstance(resource, SnowyRock):
-            if self.stone < 5:
+            elif isinstance(resource, SnowyRock):
+                if self.stone >= self.resouce_max:
+                    return
                 self.stone += 1
-                collected = True
-        if collected:
             self.environment.delete_entity(resource)
-            self.energy -= self.environment.terrain_object_grid[x, y].energy_requirement
 
     def collect_water(self):
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
