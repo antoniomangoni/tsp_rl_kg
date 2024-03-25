@@ -77,7 +77,7 @@ class Environment:
             else:
                 self.suitable_terrain_locations['Hills'].remove((x, y))
 
-        print(f"Added {len(self.outpost_locations)} outposts.")
+        # print(f"Added {len(self.outpost_locations)} outposts.")
         return possible_locations
 
     def init_player(self):
