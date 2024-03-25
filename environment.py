@@ -141,6 +141,17 @@ class Environment:
             self.terrain_object_grid[x, y].land_fill()
         self.single_environment_changed(x, y)
 
+    def get_neighbours(self, x, y):
+        neighbours = []
+        for dx in range(-1, 2):
+            for dy in range(-1, 2):
+                if dx == 0 and dy == 0:
+                    continue
+                new_x, new_y = x + dx, y + dy
+                if self.within_bounds(new_x, new_y):
+                    neighbours.append((new_x, new_y))
+        return neighbours
+
     def environment_gamestate(self):
         return self.terrain_index_grid, self.entity_index_grid
     

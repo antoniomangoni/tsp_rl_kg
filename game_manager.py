@@ -23,8 +23,6 @@ class GameManager:
         self.init_pygame()
         self.load_resources()
         self.initialize_components()
-        self.target_path_energy = self.target_manager.get_energy_required(self.target_manager.shortest_path)
-        print(f"Energy required for the target path: {self.target_path_energy}")
         # self.test()
 
     def init_pygame(self):
