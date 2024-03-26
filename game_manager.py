@@ -2,18 +2,16 @@ import numpy as np
 import pygame
 from heightmap_generator import HeightmapGenerator
 from environment import Environment
-from agent_model import AgentModel
+from agent import Agent
 from renderer import Renderer
 from target import Target_Manager
 
 class GameManager:
-    def __init__(self, map_size=3, tile_size=200):
+    def __init__(self, map_size=32, tile_size=200):
         self.map_size = map_size
-        self.tile_size = 1000 // map_size # 1000 is the maximum window size, so we want to scale the tile size to fit the window
+        self.tile_size = 1000 // map_size
         self.environment = None
-        # self.player = None
-
-        self.agent_model = None
+        self.agent_controler = None
         self.agent = None
         self.target_manager = None
 
@@ -44,12 +42,12 @@ class GameManager:
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
-        self.agent_model = AgentModel(self.environment)
-        self.agent = self.agent_model.agent
+        self.agent_controler = Agent(self.environment)
+        self.agent = self.agent_controler.agent
         self.target_manager = Target_Manager(self.environment)
 
     def initialise_rendering(self):
-        self.renderer = Renderer(self.environment)
+        self.renderer = Renderer(self.environment, self.agent_controler)
         self.screen = pygame.display.set_mode((self.map_size * self.tile_size, self.map_size * self.tile_size))
         self.renderer.init_render()
 
@@ -59,8 +57,7 @@ class GameManager:
                 self.running = False
 
     def update(self):
-        self.agent_model.agent_action(11)
-        # self.agent_model.agent_move()
+        self.agent_controler.agent_action(11)
 
     def render(self):
         self.renderer.render()
@@ -77,7 +74,3 @@ class GameManager:
         pygame.quit()
         print('Game closed')
         self.environment.print_entities()
-
-if __name__ == '__main__':
-    game_manager = GameManager()
-    game_manager.run()

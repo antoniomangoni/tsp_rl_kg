@@ -3,10 +3,10 @@ import pygame
 import numpy as np
 
 from environment import Environment
-from entities import Fish, Tree, MossyRock, SnowyRock
+from entities import Fish, Tree, MossyRock, SnowyRock, Outpost, WoodPath
 from terrains import DeepWater, Water
 
-class AgentModel:
+class Agent:
     def __init__(self, environment : Environment):
         self.environment = environment
         self.agent = self.environment.player
@@ -14,6 +14,7 @@ class AgentModel:
 
         self.energy_max = 100
         self.resouce_max = 5
+        self.hunger_thirst_max = 20
 
         self.energy = 100 # Decrease when moving or collecting resources, increase when resting
         self.hunger = 0 # Eat fish to derease
@@ -34,11 +35,6 @@ class AgentModel:
 
     def agent_action(self, action):
         action = choice(range(11))
-        # print(f'Action: {action}')
-        # if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
-        #     if self.stone >= 1:
-        #         action = 3
-        #         print("Placing rock")
         if action == 0:
             self.agent_move()
         elif action == 1:
@@ -98,7 +94,7 @@ class AgentModel:
         if self.environment.within_bounds(x, y) is False:
             return
         resource = self.environment.terrain_object_grid[x, y].entity_on_tile
-        if resource is None:
+        if resource is None or isinstance(resource, Outpost) or isinstance(resource, WoodPath):
             return
         else:
             if isinstance(resource, Fish):

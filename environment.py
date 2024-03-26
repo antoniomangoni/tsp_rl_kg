@@ -24,6 +24,8 @@ class Environment:
             5: {'class': Snow, 'entity_prob': 0.4},
         }
 
+
+
         self.suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
         self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
 

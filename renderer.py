@@ -1,14 +1,19 @@
 import pygame
 
 from environment import Environment
-from helper_functions import time_function
+from agent import Agent
 
 class Renderer:
-    def __init__(self, environment: Environment):
+    def __init__(self, environment: Environment, agent_control: Agent):
         self.environment = environment
+        self.agent = agent_control  # Reference to the agent to access its status and inventory
         self.tile_size = environment.tile_size
-        self.surface = pygame.display.set_mode((environment.width * self.tile_size, environment.height * self.tile_size))
-        self.terrain_surface = pygame.Surface(self.surface.get_size())
+        self.window_width = environment.width * self.tile_size
+        self.window_height = environment.height * self.tile_size
+        self.ui_height = 100  # Height for the UI panel at the bottom
+        self.surface = pygame.display.set_mode((self.window_width, self.window_height + self.ui_height))
+        
+        self.terrain_surface = pygame.Surface((self.window_width, self.window_height))
         self.terrain_surface.set_alpha(None)
 
     def init_render(self):
@@ -22,11 +27,13 @@ class Renderer:
         self.surface.blit(self.terrain_surface, (0, 0))
         # Draw all entities for the first time
         self.environment.entity_group.draw(self.surface)
+        self.render_ui()
         pygame.display.flip()
 
     def render_updated_tiles(self):
         if not self.environment.environment_changed_flag:
             return
+
         # Go through the list of changed tiles and update them
         for x, y in self.environment.changed_tiles_list:
             self.update_tile(x, y)
@@ -45,7 +52,7 @@ class Renderer:
         # Clear the list of changed tiles after updating
         self.environment.changed_tiles_list.clear()
         self.environment.environment_changed_flag = False
-
+        self.render_changed_ui()
 
     def update_tile(self, x, y):
         # Directly access and redraw the terrain tile
@@ -56,3 +63,63 @@ class Renderer:
         if terrain_tile.entity_on_tile is not None:
             self.surface.blit(terrain_tile.entity_on_tile.image, (x * self.tile_size, y * self.tile_size))
 
+    def render_ui(self):
+        # First, clear the UI area to ensure a clean slate for UI rendering
+        self.clear_ui_area()
+        
+        # Render the status bars for energy, hunger, and thirst
+        self.render_status_bars()
+        
+        # Render the inventory text
+        self.render_inventory_text()
+
+    def render_changed_ui(self):
+        # Update the status bars and inventory text
+        self.render_status_bars()
+        self.render_inventory_text()
+
+    def clear_ui_area(self):
+        # Fill the UI background to clear previous frame's UI elements
+        pygame.draw.rect(self.surface, (0, 0, 0), (0, self.window_height, self.window_width, self.ui_height))
+
+    def render_status_bars(self):
+        # Define bar properties
+        bars_info = [
+            (self.agent.energy, self.agent.energy_max, (255, 0, 0), "Energy"),
+            (self.agent.hunger, self.agent.hunger_thirst_max, (0, 255, 0), "Hunger"),
+            (self.agent.thirst, self.agent.hunger_thirst_max, (0, 0, 255), "Thirst")
+        ]
+        y_offset = 10
+        for value, max_value, color, label in bars_info:
+            self.render_bar(20, self.window_height + y_offset, value, max_value, color, label)
+            y_offset += 25
+
+    def render_inventory_text(self):
+        # Render inventory items as text
+        inventory_items = [
+            ('fish', self.agent.fish),
+            ('water', self.agent.water),
+            ('wood', self.agent.wood),
+            ('stone', self.agent.stone)
+        ]
+        inventory_start_x = 300
+        inventory_start_y = self.window_height + 10
+        font = pygame.font.Font(None, 24)
+        
+        for index, (item, quantity) in enumerate(inventory_items):
+            text = font.render(f"{item.capitalize()}: {quantity}", True, (255, 255, 255))
+            self.surface.blit(text, (inventory_start_x, inventory_start_y + index * 25))
+
+    def render_bar(self, x, y, value, max_value, color, label):
+        # Draw the status bar for a single attribute
+        bar_length = 200
+        bar_height = 20
+        fill_length = (value / max_value) * bar_length
+        # Background bar
+        pygame.draw.rect(self.surface, (255, 255, 255), (x, y, bar_length, bar_height), 2)
+        # Filled bar
+        pygame.draw.rect(self.surface, color, (x, y, fill_length, bar_height))
+        # Label text
+        font = pygame.font.Font(None, 24)
+        text = font.render(label, True, (255, 255, 255))
+        self.surface.blit(text, (x + bar_length + 5, y))
