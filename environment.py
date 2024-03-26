@@ -24,7 +24,7 @@ class Environment:
             5: {'class': Snow, 'entity_prob': 0.4},
         }
 
-        self.suitable_terrain_locations = {'Plains': [], 'Hills': []}
+        self.suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
         self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
 
         self.initialize_environment()
@@ -58,8 +58,12 @@ class Environment:
         else:
             if isinstance(terrain, Plains):
                 self.suitable_terrain_locations['Plains'].append((x, y))
-            elif isinstance(terrain, Hills):
+            if isinstance(terrain, Hills):
                 self.suitable_terrain_locations['Hills'].append((x, y))
+            if isinstance(terrain, Mountains):
+                self.suitable_terrain_locations['Mountains'].append((x, y))
+            elif isinstance(terrain, Snow):
+                self.suitable_terrain_locations['Snow'].append((x, y))
 
     def add_outposts(self):
         possible_locations = self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills']
@@ -74,10 +78,13 @@ class Environment:
             # remove the location from the list of suitable locations
             if (x, y) in self.suitable_terrain_locations['Plains']:
                 self.suitable_terrain_locations['Plains'].remove((x, y))
-            else:
+            if (x, y) in self.suitable_terrain_locations['Hills']:
                 self.suitable_terrain_locations['Hills'].remove((x, y))
+            if (x, y) in self.suitable_terrain_locations['Mountains']:
+                self.suitable_terrain_locations['Mountains'].remove((x, y))
+            if (x, y) in self.suitable_terrain_locations['Snow']:
+                self.suitable_terrain_locations['Snow'].remove((x, y))
 
-        # print(f"Added {len(self.outpost_locations)} outposts.")
         return possible_locations
 
     def init_player(self):
