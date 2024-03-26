@@ -36,7 +36,6 @@ class Entity(pygame.sprite.Sprite):
         self.rect.x = self.screen_x
         self.rect.y = self.screen_y
 
-
 class Player(Entity):
     def __init__(self, x, y, tile_size):
         super().__init__(x, y, art='player.png', tile_size=tile_size)

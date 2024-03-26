@@ -14,7 +14,7 @@ class Environment:
         self.tile_size = tile_size
         self.width, self.height = heightmap.shape
         self.number_of_outposts = number_of_outposts
-        self.entity_group = pygame.sprite.Group()
+        self.entity_group = pygame.sprite.LayeredUpdates() # pygame.sprite.Group()
         self.terrain_definitions = {
             0: {'class': DeepWater, 'entity_prob': 0.4},
             1: {'class': Water, 'entity_prob': 0.3},
@@ -90,7 +90,7 @@ class Environment:
     def init_player(self):
         location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
         player = Player(location[0], location[1], self.tile_size)
-        self.entity_group.add(player)
+        self.entity_group.add(player, layer=2)
         self.entity_index_grid[location[0], location[1]] = player.id
         return player
     
