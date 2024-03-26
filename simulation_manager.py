@@ -7,8 +7,8 @@ class SimulationManager:
         self.game_managers = []
         self.curriculum_indices = []
         self.create_games(number_of_environments)
-        self.curriculum_indices = self.get_curriculum(number_of_curricula)
-        self.plot_curriculum()
+        self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
+        self.plot_curriculum(step_size)
 
     def create_games(self, number_of_games):
         for _ in range(number_of_games):
@@ -31,15 +31,29 @@ class SimulationManager:
             closest_index = np.abs(np.array(energy_values) - target_energy).argmin()
             if closest_index not in simulation_indices:
                 simulation_indices.append(closest_index)
-        return simulation_indices
-
-    def plot_curriculum(self, number_of_curricula=60):
+        return simulation_indices, step_size
+    
+    def plot_curriculum(self, step_size):
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
         simulation_points = [energy_values[i] for i in self.curriculum_indices]
+
+        # Save a reference to the original axis
+        ax1 = plt.gca()
+
         plt.plot(energy_values, label='Energy for trade route')
         plt.scatter(self.curriculum_indices, simulation_points, color='red', zorder=5, label='Simulation Points', s=10)
         plt.xlabel('Environment index')
         plt.ylabel('Energy required for trade route')
         plt.title('Energy required for trade route for each environment')
-        plt.legend()
+
+        # Creating a twin of the original y-axis to use for the step_size note
+        ax2 = plt.twinx()
+        # Use the set_ylabel to add your note, align it to the top to make it visually distinct
+        ax2.set_ylabel(f'Curriculum step size: ~{step_size} energy units', fontsize=10, color='blue')
+        # Turn off ticks and tick labels for the secondary axis if it's only used for the note
+        ax2.tick_params(right=False, labelright=False)
+
+        # Explicitly create the legend for the primary axis
+        ax1.legend()
+
         plt.show()
