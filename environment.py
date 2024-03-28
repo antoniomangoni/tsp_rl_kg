@@ -3,7 +3,7 @@ import pygame
 import numpy as np
 
 from entities import Player, Outpost, WoodPath, Fish, Tree, MossyRock, SnowyRock
-from terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
+from terrains import DeepWater, Water, Plains, Hills, Mountains, Snow
 
 class Environment:
     def __init__(self, heightmap: np.ndarray, tile_size: int = 50, number_of_outposts: int = 3):
@@ -23,8 +23,6 @@ class Environment:
             4: {'class': Mountains, 'entity_prob': 0.4},
             5: {'class': Snow, 'entity_prob': 0.4},
         }
-
-
 
         self.suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
         self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
@@ -58,7 +56,7 @@ class Environment:
             self.entity_index_grid[x, y] = entity.id
             self.terrain_object_grid[x, y].add_entity(entity)
         else:
-            if isinstance(terrain, Plains):
+            if terrain.evelation == # isinstance(terrain, Plains):
                 self.suitable_terrain_locations['Plains'].append((x, y))
             if isinstance(terrain, Hills):
                 self.suitable_terrain_locations['Hills'].append((x, y))
