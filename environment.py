@@ -56,7 +56,7 @@ class Environment:
             self.entity_index_grid[x, y] = entity.id
             self.terrain_object_grid[x, y].add_entity(entity)
         else:
-            if terrain.evelation == # isinstance(terrain, Plains):
+            if isinstance(terrain, Plains): # terrain.evelation == isinstance(terrain, Plains):
                 self.suitable_terrain_locations['Plains'].append((x, y))
             if isinstance(terrain, Hills):
                 self.suitable_terrain_locations['Hills'].append((x, y))
