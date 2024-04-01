@@ -7,9 +7,9 @@ from renderer import Renderer
 from target import Target_Manager
 
 class GameManager:
-    def __init__(self, map_size=32, tile_size=200):
-        self.map_size = map_size
-        self.tile_size = 1000 // map_size
+    def __init__(self, map_pixel_size=32, screen_size=800):
+        self.map_size = map_pixel_size
+        self.tile_size = screen_size // map_pixel_size
         self.environment = None
         self.agent_controler = None
         self.agent = None
