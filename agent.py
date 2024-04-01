@@ -5,11 +5,15 @@ import numpy as np
 from environment import Environment
 from entities import Fish, Tree, MossyRock, SnowyRock, Outpost, WoodPath
 from terrains import DeepWater, Water
+from agent_model import AgentModel
+from knowledge_graph import KnowledgeGraph
+
 
 class Agent:
-    def __init__(self, environment : Environment):
+    def __init__(self, environment : Environment, kg : KnowledgeGraph):
         self.environment = environment
         self.agent = self.environment.player
+        self.kg = kg
         self.running = True
 
         self.energy_max = 100

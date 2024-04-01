@@ -1,19 +1,24 @@
 import numpy as np
 import pygame
+
 from heightmap_generator import HeightmapGenerator
 from environment import Environment
 from agent import Agent
 from renderer import Renderer
 from target import Target_Manager
 
+from knowledge_graph import KnowledgeGraph
+
 class GameManager:
-    def __init__(self, map_pixel_size=32, screen_size=800):
+    def __init__(self, map_pixel_size=32, screen_size=800, kg_ablation=0):
         self.map_size = map_pixel_size
         self.tile_size = screen_size // map_pixel_size
         self.environment = None
         self.agent_controler = None
         self.agent = None
         self.target_manager = None
+
+        self.kg = self.get_knowledge_graph(kg_ablation)
 
         self.renderer = None
         self.running = True
@@ -31,6 +36,14 @@ class GameManager:
         # If you have any resources to load, do it here
         pass
 
+    def get_knowledge_graph(self):
+        if self.kg_ablation == 0:
+            return KnowledgeGraph()
+        # elif self.kg_ablation == 1:
+        #     # get the first kg from the folder KG
+        #     pass
+
+
     def initialize_components(self):
         # Generate heightmap
         heightmap_generator = HeightmapGenerator(
@@ -42,7 +55,7 @@ class GameManager:
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
-        self.agent_controler = Agent(self.environment)
+        self.agent_controler = Agent(self.environment, self.kg)
         self.agent = self.agent_controler.agent
         self.target_manager = Target_Manager(self.environment)
 
