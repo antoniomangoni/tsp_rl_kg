@@ -18,8 +18,6 @@ class GameManager:
         self.agent = None
         self.target_manager = None
 
-        self.kg = self.get_knowledge_graph(kg_ablation)
-
         self.renderer = None
         self.running = True
 
@@ -36,15 +34,15 @@ class GameManager:
         # If you have any resources to load, do it here
         pass
 
-    def get_knowledge_graph(self):
-        if self.kg_ablation == 0:
-            return KnowledgeGraph()
+    def get_knowledge_graph(self, kg_ablation):
+        if kg_ablation == 0:
+            return KnowledgeGraph(self.environment.terrain_index_grid, self.environment.entity_index_grid, self.agent)
         # elif self.kg_ablation == 1:
         #     # get the first kg from the folder KG
         #     pass
 
 
-    def initialize_components(self):
+    def initialize_components(self, kg_ablation=0):
         # Generate heightmap
         heightmap_generator = HeightmapGenerator(
             width=self.map_size, 
@@ -55,6 +53,7 @@ class GameManager:
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
+        self.kg = self.get_knowledge_graph(kg_ablation)
         self.agent_controler = Agent(self.environment, self.kg)
         self.agent = self.agent_controler.agent
         self.target_manager = Target_Manager(self.environment)

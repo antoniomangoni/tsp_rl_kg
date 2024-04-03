@@ -5,7 +5,7 @@ import numpy as np
 from environment import Environment
 from entities import Fish, Tree, MossyRock, SnowyRock, Outpost, WoodPath
 from terrains import DeepWater, Water
-from agent_model import AgentModel
+# from agent_model import AgentModel
 from knowledge_graph import KnowledgeGraph
 
 
