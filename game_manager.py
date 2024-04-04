@@ -36,7 +36,7 @@ class GameManager:
 
     def get_knowledge_graph(self, kg_ablation):
         if kg_ablation == 0:
-            return KnowledgeGraph(self.environment.terrain_index_grid, self.environment.entity_index_grid, self.agent)
+            return KnowledgeGraph(self.environment, self.agent)
         # elif self.kg_ablation == 1:
         #     # get the first kg from the folder KG
         #     pass

@@ -5,57 +5,62 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 class KnowledgeGraph(pyg.data.Data):
-    def __init__(self, terrain_indicies_grid, entity_indicies_grid, agent):
+    def __init__(self, environment, agent):
         super(KnowledgeGraph, self).__init__()
-        self.entity_indicies_grid = entity_indicies_grid
-        self.terrain_indicies_grid = terrain_indicies_grid
+        self.environment = environment
         self.agent = agent
-        self.nodes, self.edges = self.construct_graph()
+        self.terrain_features, self.entity_features, self.nodes, self.edges = self.construct_graph()
         self.print_kg()
 
     def construct_graph(self):
-        # Assume entity_indicies_grid and terrain_indicies_grid have the same shape
-        height, width = self.terrain_indicies_grid.shape
-        node_features = []
+        height, width = self.environment.heightmap.shape
+        terrain_features = []
+        entity_features = []
         edge_indices = []
 
-        # Mapping each (x, y) to a node index
         node_index = lambda x, y: x * width + y
 
-        # Iterate over each tile to construct the graph
         for x in range(height):
             for y in range(width):
-                # Combine terrain and entity indices for node features
-                terrain_feature = self.terrain_indicies_grid[x, y]
-                entity_feature = self.entity_indicies_grid[x, y]
-                node_features.append([terrain_feature, entity_feature])
+                terrain_object = self.environment.terrain_object_grid[x][y]
+                terrain_feature = terrain_object.elevation
+                terrain_node_idx = node_index(x, y)
+                terrain_features.append([terrain_feature])
 
-                # Connect nodes in all eight directions (or four if preferred)
-                for dx in [-1, 0, 1]:
-                    for dy in [-1, 0, 1]:
-                        if dx == 0 and dy == 0:
-                            continue  # Skip the node itself
-                        nx, ny = x + dx, y + dy
-                        if 0 <= nx < height and 0 <= ny < width:
-                            edge_indices.append([node_index(x, y), node_index(nx, ny)])
+                if terrain_object.entity_on_tile:  # Check if there is an entity on the tile
+                    entity_feature = terrain_object.entity_on_tile.id
+                    entity_node_idx = len(terrain_features) - 1 + len(entity_features)  # Index based on counts
+                    entity_features.append([entity_feature])
+                    edge_indices.append([terrain_node_idx, entity_node_idx])  # "Contains" relationship
+
+                # Connect nodes in four directions
+                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < height and 0 <= ny < width:
+                        edge_indices.append([terrain_node_idx, node_index(nx, ny)])
 
         # Convert to tensors
-        node_features = torch.tensor(node_features, dtype=torch.float)
+        terrain_features = torch.tensor(terrain_features, dtype=torch.float)
+        entity_features = torch.tensor(entity_features, dtype=torch.float)
         edge_indices = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
 
-        return node_features, edge_indices
+        return terrain_features, entity_features, torch.cat((terrain_features, entity_features), dim=0), edge_indices
 
     def to_torch_geometric(self):
-        # Use the nodes and edges to create a torch geometric Data object
         data = pyg.data.Data(x=self.nodes, edge_index=self.edges)
         return data
 
     def print_kg(self):
-        # Convert the nodes and edges to a networkx graph for visualization
         G = nx.Graph()
-        for i, (terrain, entity) in enumerate(self.nodes):
-            G.add_node(i, terrain=terrain, entity=entity)
+        num_terrain_nodes = len(self.terrain_features)
+        total_nodes = num_terrain_nodes + len(self.entity_features)
+        for i, feature in enumerate(self.nodes):
+            if i < num_terrain_nodes:
+                G.add_node(i, terrain=feature.item(), entity=None)
+            else:
+                G.add_node(i, terrain=None, entity=feature.item())
         for edge in self.edges.t().tolist():
             G.add_edge(edge[0], edge[1])
+
         nx.draw(G, with_labels=True, font_weight='bold')
         plt.show()
