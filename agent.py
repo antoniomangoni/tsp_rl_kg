@@ -19,6 +19,7 @@ class Agent:
         self.energy_max = 100
         self.resouce_max = 5
         self.hunger_thirst_max = 20
+        self.vision_range = kg.agent_vision_range
 
         self.energy = 100 # Decrease when moving or collecting resources, increase when resting
         self.hunger = 0 # Eat fish to derease

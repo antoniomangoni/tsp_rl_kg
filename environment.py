@@ -30,6 +30,7 @@ class Environment:
         self.initialize_environment()
         self.add_outposts()
         self.player = self.init_player()
+
         self.environment_changed_flag = False
         self.changed_tiles_list = []
 
