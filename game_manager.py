@@ -10,7 +10,7 @@ from target import Target_Manager
 from knowledge_graph import KnowledgeGraph
 
 class GameManager:
-    def __init__(self, map_pixel_size=32, screen_size=800, kg_completness=100):
+    def __init__(self, map_pixel_size=32, screen_size=800, kg_completness=1):
         self.map_size = map_pixel_size
         self.tile_size = screen_size // map_pixel_size
         self.environment = None
@@ -19,7 +19,7 @@ class GameManager:
         self.agent = None
         self.target_manager = None
 
-        self.agent_vision_range = 1
+        self.agent_vision_range = 2
 
         self.renderer = None
         self.running = True
@@ -73,7 +73,7 @@ class GameManager:
     def run(self):
         self.initialise_rendering()
         while self.running:
-            pygame.time.delay(3000)
+            pygame.time.delay(1500)
             exit()
             self.handle_keyboard()
             self.update()
