@@ -19,7 +19,7 @@ class GameManager:
         self.agent = None
         self.target_manager = None
 
-        self.agent_vision_range = 2
+        self.agent_vision_range = 1
 
         self.renderer = None
         self.running = True
@@ -73,7 +73,8 @@ class GameManager:
     def run(self):
         self.initialise_rendering()
         while self.running:
-            # pygame.time.delay(100)
+            pygame.time.delay(3000)
+            exit()
             self.handle_keyboard()
             self.update()
             self.renderer.render_updated_tiles()
