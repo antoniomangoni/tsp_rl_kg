@@ -73,7 +73,7 @@ class GameManager:
     def run(self):
         self.initialise_rendering()
         while self.running:
-            pygame.time.delay(50)
+            pygame.time.delay(10)
             #  exit()
             self.handle_keyboard()
             self.update()

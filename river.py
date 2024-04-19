@@ -2,12 +2,6 @@
 import numpy as np
 from typing import List, Tuple
 
-# add this to main.py when integrating
-
-    # river_path_finder = RiverPathFinder(heightmap)
-    # river_path_finder.find_river_path_with_adam()
-    # river_path_finder.mark_river_path()
-    # updated_heightmap = river_path_finder.heightmap
 class RiverPathFinder:
 
     def __init__(self, heightmap: np.ndarray):

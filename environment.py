@@ -16,8 +16,8 @@ class Environment:
         self.number_of_outposts = number_of_outposts
         self.entity_group = pygame.sprite.LayeredUpdates() # pygame.sprite.Group()
         self.terrain_definitions = {
-            0: {'class': DeepWater, 'entity_prob': 0.4},
-            1: {'class': Water, 'entity_prob': 0.3},
+            0: {'class': DeepWater, 'entity_prob': 0},
+            1: {'class': Water, 'entity_prob': 0},
             2: {'class': Plains, 'entity_prob': 0.3},
             3: {'class': Hills, 'entity_prob': 0.4},
             4: {'class': Mountains, 'entity_prob': 0.4},
@@ -191,7 +191,7 @@ class Environment:
         print(f"Players: {number_of_players}")
         print(f"Outposts: {number_of_outposts}")
         print(f"Wood Paths: {number_of_wood_paths}")
-        print(f"Fish: {number_of_fish}")
+        # print(f"Fish: {number_of_fish}")
         print(f"Trees: {number_of_trees}")
         print(f"Mossy Rocks: {number_of_mossy_rocks}")
         print(f"Snowy Rocks: {number_of_snowy_rocks}")

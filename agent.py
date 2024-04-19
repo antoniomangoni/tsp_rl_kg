@@ -102,11 +102,11 @@ class Agent:
         if resource is None or isinstance(resource, Outpost) or isinstance(resource, WoodPath):
             return
         else:
-            if isinstance(resource, Fish):
-                if self.fish >= self.resouce_max:
-                    return
-                self.fish += 1
-            elif isinstance(resource, Tree):
+            # if isinstance(resource, Fish):
+            #     if self.fish >= self.resouce_max:
+            #         return
+            #     self.fish += 1
+            if isinstance(resource, Tree):
                 if self.wood >= self.resouce_max:
                     return
                 self.wood += 1
@@ -114,7 +114,6 @@ class Agent:
                 if self.stone >= self.resouce_max:
                     return
                 self.stone += 1
-                # print(f'Collecting - Stone inventory: {self.stone}')
             elif isinstance(resource, SnowyRock):
                 if self.stone >= self.resouce_max:
                     return
