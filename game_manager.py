@@ -73,8 +73,8 @@ class GameManager:
     def run(self):
         self.initialise_rendering()
         while self.running:
-            pygame.time.delay(1500)
-            exit()
+            pygame.time.delay(50)
+            #  exit()
             self.handle_keyboard()
             self.update()
             self.renderer.render_updated_tiles()

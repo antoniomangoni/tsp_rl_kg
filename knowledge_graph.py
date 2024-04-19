@@ -54,28 +54,44 @@ class KnowledgeGraph(pyg.data.Data):
 
         return terrain_features, entity_features, nodes, edge_indices
 
-    def calculate_range(self, completeness, width):
-            """Calculate the range of nodes to include based on completeness."""
-            if completeness == 0:
-                return self.agent_vision_range
-            elif completeness <= self.agent_vision_range / width: # Between 0 and the agent's vision range
-                return self.agent_vision_range
-            else: # Between the agent's vision range and the full map
-                return int((completeness / 100.0) * (width // 2)) # int(completeness / width)
+    def calculate_range(self, completeness, max_range):
+
+        # Adjust the range limit calculation for completeness=0 to effectively result in a zero range.
+
+        if completeness <= 0:
+
+            return 0
+
+        elif completeness < 0.5:
+
+            return int(max_range * completeness * 2)  # Sensitive adjustment for low completeness values
+
+        else:
+
+            return int(max_range * completeness)
 
     def retain_nodes(self, range_limit, player_x, player_y, height, width):
-        """Determine which nodes to retain based on the calculated range limit."""
+
         nodes_to_retain = set()
+
         for x in range(max(0, player_x - range_limit), min(height, player_x + range_limit + 1)):
+
             for y in range(max(0, player_y - range_limit), min(width, player_y + range_limit + 1)):
+
                 nodes_to_retain.add(self.node_index(x, y, width))
+
         return nodes_to_retain
 
     def apply_filters(self, retained_nodes, total_terrain_nodes):
-        """Filter nodes and edges to only include retained nodes."""
-        self.nodes = torch.tensor([self.nodes[i] for i in range(len(self.nodes)) if i in retained_nodes], dtype=torch.float)
-        self.edges = torch.tensor([[s, t] for s, t in self.edges.t().tolist() if s in retained_nodes and t in retained_nodes], dtype=torch.long).t().contiguous()
+
+        self.nodes = torch.tensor([self.nodes[i] for i in retained_nodes], dtype=torch.float)
+
+        self.edges = torch.tensor([[s, t] for s, t in self.edges.t().tolist()
+
+                                   if s in retained_nodes and t in retained_nodes], dtype=torch.long).t().contiguous()
+
         self.terrain_features = [self.terrain_features[i] for i in retained_nodes if i < total_terrain_nodes]
+
         self.entity_features = [self.entity_features[i - total_terrain_nodes] for i in retained_nodes if i >= total_terrain_nodes]
 
     def apply_completeness(self, completeness):

@@ -164,7 +164,7 @@ class Environment:
         return self.terrain_index_grid, self.entity_index_grid
     
     def print_entities(self):
-        number_of_fish = 0
+        # number_of_fish = 0
         number_of_trees = 0
         number_of_mossy_rocks = 0
         number_of_snowy_rocks = 0
@@ -179,8 +179,8 @@ class Environment:
                 number_of_outposts += 1
             elif isinstance(entity, WoodPath):
                 number_of_wood_paths += 1
-            elif isinstance(entity, Fish):
-                number_of_fish += 1
+            # elif isinstance(entity, Fish):
+            #     number_of_fish += 1
             elif isinstance(entity, Tree):
                 number_of_trees += 1
             elif isinstance(entity, MossyRock):
