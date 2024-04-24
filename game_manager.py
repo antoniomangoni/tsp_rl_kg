@@ -32,10 +32,6 @@ class GameManager:
     def init_pygame(self):
         pygame.init()
         pygame.display.set_caption("Game World")
-    
-    def load_resources(self):
-        # If you have any resources to load, do it here
-        pass
 
     def initialize_components(self):
         # Generate heightmap
@@ -48,9 +44,10 @@ class GameManager:
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
-        self.kg = KnowledgeGraph(self.environment, self.agent_vision_range, self.kg_completness)
-        self.agent_controler = Agent(self.environment, self.kg)
+        self.agent_controler = Agent(self.environment, self.agent_vision_range)
         self.agent = self.agent_controler.agent
+        self.kg_class = KnowledgeGraph(self.environment, self.agent_vision_range, self.kg_completness)
+        self.knowledge_graph = self.kg_class.graph
         self.target_manager = Target_Manager(self.environment)
 
     def initialise_rendering(self):
@@ -73,7 +70,7 @@ class GameManager:
     def run(self):
         self.initialise_rendering()
         while self.running:
-            pygame.time.delay(10)
+            pygame.time.delay(100)
             #  exit()
             self.handle_keyboard()
             self.update()

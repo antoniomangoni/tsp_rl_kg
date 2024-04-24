@@ -1,125 +1,95 @@
 import torch
 import torch_geometric as pyg
+from torch_geometric.utils import subgraph
 import networkx as nx
+import numpy as np
 import matplotlib.pyplot as plt
 
 class KnowledgeGraph(pyg.data.Data):
-    def __init__(self, environment, agent_vision_range=3, completeness=1):
+    def __init__(self, environment, vision_range, completion=1.0):
         super(KnowledgeGraph, self).__init__()
         self.environment = environment
-        self.agent_vision_range = agent_vision_range
-        self.terrain_features, self.entity_features, self.nodes, self.edges = self.construct_graph()
-        self.apply_completeness(completeness)
+        self.vision_range = vision_range
+        self.completion = completion
+        self.terrain_features, self.full_nodes, self.full_edges, self.terrain_graph = self.construct_terrain_graph()
+        self.subgraph_nodes, self.subgraph_edges = self.get_terrain_subgraph(completion)
+        self.graph = self.add_entities_to_graph()
         self.visualize()
 
-    def node_index(self, x, y, width):
-        """Calculate node index based on x and y coordinates."""
-        return x * width + y
-
-    def construct_graph(self):
-        """Construct the graph from the environment data."""
+    def construct_terrain_graph(self):
+        """Constructs the graph for the entire terrain."""
         height, width = self.environment.heightmap.shape
         terrain_features = []
-        entity_features = [[self.environment.player.id]]  # Player's unique ID as its feature
         edge_indices = []
-
-        # Create a node for the player first
-        player_node_idx = height * width  # Ensures the player node index is after all terrain nodes
 
         for x in range(height):
             for y in range(width):
                 terrain_object = self.environment.terrain_object_grid[x][y]
                 terrain_feature = terrain_object.elevation
-                terrain_node_idx = self.node_index(x, y, width)
+                node_idx = self.node_index(x, y, width)
                 terrain_features.append([terrain_feature])
 
-                if terrain_object.entity_on_tile:
-                    entity_feature = terrain_object.entity_on_tile.id
-                    entity_node_idx = height * width + len(entity_features)
-                    entity_features.append([entity_feature])
-                    edge_indices.extend([[terrain_node_idx, entity_node_idx], [entity_node_idx, player_node_idx]])
-
-                # Connect nodes in four directions to create the grid
-                edge_indices.extend([[terrain_node_idx, self.node_index(nx, ny, width)]
-                                     for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]
+                # Connect nodes in four directions
+                edge_indices.extend([[node_idx, self.node_index(nx, ny, width)]
+                                     for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]
                                      if 0 <= (nx := x + dx) < height and 0 <= (ny := y + dy) < width])
 
-        # Convert to tensors
         terrain_features = torch.tensor(terrain_features, dtype=torch.float)
-        entity_features = torch.tensor(entity_features, dtype=torch.float)
         edge_indices = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
+        terrain_nodes = torch.cat((terrain_features), dim=0)
+        return terrain_features, terrain_nodes, edge_indices, pyg.data.Data(x=terrain_nodes, edge_index=edge_indices)
 
-        # Nodes are a concatenation of terrain and entity features, player node added at the end
-        nodes = torch.cat((terrain_features, entity_features), dim=0)
+    def get_terrain_subgraph(self, completion):
+        """Extracts a subgraph around the player based on the completion parameter."""
+        player_idx = self.node_index(self.environment.player.x, self.environment.player.y, self.environment.heightmap.shape[1])
+        # Assume completion influences the number of nodes in the player's vicinity
+        radius = int(completion * self.vision_range)  # Adjust radius calculation as needed
+        nodes_to_include = set([player_idx])  # Start with the player node
+        
+        # Add nearby nodes based on radius - simplistic breadth-first search approach
+        for _ in range(radius):
+            new_nodes = set()
+            for node in nodes_to_include:
+                # Consider nodes directly connected to current node set
+                edges = self.full_edges.t().numpy()
+                connected = np.unique(edges[np.isin(edges[:, 0], list(nodes_to_include))][:, 1])
+                new_nodes.update(connected)
+            nodes_to_include.update(new_nodes)
+        
+        subgraph_nodes, subgraph_edge_indices = subgraph(torch.tensor(list(nodes_to_include), dtype=torch.long), self.full_edges, relabel_nodes=True)
+        return self.terrain_graph.x[subgraph_nodes], subgraph_edge_indices
 
-        return terrain_features, entity_features, nodes, edge_indices
+    def add_entities_to_graph(self):
+        """Adds entities to the subgraph."""
+        entity_features = []
+        edge_indices = list(self.subgraph_edges)
+        player_node_idx = self.node_index(self.environment.player.x, self.environment.player.y, self.environment.heightmap.shape[1])
+        start_entity_idx = len(self.subgraph_nodes)
 
-    def calculate_range(self, completeness, max_range):
+        for entity in self.environment.entities:
+            entity_feature = [entity.id]
+            entity_node_idx = start_entity_idx + len(entity_features)
+            entity_features.append(entity_feature)
+            terrain_node_idx = self.node_index(entity.x, entity.y, self.environment.heightmap.shape[1])
 
-        # Adjust the range limit calculation for completeness=0 to effectively result in a zero range.
+            edge_indices.append([entity_node_idx, terrain_node_idx])
+            edge_indices.append([entity_node_idx, player_node_idx])
 
-        if completeness <= 0:
-
-            return 0
-
-        elif completeness < 0.5:
-
-            return int(max_range * completeness * 2)  # Sensitive adjustment for low completeness values
-
-        else:
-
-            return int(max_range * completeness)
-
-    def retain_nodes(self, range_limit, player_x, player_y, height, width):
-
-        nodes_to_retain = set()
-
-        for x in range(max(0, player_x - range_limit), min(height, player_x + range_limit + 1)):
-
-            for y in range(max(0, player_y - range_limit), min(width, player_y + range_limit + 1)):
-
-                nodes_to_retain.add(self.node_index(x, y, width))
-
-        return nodes_to_retain
-
-    def apply_filters(self, retained_nodes, total_terrain_nodes):
-
-        self.nodes = torch.tensor([self.nodes[i] for i in retained_nodes], dtype=torch.float)
-
-        self.edges = torch.tensor([[s, t] for s, t in self.edges.t().tolist()
-
-                                   if s in retained_nodes and t in retained_nodes], dtype=torch.long).t().contiguous()
-
-        self.terrain_features = [self.terrain_features[i] for i in retained_nodes if i < total_terrain_nodes]
-
-        self.entity_features = [self.entity_features[i - total_terrain_nodes] for i in retained_nodes if i >= total_terrain_nodes]
-
-    def apply_completeness(self, completeness):
-        if completeness >= 1:
-            return
-        height, width = self.environment.heightmap.shape
-        total_terrain_nodes = height * width
-        player_x, player_y = self.environment.player.grid_x, self.environment.player.grid_y
-        range_limit = self.calculate_range(completeness, width)
-
-        retained_nodes = self.retain_nodes(range_limit, player_x, player_y, height, width)
-
-        # Always include the player node
-        retained_nodes.add(total_terrain_nodes)
-
-        self.apply_filters(retained_nodes, total_terrain_nodes)
+        entity_features = torch.tensor(entity_features, dtype=torch.float)
+        all_nodes = torch.cat((self.subgraph_nodes, entity_features), dim=0)
+        all_edges = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
+        return pyg.data.Data(x=all_nodes, edge_index=all_edges)
 
     def visualize(self):
-        """Visualize the knowledge graph."""
+        """Visualizes the current graph (subgraph with entities)."""
         G = nx.Graph()
-        num_terrain_nodes = len(self.terrain_features)
-
-        for i, feature in enumerate(self.nodes):
-            node_type = 'terrain' if i < num_terrain_nodes else 'entity'
-            G.add_node(i, **{node_type: feature.item()})
-
-        G.add_edges_from(self.edges.t().tolist())
-
+        for i, feature in enumerate(self.graph.x):
+            G.add_node(i, value=feature.item())
+        G.add_edges_from(self.graph.edge_index.t().tolist())
         plt.figure(figsize=(8, 6))
         nx.draw(G, with_labels=True, font_weight='bold', node_size=10, node_color='skyblue', font_size=8, font_color='black')
         plt.show()
+
+    def node_index(self, x, y, width):
+        """Calculates a node's index in a flat array from 2D coordinates."""
+        return x * width + y

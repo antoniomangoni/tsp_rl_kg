@@ -10,16 +10,15 @@ from knowledge_graph import KnowledgeGraph
 
 
 class Agent:
-    def __init__(self, environment : Environment, kg : KnowledgeGraph):
+    def __init__(self, environment : Environment, agent_vision_range : int):
         self.environment = environment
         self.agent = self.environment.player
-        self.kg = kg
         self.running = True
 
         self.energy_max = 100
         self.resouce_max = 5
         self.hunger_thirst_max = 20
-        self.vision_range = kg.agent_vision_range
+        self.vision_range = agent_vision_range
 
         self.energy = 100 # Decrease when moving or collecting resources, increase when resting
         self.hunger = 0 # Eat fish to derease
