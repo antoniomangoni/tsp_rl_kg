@@ -3,7 +3,7 @@ import pygame
 import numpy as np
 
 from entities import Player, Outpost, WoodPath, Fish, Tree, MossyRock, SnowyRock
-from terrains import DeepWater, Water, Plains, Hills, Mountains, Snow
+from terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
 
 class Environment:
     def __init__(self, heightmap: np.ndarray, tile_size: int = 50, number_of_outposts: int = 3):
@@ -23,7 +23,7 @@ class Environment:
             4: {'class': Mountains, 'entity_prob': 0.4},
             5: {'class': Snow, 'entity_prob': 0.4},
         }
-
+        self.terrain_colour_map = self.get_terrain_colour_map()
         self.suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
         self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
 
@@ -33,6 +33,14 @@ class Environment:
 
         self.environment_changed_flag = False
         self.changed_tiles_list = []
+
+    def get_terrain_colour_map(self):
+        terrain = Terrain(0, 0, self.tile_size, 0)
+        map = {}
+        for terrain_code, value in self.terrain_definitions.items():
+            map[terrain_code] = terrain.set_colour(terrain_code)
+        print(map)
+        return map
 
     def initialize_environment(self):
         for (x, y), terrain_code in np.ndenumerate(self.heightmap):

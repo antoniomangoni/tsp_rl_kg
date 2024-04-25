@@ -25,7 +25,6 @@ class GameManager:
         self.running = True
 
         self.init_pygame()
-        self.load_resources()
         self.initialize_components()
         # self.test()
 

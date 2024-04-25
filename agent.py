@@ -13,6 +13,9 @@ class Agent:
     def __init__(self, environment : Environment, agent_vision_range : int):
         self.environment = environment
         self.agent = self.environment.player
+        self.x = self.agent.grid_x
+        self.y = self.agent.grid_y
+        
         self.running = True
 
         self.energy_max = 100

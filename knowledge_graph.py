@@ -1,9 +1,9 @@
 import torch
 import torch_geometric as pyg
-from torch_geometric.utils import subgraph
+from torch_geometric.utils import subgraph, to_networkx, from_networkx
 import networkx as nx
-import numpy as np
 import matplotlib.pyplot as plt
+from terrains import Terrain
 
 class KnowledgeGraph(pyg.data.Data):
     def __init__(self, environment, vision_range, completion=1.0):
@@ -11,85 +11,105 @@ class KnowledgeGraph(pyg.data.Data):
         self.environment = environment
         self.vision_range = vision_range
         self.completion = completion
-        self.terrain_features, self.full_nodes, self.full_edges, self.terrain_graph = self.construct_terrain_graph()
-        self.subgraph_nodes, self.subgraph_edges = self.get_terrain_subgraph(completion)
+
+        self.terrain_graph = self.construct_terrain_graph()
+        if not isinstance(self.terrain_graph, pyg.data.Data):
+            raise TypeError("Terrain graph is not a PyG data object")
+
+        self.visualize(self.terrain_graph)
+        
+        radius = self.get_radius(completion)
+        self.subgraph = self.get_terrain_subgraph(self.terrain_graph, radius)
+        if self.subgraph is None:
+            print("No valid subgraph was created; subgraph is None")
+            return
+        elif not isinstance(self.subgraph, pyg.data.Data):
+            print(f"Error: Subgraph is not a PyG data object, it is of type: {type(self.subgraph)}")
+            raise TypeError("Subgraph is not a PyG data object")
+
+        self.visualize(self.subgraph)
+        
         self.graph = self.add_entities_to_graph()
-        self.visualize()
+        if not isinstance(self.graph, pyg.data.Data):
+            raise TypeError("Graph after adding entities is not a PyG data object")
+        
+        self.visualize(self.graph)
+
+    def get_radius(self, completion):
+        """Calculates the effective radius for subgraph extraction."""
+        max_dimension = max(self.environment.heightmap.shape)
+        print(f"Max dimension: {max_dimension}")
+        if completion >= 1.0:
+            return float('inf')  # Represents the entire graph
+        return max(completion * max_dimension, self.vision_range)
 
     def construct_terrain_graph(self):
-        """Constructs the graph for the entire terrain."""
+        """Constructs a graph for the entire terrain indices with Manhattan neighborhood connections."""
         height, width = self.environment.heightmap.shape
-        terrain_features = []
-        edge_indices = []
+        terrain_features = self.environment.terrain_index_grid.flatten()
+        node_features = torch.tensor(terrain_features, dtype=torch.float).view(-1, 1)
 
-        for x in range(height):
-            for y in range(width):
-                terrain_object = self.environment.terrain_object_grid[x][y]
-                terrain_feature = terrain_object.elevation
-                node_idx = self.node_index(x, y, width)
-                terrain_features.append([terrain_feature])
+        # Prepare to collect edges
+        edges = []
 
-                # Connect nodes in four directions
-                edge_indices.extend([[node_idx, self.node_index(nx, ny, width)]
-                                     for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]
-                                     if 0 <= (nx := x + dx) < height and 0 <= (ny := y + dy) < width])
+        # Initialize positional data for the nodes
+        pos = []
 
-        terrain_features = torch.tensor(terrain_features, dtype=torch.float)
-        edge_indices = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
-        terrain_nodes = torch.cat((terrain_features), dim=0)
-        return terrain_features, terrain_nodes, edge_indices, pyg.data.Data(x=terrain_nodes, edge_index=edge_indices)
+        # Connect each node to its Manhattan neighbors (up, down, left, right)
+        for y in range(height):
+            for x in range(width):
+                idx = x + y * width
+                pos.append([x, y])
+                if x > 0:  # left
+                    edges.append((idx, idx - 1))
+                if x < width - 1:  # right
+                    edges.append((idx, idx + 1))
+                if y > 0:  # up
+                    edges.append((idx, idx - width))
+                if y < height - 1:  # down
+                    edges.append((idx, idx + width))
 
-    def get_terrain_subgraph(self, completion):
-        """Extracts a subgraph around the player based on the completion parameter."""
-        player_idx = self.node_index(self.environment.player.x, self.environment.player.y, self.environment.heightmap.shape[1])
-        # Assume completion influences the number of nodes in the player's vicinity
-        radius = int(completion * self.vision_range)  # Adjust radius calculation as needed
-        nodes_to_include = set([player_idx])  # Start with the player node
-        
-        # Add nearby nodes based on radius - simplistic breadth-first search approach
-        for _ in range(radius):
-            new_nodes = set()
-            for node in nodes_to_include:
-                # Consider nodes directly connected to current node set
-                edges = self.full_edges.t().numpy()
-                connected = np.unique(edges[np.isin(edges[:, 0], list(nodes_to_include))][:, 1])
-                new_nodes.update(connected)
-            nodes_to_include.update(new_nodes)
-        
-        subgraph_nodes, subgraph_edge_indices = subgraph(torch.tensor(list(nodes_to_include), dtype=torch.long), self.full_edges, relabel_nodes=True)
-        return self.terrain_graph.x[subgraph_nodes], subgraph_edge_indices
+        edge_index = torch.tensor(edges, dtype=torch.long).t()
+        pos = torch.tensor(pos, dtype=torch.float)
+
+        return pyg.data.Data(x=node_features, edge_index=edge_index, pos=pos)
+
+    def get_terrain_subgraph(self, data, radius):
+        if radius == float('inf'):
+            return data.copy()
+
+        center_idx = self.node_index(self.environment.player.grid_x, self.environment.player.grid_y)
+        center_position = data.pos[center_idx]
+        distances = torch.norm(data.pos - center_position, dim=1)
+        mask = distances <= radius
+        subgraph_nodes = mask.nonzero(as_tuple=True)[0]
+
+        if subgraph_nodes.size(0) == 0:
+            print("No nodes found within the specified radius.")
+            return None
+
+        subgraph_nodes, sub_edge_index = subgraph(subgraph_nodes, data.edge_index, relabel_nodes=True, num_nodes=data.num_nodes)
+        sub_node_features = data.x[subgraph_nodes]
+        return pyg.data.Data(x=sub_node_features, edge_index=sub_edge_index)
 
     def add_entities_to_graph(self):
-        """Adds entities to the subgraph."""
-        entity_features = []
-        edge_indices = list(self.subgraph_edges)
-        player_node_idx = self.node_index(self.environment.player.x, self.environment.player.y, self.environment.heightmap.shape[1])
-        start_entity_idx = len(self.subgraph_nodes)
+        """Adds entities to the subgraph, connecting each to their nearest terrain node and the player."""
+        features = self.environment.entity_index_grid.flatten()
+        entity_features = torch.tensor(features, dtype=torch.float).view(-1, 1)
+        num_existing_nodes = self.subgraph.x.shape[0]
+        self.subgraph.x = torch.cat([self.subgraph.x, entity_features], dim=0)
+        # Define additional logic to create edges
+        return self.subgraph
 
-        for entity in self.environment.entities:
-            entity_feature = [entity.id]
-            entity_node_idx = start_entity_idx + len(entity_features)
-            entity_features.append(entity_feature)
-            terrain_node_idx = self.node_index(entity.x, entity.y, self.environment.heightmap.shape[1])
-
-            edge_indices.append([entity_node_idx, terrain_node_idx])
-            edge_indices.append([entity_node_idx, player_node_idx])
-
-        entity_features = torch.tensor(entity_features, dtype=torch.float)
-        all_nodes = torch.cat((self.subgraph_nodes, entity_features), dim=0)
-        all_edges = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
-        return pyg.data.Data(x=all_nodes, edge_index=all_edges)
-
-    def visualize(self):
-        """Visualizes the current graph (subgraph with entities)."""
-        G = nx.Graph()
-        for i, feature in enumerate(self.graph.x):
-            G.add_node(i, value=feature.item())
-        G.add_edges_from(self.graph.edge_index.t().tolist())
+    def visualize(self, graph):
+        """Visualises the graph using NetworkX."""
+        G = to_networkx(graph)
+        # use terrain.get_colour() to get the colour of the terrain
+        # node_color = [self.environment.terrain_colour_map(int(node)) for node in graph.x.flatten()]
         plt.figure(figsize=(8, 6))
-        nx.draw(G, with_labels=True, font_weight='bold', node_size=10, node_color='skyblue', font_size=8, font_color='black')
+        nx.draw(G, with_labels=True, node_size=12, node_color='blue', cmap='viridis', edge_color='gray', width=0.5)
         plt.show()
 
-    def node_index(self, x, y, width):
-        """Calculates a node's index in a flat array from 2D coordinates."""
-        return x * width + y
+    def node_index(self, x, y):
+        """Converts grid coordinates to node index."""
+        return x * self.environment.heightmap.shape[1] + y
