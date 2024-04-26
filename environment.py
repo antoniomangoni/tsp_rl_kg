@@ -39,7 +39,6 @@ class Environment:
         map = {}
         for terrain_code, value in self.terrain_definitions.items():
             map[terrain_code] = terrain.set_colour(terrain_code)
-        print(map)
         return map
 
     def initialize_environment(self):
