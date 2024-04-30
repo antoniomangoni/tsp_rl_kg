@@ -15,13 +15,13 @@ class Agent:
         self.agent = self.environment.player
         self.x = self.agent.grid_x
         self.y = self.agent.grid_y
-        
+
         self.running = True
 
         self.energy_max = 100
         self.resouce_max = 5
         self.hunger_thirst_max = 20
-        self.vision_range = agent_vision_range
+        self.vision_range = agent_vision_range 
 
         self.energy = 100 # Decrease when moving or collecting resources, increase when resting
         self.hunger = 0 # Eat fish to derease

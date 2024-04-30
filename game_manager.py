@@ -7,7 +7,8 @@ from agent import Agent
 from renderer import Renderer
 from target import Target_Manager
 
-from knowledge_graph import KnowledgeGraph
+# from knowledge_graph import KnowledgeGraph
+from kg import KG as KnowledgeGraph
 
 class GameManager:
     def __init__(self, map_pixel_size=32, screen_size=800, kg_completness=1):
@@ -19,7 +20,7 @@ class GameManager:
         self.agent = None
         self.target_manager = None
 
-        self.agent_vision_range = 2
+        self.agent_vision_range = 1
 
         self.renderer = None
         self.running = True
