@@ -78,4 +78,4 @@ class GameManager:
 
         pygame.quit()
         print('Game closed')
-        self.environment.print_entities()
+        # self.environment.print_entities()

@@ -13,6 +13,7 @@ class KG:
         self.entity_array = environment.entity_index_grid
         self.vision_range = vision_range
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
+        print(f"Player position: {self.player_pos}")
         self.terrain_pos_list = [self.player_pos]  # Start by keeping track of the initial terrain position
         self.max_terrain_nodes = self.terrain_array.size
         self.distance = self.get_distance(completion) # Graph distance
@@ -29,7 +30,7 @@ class KG:
         self.graph = Data(x=torch.cat([player_node_features, terrain_node_features], dim=0),
                           edge_index=edge_index)
         
-        print(self.environment.terrain_colour_map)
+        # print(self.environment.terrain_colour_map)
         self.add_terrain_to_graph()
         # self.print_graph()        
         self.visualise_graph()
@@ -111,40 +112,72 @@ class KG:
         # Print connections for verification
         self.print_graph_connections()
 
-    def visualise_graph(self):
+    def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
+        # These colors are in RGB format, normalized to [0, 1] --> green, grey twice, red, brown, black
+        entity_colour_map = {2: (0.13, 0.33, 0.16), 3: (0.61, 0.65, 0.62),4: (0.61, 0.65, 0.62),
+                             5: (0.78, 0.16, 0.12), 6: (0.46, 0.31, 0.04), 7: (0, 0, 0)}
+        
+        # Convert to undirected graph for visualization
         G = to_networkx(self.graph, to_undirected=True)
-
-        pos = nx.spring_layout(G, dim=3, seed=42)  # 3D layout
+        
+        # Use a 2D spring layout, as z-coordinates are manually assigned
+        pos = nx.spring_layout(G, seed=42)  # 2D layout
         node_colors = []
 
         for node in G.nodes():
             node_type = self.graph.x[node][0].item()
-            x, y = self.graph.x[node][2].item(), self.graph.x[node][3].item()
+            # The node features are [Node Type, Entity/Terrain Type, X Pos, Y Pos] and the z-coordinate is the node type
+            x, y, z = self.graph.x[node][2].item(), self.graph.x[node][3].item(), self.graph.x[node][0].item()
 
+            # Assign z-coordinate based on node type
+            z = 0 if node_type == self.terrain_node_type else 1
+            pos[node] = (x, y, z)  # Update position to include z-coordinate
+            
+            # Set node color based on node type
             if node_type == self.terrain_node_type:
-                pos[node] = (x, y, 0)  # Z = 0 for terrain
                 terrain_type = int(self.graph.x[node][1].item())
-                color = self.environment.terrain_colour_map.get(terrain_type, (255, 0, 0))  # Default to red if not found
-                # Normalize color values to [0, 1]
+                color = self.environment.terrain_colour_map.get(terrain_type, (255, 0, 0))
                 node_colors.append([color[0] / 255.0, color[1] / 255.0, color[2] / 255.0])
             elif node_type == self.entity_node_type:
-                linked_terrain = next((edge[1] for edge in G.edges(node) if self.graph.x[edge[1]][0].item() == self.terrain_node_type), None)
-                pos[node] = (pos[linked_terrain][0], pos[linked_terrain][1], 1) if linked_terrain else (x, y, 1)
-                node_colors.append([0, 0, 0])  # Black for entities, normalized
+                entity_type = int(self.graph.x[node][1].item())
+                color = entity_colour_map.get(entity_type)  # Default to grey if type not found
+                if color is None:
+                    color = entity_colour_map[3]
+                    print(f"Entity type {entity_type} not found in colour map. now it is {color}")
+                    
+                node_colors.append(color)  # Directly use the color name
 
+            
+        print(f"Player node at position ({pos[0][0]}, {pos[0][1]}, {pos[0][2]})")
+        assert (pos[0][0], pos[0][1]) == self.player_pos and pos[0][2] == 1, "Player position does not match the graph position"
+        # Create a 3D plot
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         node_xyz = np.array([pos[v] for v in sorted(G)])
         edge_xyz = np.array([(pos[u], pos[v]) for u, v in G.edges()])
-
-        ax.scatter(*node_xyz.T, s=100, color=node_colors, edgecolor='w', depthshade=True)
+        try:
+            node_colors = np.array(node_colors)
+        except ValueError:
+            print("Printing node colors")
+            print(node_colors)
+        # Scatter plot for nodes
+        ax.scatter(*node_xyz.T, s=node_size, color=node_colors, edgecolor='w', depthshade=True)
+        # Draw edges
         for vizedge in edge_xyz:
-            ax.plot(*vizedge.T, color="tab:gray")
+            ax.plot(*vizedge.T, color=edge_color)
 
-        ax.grid(False)
-        ax.xaxis.set_ticks([])
-        ax.yaxis.set_ticks([])
-        ax.zaxis.set_ticks([])
+        # Configure axis visibility and ticks
+        if show_ticks:
+            # Set tick labels based on the data range
+            ax.set_xticks(np.linspace(min(pos[n][0] for n in G.nodes()), max(pos[n][0] for n in G.nodes()), num=5))
+            ax.set_yticks(np.linspace(min(pos[n][1] for n in G.nodes()), max(pos[n][1] for n in G.nodes()), num=5))
+            ax.set_zticks([0, 1])  # Only two levels: 0 for terrain, 1 for entities
+        else:
+            ax.grid(False)
+            ax.xaxis.set_ticks([])
+            ax.yaxis.set_ticks([])
+            ax.zaxis.set_ticks([])
+
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
         ax.set_zlabel("Z")
