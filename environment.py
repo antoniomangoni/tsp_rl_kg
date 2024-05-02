@@ -81,6 +81,7 @@ class Environment:
             outpost = Outpost(x, y, self.tile_size)
             self.entity_group.add(outpost)
             self.terrain_object_grid[x, y].add_entity(outpost)
+            self.entity_index_grid[x, y] = outpost.id
             self.outpost_locations.append((x, y))
 
             # remove the location from the list of suitable locations

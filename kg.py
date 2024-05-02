@@ -11,12 +11,8 @@ class KG:
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
-        print(f"Terrain array: {self.terrain_array}")
-        print(f"Entity array: {self.entity_array}")
-        self.counter = 0
         self.vision_range = vision_range
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
-        print(f"Player position: {self.player_pos}")
         self.terrain_pos_idx_dict = {} # Dictionary to map terrain positions to their node indices
         self.player_idx = None
         self.max_terrain_nodes = self.terrain_array.size
@@ -88,7 +84,6 @@ class KG:
         # self.print_graph_connections()
 
     def add_terrain_node(self, position, connect=True):
-        self.counter += 1
         if position not in self.terrain_pos_idx_dict:
             new_node_index = self.create_node(self.terrain_node_type, position)
             self.terrain_pos_idx_dict[position] = new_node_index
@@ -103,7 +98,7 @@ class KG:
 
     def create_terrain_edges(self, terrain_idx, coor):
         x, y = coor
-        neighbours = self.environment.get_neighbours(x, y)
+        neighbours = self.get_manhattan_neighbours(x, y)
         for neighbour in neighbours:
             if neighbour in self.terrain_pos_idx_dict:
                 neighbour_idx = self.terrain_pos_idx_dict[neighbour]
@@ -138,6 +133,14 @@ class KG:
     def get_cartesian_distance(self, pos1, pos2):
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])	
     
+    def get_manhattan_neighbours(self, x, y):
+        neighbours = []
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            new_x, new_y = x + dx, y + dy
+            if self.environment.within_bounds(new_x, new_y):
+                neighbours.append((new_x, new_y))
+        return neighbours
+    
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
         # These colors are in RGB format, normalized to [0, 1] --> green, grey twice, red, brown, black
         entity_colour_map = {2: (0.13, 0.33, 0.16), 3: (0.61, 0.65, 0.62),4: (0.61, 0.65, 0.62),
@@ -166,8 +169,6 @@ class KG:
                 node_colors.append([color[0] / 255.0, color[1] / 255.0, color[2] / 255.0])
             elif node_type == self.entity_node_type:
                 entity_type = int(self.graph.x[node][1].item())
-                print(f"Entity type: {entity_type}")
-                # color = entity_colour_map.get(entity_type)  # Default to grey if type not found
                 color = entity_colour_map[int(self.graph.x[node][1])]
                 if color is None:
                     color = entity_colour_map[3]
@@ -208,8 +209,8 @@ class KG:
 
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
-        ax.set_zlabel("Z")
-        plt.title("3D Graph Visualization")
+        ax.set_zlabel("Terrain/Entity")
+        plt.title("Game World")
         plt.show()
 
     def print_graph_connections(self):
