@@ -120,6 +120,7 @@ class Environment:
         self.terrain_object_grid[new_x, new_y].add_entity(entity)
         # We never remove the entity from the entity_group, so no need to re-add it
         self.environment_changed(old_x, old_y, new_x, new_y)
+        return new_x, new_y
     
     def delete_entity(self, entity):
         x, y = entity.grid_x, entity.grid_y
@@ -171,7 +172,11 @@ class Environment:
     def environment_gamestate(self):
         return self.terrain_index_grid, self.entity_index_grid
     
-    def print_entities(self):
+    def print_environment(self):
+        print('Terrain Index Grid:\n')
+        print(self.terrain_index_grid)
+        print('\nEntity Index Grid:\n')
+        print(self.entity_index_grid)
         # number_of_fish = 0
         number_of_trees = 0
         number_of_mossy_rocks = 0

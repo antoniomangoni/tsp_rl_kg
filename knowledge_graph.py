@@ -11,9 +11,11 @@ class KnowledgeGraph:
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
+        # Initialize arrays to keep track of node indices
+        self.terrain_idx_array = np.full_like(self.terrain_array, -1)
+        self.entity_idx_array = np.full_like(self.entity_array, -1)
         self.vision_range = vision_range
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
-        self.terrain_pos_idx_dict = {} # Dictionary to map terrain positions to their node indices
         self.player_idx = None
         self.max_terrain_nodes = self.terrain_array.size
         self.distance = self.get_distance(completion) # Graph distance
@@ -45,6 +47,7 @@ class KnowledgeGraph:
         player_features = self.get_node_features(self.player_pos, self.entity_node_type)
         self.graph.x = torch.cat([self.graph.x, player_features], dim=0)
         self.player_idx = len(self.graph.x) - 1
+        self.entity_idx_array[self.player_pos] = self.player_idx
 
     def create_edge(self, node1, node2, distance):
         new_edge = torch.tensor([[node1, node2], [node2, node1]], dtype=torch.long).view(2, -1)
@@ -53,7 +56,7 @@ class KnowledgeGraph:
         self.graph.edge_attr = torch.cat([self.graph.edge_attr, new_attr], dim=0)
 
     def create_entity_edge(self, node_idx, coor):
-        terrain_idx = self.terrain_pos_idx_dict[coor]
+        terrain_idx = self.terrain_idx_array[coor]
         self.create_edge(node_idx, terrain_idx, distance=0)
 
         cart_distance = self.get_cartesian_distance(coor, self.player_pos)
@@ -69,7 +72,7 @@ class KnowledgeGraph:
                 if not self.environment.within_bounds(x, y):
                     continue
                 # Add the terrain node if it does not exist
-                if (x, y) not in self.terrain_pos_idx_dict:
+                if self.terrain_idx_array[x, y] == -1:
                     node_index = self.add_terrain_node((x, y), connect=False)
                     # Add node index to list of terrain nodes to calculate edges for
                     terrain_nodes_to_calculate_edges.append((node_index, (x, y)))
@@ -84,9 +87,9 @@ class KnowledgeGraph:
         # self.print_graph_connections()
 
     def add_terrain_node(self, position, connect=True):
-        if position not in self.terrain_pos_idx_dict:
+        if self.terrain_idx_array[position] == -1:
             new_node_index = self.create_node(self.terrain_node_type, position)
-            self.terrain_pos_idx_dict[position] = new_node_index
+            self.terrain_idx_array[position] = new_node_index
 
             if connect == True:
                 self.create_terrain_edges(new_node_index, position)
@@ -100,13 +103,34 @@ class KnowledgeGraph:
         x, y = coor
         neighbours = self.get_manhattan_neighbours(x, y)
         for neighbour in neighbours:
-            if neighbour in self.terrain_pos_idx_dict:
-                neighbour_idx = self.terrain_pos_idx_dict[neighbour]
+            if self.terrain_idx_array[neighbour] != -1:
+                neighbour_idx = self.terrain_idx_array[neighbour]
                 self.create_edge(terrain_idx, neighbour_idx, distance=1)
 
     def add_entity_node(self, position):
         entity_idx = self.create_node(self.entity_node_type, position)
+        self.entity_idx_array[position] = entity_idx
         self.create_entity_edge(entity_idx, position)
+
+    def remove_entity_node(self, position):
+        entity_idx = self.entity_idx_array[position]
+        if entity_idx == -1:
+            return  # Entity node does not exist
+
+        # Update the node features and reset the index in the array
+        self.graph.x = torch.cat([self.graph.x[:entity_idx], self.graph.x[entity_idx + 1:]], dim=0)
+        self.entity_idx_array[position] = -1
+
+        # Find all edges involving the entity index
+        mask = (self.graph.edge_index == entity_idx).any(dim=0)
+
+        # Apply the mask to remove edges connected to the entity node
+        self.graph.edge_index = self.graph.edge_index[:, ~mask]
+        self.graph.edge_attr = self.graph.edge_attr[~mask]
+
+        # Adjust indices in edge_index that are greater than entity_idx
+        for i in range(2):
+            self.graph.edge_index[i, self.graph.edge_index[i] > entity_idx] -= 1
 
     def create_node(self, node_type, position):
         features = self.get_node_features(position, node_type)
@@ -141,6 +165,45 @@ class KnowledgeGraph:
                 neighbours.append((new_x, new_y))
         return neighbours
     
+    def landfill_node(self, x, y):
+        node_idx = self.terrain_idx_array[(x, y)]
+        self.graph.x[node_idx][1] += 1  # Increment the terrain type to land fill
+
+    def move_player_node(self, new_pos):
+        old_pos = self.player_pos
+        self.player_pos = new_pos
+
+        # Modify the player node features
+        self.graph.x[self.player_idx][2:] = torch.tensor([new_pos[0], new_pos[1]], dtype=torch.float)
+
+        # Remove edge to old terrain node
+        old_terrain_idx = self.terrain_idx_array[old_pos]
+        if old_terrain_idx != -1:
+            mask = ((self.graph.edge_index[0] == self.player_idx) & (self.graph.edge_index[1] == old_terrain_idx)) | \
+                ((self.graph.edge_index[1] == self.player_idx) & (self.graph.edge_index[0] == old_terrain_idx))
+            self.graph.edge_index = self.graph.edge_index[:, ~mask]
+            self.graph.edge_attr = self.graph.edge_attr[~mask]
+
+        # Add edge to new terrain node
+        new_terrain_idx = self.terrain_idx_array[new_pos]
+        if new_terrain_idx != -1:
+            self.create_edge(self.player_idx, new_terrain_idx, 0)  # Distance of 0 to own terrain node
+
+        # Update edge attributes to other entities
+        for y in range(len(self.entity_idx_array)):
+            for x in range(len(self.entity_idx_array)):
+                entity_idx = self.entity_idx_array[x, y]
+                #  Skip if the node is out of bounds or the player node
+                if entity_idx == -1 or entity_idx == self.player_idx:
+                    continue
+                # Thus, if the entity is not the player, we get the new distance to the player
+                new_distance = self.get_cartesian_distance(new_pos, (x, y))
+
+                # Find indices of edges between player and this entity to update attributes
+                mask = ((self.graph.edge_index[0] == self.player_idx) & (self.graph.edge_index[1] == entity_idx)) | \
+                    ((self.graph.edge_index[1] == self.player_idx) & (self.graph.edge_index[0] == entity_idx))
+                self.graph.edge_attr[mask] = new_distance
+
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
         # These colors are in RGB format, normalized to [0, 1] --> green, grey twice, red, brown, black
         entity_colour_map = {2: (0.13, 0.33, 0.16), 3: (0.61, 0.65, 0.62),4: (0.61, 0.65, 0.62),

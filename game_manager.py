@@ -44,10 +44,11 @@ class GameManager:
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
-        self.agent_controler = Agent(self.environment, self.agent_vision_range)
-        self.agent = self.agent_controler.agent
         self.kg_class = KnowledgeGraph(self.environment, self.agent_vision_range, self.kg_completness)
         self.knowledge_graph = self.kg_class.graph
+        self.agent_controler = Agent(self.environment, self.agent_vision_range, self.kg_class)
+        self.agent = self.agent_controler.agent
+        
         self.target_manager = Target_Manager(self.environment)
 
     def initialise_rendering(self):
@@ -61,21 +62,25 @@ class GameManager:
                 self.running = False
 
     def update(self):
-        self.agent_controler.agent_action(11)
+        self.agent_controler.agent_action(8)
 
     def render(self):
         self.renderer.render()
         pygame.display.flip()
 
     def run(self):
+        count = 0
         self.initialise_rendering()
         while self.running:
-            pygame.time.delay(100)
+            # pygame.time.delay(100)
             #  exit()
             self.handle_keyboard()
             self.update()
             self.renderer.render_updated_tiles()
-
+            if count > 1000:
+                break
+            count += 1  
         pygame.quit()
         print('Game closed')
-        # self.environment.print_entities()
+        self.environment.print_environment()
+        self.kg_class.visualise_graph()
