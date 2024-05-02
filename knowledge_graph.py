@@ -1,183 +1,220 @@
-import networkx as nx
-import numpy as np
-from numpy.linalg import norm
-import torch_geometric as pyg
 import torch
-from torch_geometric.utils import from_networkx
+from torch_geometric.data import Data
+from torch_geometric.utils import to_networkx
+import networkx as nx
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 
 class KnowledgeGraph:
     def __init__(self, environment, vision_range, completion=1.0):
         self.environment = environment
-        print(self.environment.terrain_index_grid)
-        print(self.environment.entity_index_grid)
+        self.terrain_array = environment.terrain_index_grid
+        self.entity_array = environment.entity_index_grid
         self.vision_range = vision_range
-        self.completion = completion
-        self.player_position = (self.environment.player.grid_x, self.environment.player.grid_y)
-        
-        # Construct the initial terrain graph and convert to PyG format
-        self.terrain_graph = self.construct_terrain_graph()
-        # Extract the subgraph based on the player's position and vision range / completion
-        self.subgraph = self.get_subgraph_bfs(self.terrain_graph, self.get_distance(completion))
-        self.graph = self.convert_to_pyg(self.subgraph)  # Convert to PyTorch Geometric format
-        
-        # Add player to the graph
-        self.player_idx = self.add_player_to_graph()
-        # Add entities to the graph
-        self.add_entities_to_graph(self.graph)
-        
-        # Visualize the graph with player
-        self.visualise(self.graph)
+        self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
+        self.terrain_pos_idx_dict = {} # Dictionary to map terrain positions to their node indices
+        self.player_idx = None
+        self.max_terrain_nodes = self.terrain_array.size
+        self.distance = self.get_distance(completion) # Graph distance
+        self.terrain_node_type = 0
+        self.entity_node_type = 1
 
-    def add_player_to_graph(self):
-        player_idx = self.node_index(self.environment.player.grid_x, self.environment.player.grid_y)
-        # Ensure the graph.x tensor exists and has a size method
-        if self.graph.x is not None and player_idx >= self.graph.x.size(0):
-            player_feature = torch.tensor([0], dtype=torch.float)  # Example feature for player
-            self.graph.x = torch.cat([self.graph.x, player_feature.view(1, 1)], dim=0)
-            player_edge = torch.tensor([[player_idx], [player_idx]], dtype=torch.long)
-            self.graph.edge_index = torch.cat([self.graph.edge_index, player_edge], dim=1)
-        return player_idx
+        self.graph = Data()
+        self.graph.x = torch.empty((0, 4), dtype=torch.float)  # Node features: node_type, type_id, x, y
+        self.graph.edge_index = torch.empty((2, 0), dtype=torch.long)  # Edge connections
+        self.graph.edge_attr = torch.empty((0, 1), dtype=torch.float)  # Edge attributes: distance
+        self.create_player_node()
 
-    def move_player_in_graph(self, new_x, new_y):
-        new_player_idx = self.node_index(new_x, new_y)
-        if new_player_idx not in self.graph.x.size(0):
-            new_player_feature = torch.tensor([0], dtype=torch.float)
+        # print(self.environment.terrain_colour_map)
+        self.add_terrain_nodes_to_graph()
+        # self.print_graph()        
+        self.visualise_graph()
 
-    def add_entities_to_graph(self):
-        # Assuming `self.graph` is already initialized as a PyTorch Geometric `Data` object
-        node_features = self.graph.x.tolist()  # Convert existing node features to list
-        edges = self.graph.edge_index.t().tolist()  # Convert edge indices to list of pairs
+    def get_node_features(self, coor, node_type):
+        x, y = coor
+        if node_type == self.terrain_node_type:
+            return torch.tensor([[node_type, self.terrain_array[x, y], x, y]], dtype=torch.float)
+        elif node_type == self.entity_node_type:
+            assert self.entity_array[x, y] > 0, f"Invalid entity type at position ({x}, {y}), type: {self.entity_array[x, y]}, \n {self.entity_array}, \n {self.graph.x}"
+            return torch.tensor([[node_type, self.entity_array[x, y], x, y]], dtype=torch.float)
+        else:
+            raise ValueError(f"Invalid node type: {node_type}")
+    
+    def create_player_node(self):
+        player_features = self.get_node_features(self.player_pos, self.entity_node_type)
+        self.graph.x = torch.cat([self.graph.x, player_features], dim=0)
+        self.player_idx = len(self.graph.x) - 1
 
-        height, width = self.environment.height, self.environment.width
-        idx_offset = max(self.environment.height * self.environment.width, self.graph.num_nodes)  # Offset to distinguish entity nodes from terrain nodes
+    def create_edge(self, node1, node2, distance):
+        new_edge = torch.tensor([[node1, node2], [node2, node1]], dtype=torch.long).view(2, -1)
+        new_attr = torch.tensor([[distance], [distance]], dtype=torch.float)
+        self.graph.edge_index = torch.cat([self.graph.edge_index, new_edge], dim=1)
+        self.graph.edge_attr = torch.cat([self.graph.edge_attr, new_attr], dim=0)
 
-        for y in range(height):
-            for x in range(width):
-                entity = self.environment.entity_index_grid[y, x]
-                if entity != 0:  # Check if there is an entity
-                    idx = self.node_index(x, y)  # Index of the current terrain node
-                    entity_idx = idx + idx_offset
-                    # Add the entity node
-                    node_features.append([entity])  # Assume entity value is used as the node feature
-                    # Connect entity to the corresponding terrain node
-                    edges.append([entity_idx, idx])
-                    edges.append([idx, entity_idx])  # For undirected graph, add both directions
+    def create_entity_edge(self, node_idx, coor):
+        terrain_idx = self.terrain_pos_idx_dict[coor]
+        self.create_edge(node_idx, terrain_idx, distance=0)
 
-        # Convert lists back to tensor
-        self.graph.x = torch.tensor(node_features, dtype=torch.float)
-        self.graph.edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()
+        cart_distance = self.get_cartesian_distance(coor, self.player_pos)
+        self.create_edge(node_idx, self.player_idx, cart_distance)
 
-    def add_entities_to_graph(self, graph):
-        for y in range(self.environment.height):
-            for x in range(self.environment.width):
-                entity_type = self.environment.entity_index_grid[y, x]
-                if entity_type != 0:
-                    self.add_entity_to_graph(x, y, entity_type)
+    def add_terrain_nodes_to_graph(self):
+        player_x, player_y = self.player_pos
+        terrain_nodes_to_calculate_edges = []
 
+        for y in range(player_y - self.distance, player_y + self.distance + 1):
+            for x in range(player_x - self.distance, player_x + self.distance + 1):
+                # Skip if the node is out of bounds or already added
+                if not self.environment.within_bounds(x, y):
+                    continue
+                # Add the terrain node if it does not exist
+                if (x, y) not in self.terrain_pos_idx_dict:
+                    node_index = self.add_terrain_node((x, y), connect=False)
+                    # Add node index to list of terrain nodes to calculate edges for
+                    terrain_nodes_to_calculate_edges.append((node_index, (x, y)))
+
+                if self.entity_array[x, y] > 0:
+                    self.add_entity_node((x, y))
+
+        # Calculate edges for all deferred nodes
+        self.finalize_graph_edges(terrain_nodes_to_calculate_edges)
+
+        # Print connections for verification
+        # self.print_graph_connections()
+
+    def add_terrain_node(self, position, connect=True):
+        if position not in self.terrain_pos_idx_dict:
+            new_node_index = self.create_node(self.terrain_node_type, position)
+            self.terrain_pos_idx_dict[position] = new_node_index
+
+            if connect == True:
+                self.create_terrain_edges(new_node_index, position)
+            return new_node_index
+    
+    def finalize_graph_edges(self, t_nodes_to_calculate_edges):
+        for node_index, position in t_nodes_to_calculate_edges:
+            self.create_terrain_edges(node_index, position)
+
+    def create_terrain_edges(self, terrain_idx, coor):
+        x, y = coor
+        neighbours = self.get_manhattan_neighbours(x, y)
+        for neighbour in neighbours:
+            if neighbour in self.terrain_pos_idx_dict:
+                neighbour_idx = self.terrain_pos_idx_dict[neighbour]
+                self.create_edge(terrain_idx, neighbour_idx, distance=1)
+
+    def add_entity_node(self, position):
+        entity_idx = self.create_node(self.entity_node_type, position)
+        self.create_entity_edge(entity_idx, position)
+
+    def create_node(self, node_type, position):
+        features = self.get_node_features(position, node_type)
+        self.graph.x = torch.cat([self.graph.x, features], dim=0)
+        return len(self.graph.x) - 1
+    
+    def add_entity_nodes(self):
+        for y in range(self.entity_array.shape[0]):
+            for x in range(self.entity_array.shape[1]):
+                # Skip if the node is out of bounds or already added
+                if not self.environment.within_bounds(x, y):
+                    continue
+                if (x, y) == self.player_pos:
+                    continue
+                # Add entity if one exists in the array (non-zero value, 1 is a fish which is also not included)
+                if self.entity_array[x, y] > 0:
+                    self.add_entity_node((x, y))
+    
     def get_distance(self, completion):
         """Calculates the effective distance for subgraph extraction."""
-        max_dimension = max(self.environment.heightmap.shape)
-        if completion >= 1.0:
-            return float('inf')  # Represents the entire graph
-        return max(int(completion * max_dimension), self.vision_range)
+        completion = min(completion, 1)
+        return max(int(completion * self.terrain_array.shape[0]), self.vision_range)
+
+    def get_cartesian_distance(self, pos1, pos2):
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])	
     
-    def construct_terrain_graph(self):
-        G = nx.Graph()
-        for y in range(self.environment.height):
-            for x in range(self.environment.width):
-                idx = x + y * self.environment.width
-                G.add_node(idx, type=0, pos=(x, y), feature=self.environment.terrain_index_grid[y, x])
-                if x > 0:
-                    G.add_edge(idx, idx - 1)
-                if x < self.environment.width - 1:
-                    G.add_edge(idx, idx + 1)
-                if y > 0:
-                    G.add_edge(idx, idx - self.environment.width)
-                if y < self.environment.height - 1:
-                    G.add_edge(idx, idx + self.environment.width)
-        return G
-
-    def get_subgraph_bfs(self, graph, max_depth):
-        """Generate a subgraph using BFS from the player's current position."""
-        start_node = self.node_index(self.environment.player.grid_x, self.environment.player.grid_y)
-        bfs_tree = nx.bfs_tree(graph, source=start_node, depth_limit=max_depth)
-        return graph.subgraph(bfs_tree.nodes()).copy()
+    def get_manhattan_neighbours(self, x, y):
+        neighbours = []
+        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            new_x, new_y = x + dx, y + dy
+            if self.environment.within_bounds(new_x, new_y):
+                neighbours.append((new_x, new_y))
+        return neighbours
     
-    def add_entities_to_graph(self, graph):
-        G = graph.copy()
-        height, width = self.environment.heightmap.shape
-        idx_offset = 10000  # Offset to distinguish entity nodes from terrain nodes
-        player_terrain_idx = self.node_index(self.environment.player.grid_x, self.environment.player.grid_y) # Index of the terrain the player node is connected to
-        player_idx = player_terrain_idx + idx_offset
-        G.add_node(player_idx, type=2, pos=self.player_position, feature=0)  # Add the player node
-        G.add_edge(player_idx, player_terrain_idx)  # Connect player node to the corresponding terrain node
-        for y in range(height):
-            for x in range(width):
-                entity = self.environment.entity_index_grid[y, x]
-                if entity != 0:  # Check if there is an entity
-                    idx = self.node_index(x, y)  # Index of the current terrain node
-                    entity_idx = idx + idx_offset
-                    # Check and add entities only if they haven't been added to the graph yet
-                    if entity_idx not in G.nodes():
-                        # Add the entity node
-                        G.add_node(entity_idx, type=1, pos=(x, y), feature=entity)
-                        # Connect entity to the corresponding terrain node
-                        G.add_edge(entity_idx, idx)
-                        # Connect entity to the player node
-                        G.add_edge(entity_idx, player_idx)
-        return G
-
-    def convert_to_pyg(self, graph):
-        print(graph.nodes(data=True))
-        print(graph.edges(data=True))
-
-        features = [data.get('feature', [0]) for _, data in graph.nodes(data=True)]
-        node_features = torch.tensor(features, dtype=torch.float)
-
-        edge_index = []
-        for start_node, end_node in graph.edges():
-            edge_index.append([start_node, end_node])
-            edge_index.append([end_node, start_node])  # Because it's undirected
-
-        edge_index_tensor = torch.tensor(edge_index, dtype=torch.long).t().contiguous()
-
-        return pyg.data.Data(x=node_features, edge_index=edge_index_tensor)
-
-    def visualize(self, graph):
-        graph = graph.to_networkx()
-        pos = nx.get_node_attributes(graph, 'pos')
-        terrain_types = nx.get_node_attributes(graph, 'feature')
-        node_types = nx.get_node_attributes(graph, 'type')
-
-        node_colors = []
-        for node in graph.nodes():
-            node_type = node_types.get(node, 1)  # Default to type 2 if not found
-            if node_type == 0:
-                terrain_type = terrain_types.get(node, 0)  # Default terrain type if not found
-                color = self.environment.terrain_colour_map.get(terrain_type, (255, 0, 0))  # Red if not found
-                node_colors.append((color[0] / 255, color[1] / 255, color[2] / 255))
-            elif node_type == 1:
-                node_colors.append((0, 0, 0))  # Black for entities
-            else:
-                node_colors.append((1, 0, 0))  # Red for the player
-
-        plt.figure(figsize=(8, 6))
-        nx.draw(graph, pos, with_labels=False, node_size=12, node_color=node_colors, edge_color='gray', width=0.5)
-        plt.show()
-
-    def print_graph(self, g):
-        print(g.nodes(data=True))
-        print(g.edges(data=True))
-
-    def node_index(self, x, y):
-        return x * self.environment.heightmap.shape[1] + y
-    
-    def visualize_(self, graph):
-        # Ensure every node has a position; provide a default if missing
-        default_pos = (0, 0)  # Default to (0, 0) or any logical default
-        pos = {node: (graph.nodes[node]['pos'] if 'pos' in graph.nodes[node] else default_pos) for node in graph.nodes()}
+    def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
+        # These colors are in RGB format, normalized to [0, 1] --> green, grey twice, red, brown, black
+        entity_colour_map = {2: (0.13, 0.33, 0.16), 3: (0.61, 0.65, 0.62),4: (0.61, 0.65, 0.62),
+                             5: (0.78, 0.16, 0.12), 6: (0.46, 0.31, 0.04), 7: (0, 0, 0)}
         
-        plt.figure(figsize=(8, 6))
-        nx.draw(graph, pos, with_labels=False, node_size=12, node_color='black', edge_color='gray', width=0.5)
+        # Convert to undirected graph for visualization
+        G = to_networkx(self.graph, to_undirected=True)
+        
+        # Use a 2D spring layout, as z-coordinates are manually assigned
+        pos = nx.spring_layout(G, seed=42)  # 2D layout
+        node_colors = []
+
+        for node in G.nodes():
+            node_type = self.graph.x[node][0].item()
+            # The node features are [Node Type, Entity/Terrain Type, X Pos, Y Pos] and the z-coordinate is the node type
+            x, y, z = self.graph.x[node][2].item(), self.graph.x[node][3].item(), self.graph.x[node][0].item()
+
+            # Assign z-coordinate based on node type
+            z = 0 if node_type == self.terrain_node_type else 1
+            pos[node] = (x, y, z)  # Update position to include z-coordinate
+            
+            # Set node color based on node type
+            if node_type == self.terrain_node_type:
+                terrain_type = int(self.graph.x[node][1].item())
+                color = self.environment.terrain_colour_map.get(terrain_type, (255, 0, 0))
+                node_colors.append([color[0] / 255.0, color[1] / 255.0, color[2] / 255.0])
+            elif node_type == self.entity_node_type:
+                entity_type = int(self.graph.x[node][1].item())
+                color = entity_colour_map[int(self.graph.x[node][1])]
+                if color is None:
+                    color = entity_colour_map[3]
+                    print(f"Entity type {entity_type} not found in colour map. now it is {color}")
+                    
+                node_colors.append(color)  # Directly use the color name
+
+        # assert (pos[0][0], pos[0][1]) == self.player_pos and pos[0][2] == 1, "Player position does not match the graph position"
+        # Create a 3D plot
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        node_xyz = np.array([pos[v] for v in sorted(G)])
+        edge_xyz = np.array([(pos[u], pos[v]) for u, v in G.edges()])
+        try:
+            node_colors = np.array(node_colors)
+        except ValueError:
+            print("Printing node colors")
+            print(node_colors)
+        # Scatter plot for nodes
+        ax.scatter(*node_xyz.T, s=node_size, color=node_colors, edgecolor='w', depthshade=True)
+        # Draw edges
+        for vizedge in edge_xyz:
+            ax.plot(*vizedge.T, color=edge_color)
+
+        # Configure axis visibility and ticks
+        if show_ticks:
+            # Set tick labels based on the data range
+            ax.set_xticks(np.linspace(min(pos[n][0] for n in G.nodes()), max(pos[n][0] for n in G.nodes()), num=5))
+            ax.set_yticks(np.linspace(min(pos[n][1] for n in G.nodes()), max(pos[n][1] for n in G.nodes()), num=5))
+            ax.set_zticks([0, 1])  # Only two levels: 0 for terrain, 1 for entities
+        else:
+            ax.grid(False)
+            ax.xaxis.set_ticks([])
+            ax.yaxis.set_ticks([])
+            ax.zaxis.set_ticks([])
+
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Terrain/Entity")
+        plt.title("Game World")
         plt.show()
+
+    def print_graph_connections(self):
+        edge_index_np = self.graph.edge_index.numpy()  # Convert edge_index to a numpy array for easier handling
+        for i in range(0, edge_index_np.shape[1], 2):  # Step by 2 to handle bi-directional edges
+            print(f"Node {edge_index_np[0, i]} -> Node {edge_index_np[1, i]}")
+
+        # get the node features
+        print(self.graph.x)
