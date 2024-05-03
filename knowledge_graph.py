@@ -1,3 +1,5 @@
+from graph_manager import IDX_Manager
+
 import torch
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
@@ -5,77 +7,32 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
-class IDX_manager:
-    def __init__(self):
-        self.player_idx = None
-        self.idx = 0
-        self.idx_id_dict = {}
-        self.id_idx_dict = {}
-    
-    def create_idx(self, pos, z_level):
-        # print(f"[create_idx()] Creating index {self.idx} for position {pos} and z_level {z_level}")
-        self.idx_id_dict[self.idx] = (pos, z_level)
-        self.id_idx_dict[(pos, z_level)] = self.idx
-        self.idx += 1
-        return self.idx - 1
-    
-    def remove_idx(self, pos, z_level):
-        # print(f"[remove_idx()] Removing index for position {pos} and z_level {z_level}")
-        idx = self.id_idx_dict[(pos, z_level)]
-        del self.idx_id_dict[idx]
-        del self.id_idx_dict[(pos, z_level)]
-
-    def get_idx(self, pos, z_level):
-        if self.verify_node_exists(pos, z_level):
-            return self.id_idx_dict[(pos, z_level)]
-        else:
-            raise ValueError(f"Node at position {pos} and z_level {z_level} does not exist in the graph")
-    
-    def get_pos(self, idx):
-        return self.idx_id_dict[idx][0]
-    
-    def get_type(self, idx):
-        return self.idx_id_dict[idx][1]
-    
-    def change_pos(self, idx, new_pos):
-        self.idx_id_dict[idx] = (new_pos, self.idx_id_dict[idx][1])
-        del self.id_idx_dict[self.idx_id_dict[idx]]
-        self.id_idx_dict[(new_pos, self.idx_id_dict[idx][1])] = idx
-
-    def verify_node_exists(self, pos, z_level):
-        # print(f"[verify_node_exists()] Verifying node at position {pos} and z_level {z_level}")
-        return (pos, z_level) in self.id_idx_dict
-
-class KnowledgeGraph(IDX_manager):
+class KnowledgeGraph():
     def __init__(self, environment, vision_range, completion=1.0):
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
 
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
-        # print(f"Player position: {self.player_pos}")
         self.entity_array[self.player_pos] = 0  # Remove the player from the entity array
 
         assert max(self.entity_array.flatten()) < 7, "Entity type exceeds the maximum value of 6"
-        # print(f"Terrain array: \n{self.terrain_array}")
-        # print(f"Entity array: \n{self.entity_array}")
 
-        self.idx_manager = IDX_manager()
+        self.idx_manager = IDX_Manager()
 
         self.vision_range = vision_range
 
         self.max_terrain_nodes = self.terrain_array.size
-        self.distance = self.get_distance(completion) # Graph distance
+        self.distance = self.get_distance(completion) # Graph distance, in terms of edges, from the player node
+
         self.terrain_z_level = 0
         self.entity_z_level = 1
         self.player_z_level = 2
 
         self.init_graph()
         self.create_player_node()
-        # print(f"Player index: {self.idx_manager.player_idx}")
-        # print(f'The graph has {self.graph.num_nodes} nodes and {self.graph.num_edges} edges')
-        # # print(self.environment.terrain_colour_map)
         self.add_terrain_nodes_to_graph()
+        self.add_player_terrain_edge()
         # self.# print_graph()        
         self.visualise_graph()
 
@@ -91,16 +48,20 @@ class KnowledgeGraph(IDX_manager):
     
     def init_graph(self):
         self.graph = Data()
-        self.graph.x = torch.empty((0, 4), dtype=torch.float)  # Node features: node_type, type_id, x, y
+        self.graph.x = torch.empty((0, 4), dtype=torch.float)  # Node features: z_level, type_id, x, y
         self.graph.edge_index = torch.empty((2, 0), dtype=torch.long)  # Edge connections
         self.graph.edge_attr = torch.empty((0, 1), dtype=torch.float)  # Edge attributes: distance
-
 
     def create_player_node(self):
         player_features = torch.tensor([[self.player_z_level, self.environment.player.id, self.player_pos[0], self.player_pos[1]]], dtype=torch.float)
         self.graph.x = torch.cat([self.graph.x, player_features], dim=0)
 
         self.idx_manager.player_idx = self.idx_manager.create_idx(self.player_pos, self.player_z_level)
+
+    def add_player_terrain_edge(self):
+        player_idx = self.idx_manager.player_idx
+        terrain_idx = self.idx_manager.get_idx(self.player_pos, self.terrain_z_level)
+        self.create_edge(player_idx, terrain_idx, distance=0)
 
     def create_node(self, z_level, position):
         """ Every node has the following features: [Node Type, Entity/Terrain Type, X Pos, Y Pos]
@@ -140,9 +101,6 @@ class KnowledgeGraph(IDX_manager):
 
         # Calculate edges for all deferred nodes
         self.finalise_terrain_edges(terrain_nodes_to_calculate_edges)
-
-        # # print connections for verification
-        # self.# print_graph_connections()
 
     def add_entity_node(self, position):
         entity_idx = self.create_node(self.entity_z_level, position)
@@ -203,6 +161,7 @@ class KnowledgeGraph(IDX_manager):
 
         # Remove the index from the IDX manager
         self.idx_manager.remove_idx(position, self.entity_z_level)
+        self.verify_terrain_node_connections(position)
     
     def get_distance(self, completion):
         """Calculates the effective distance for subgraph extraction."""
@@ -222,9 +181,13 @@ class KnowledgeGraph(IDX_manager):
         return neighbours
     
     def landfill_node(self, x, y):
-        # node_idx = self.terrain_idx_array[(x, y)]
         node_idx = self.idx_manager.get_idx((x, y), self.terrain_z_level)
-        self.graph.x[node_idx][1] += 1  # Increment the terrain type to land fill
+        # get Node features: z_level, type_id, x, y
+        node_features = self.graph.x[node_idx]
+        # Add 1 to the terrain type to indicate land fill
+        node_features[1] += 1
+        self.graph.x[node_idx] = node_features
+        self.visualise_graph()
 
     def move_player_node(self, new_pos):
         old_pos = self.player_pos
@@ -232,6 +195,9 @@ class KnowledgeGraph(IDX_manager):
 
         # Modify the player node features
         self.graph.x[self.idx_manager.player_idx][2:] = torch.tensor([new_pos[0], new_pos[1]], dtype=torch.float)
+
+        # Update the position in IDX_Manager
+        self.idx_manager.change_player_pos(new_pos)
 
         # Handle old terrain node connections
         old_terrain_idx = self.idx_manager.get_idx(old_pos, self.terrain_z_level)
@@ -256,9 +222,11 @@ class KnowledgeGraph(IDX_manager):
                 mask = ((self.graph.edge_index[0] == self.idx_manager.player_idx) & (self.graph.edge_index[1] == idx)) | \
                     ((self.graph.edge_index[1] == self.idx_manager.player_idx) & (self.graph.edge_index[0] == idx))
                 self.graph.edge_attr[mask] = new_distance
+       
+        self.verify_terrain_node_connections(old_pos)
+        self.verify_terrain_node_connections(new_pos)
 
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
-        
         # These colors are in RGB format, normalized to [0, 1] --> green, grey twice, red, brown, black
         entity_colour_map = {2: (0.13, 0.33, 0.16), 3: (0.61, 0.65, 0.62),4: (0.61, 0.65, 0.62),
                              5: (0.78, 0.16, 0.12), 6: (0.46, 0.31, 0.04), 7: (0, 0, 0)}
@@ -268,58 +236,77 @@ class KnowledgeGraph(IDX_manager):
         print("[visualise_graph()] The size of the graph is: ", self.graph.num_nodes)
         print("[visualise_graph()] The size of the networkx graph is: ", len(G.nodes))
         # Use a 2D spring layout, as z-coordinates are manually assigned
-        pos = nx.spring_layout(G, seed=42)  # 2D layout
+        pos = {} # nx.spring_layout(G, seed=42)  # 2D layout
         node_colors = []
 
         for node in G.nodes():
-            node_type = self.graph.x[node][0].item()
-            # The node features are [Node Type, Entity/Terrain Type, X Pos, Y Pos] and the z-coordinate is the node type
-            x, y, z = self.graph.x[node][2].item(), self.graph.x[node][3].item(), self.graph.x[node][0].item()
-            pos[node] = (x, y, z)
-            # Set node color based on node type
-            if z == self.terrain_z_level:
-                terrain_type = int(self.graph.x[node][1].item())
-                color = self.environment.terrain_colour_map.get(terrain_type, (255, 0, 0))
-                node_colors.append([color[0] / 255.0, color[1] / 255.0, color[2] / 255.0])
-            elif z == self.entity_z_level:
-                color = entity_colour_map[int(self.graph.x[node][1])]
-                node_colors.append(color)
-            elif z == self.player_z_level:
-                color = (0, 0, 0)  # Black for player
-                # color = entity_colour_map[self.environment.player.id]   
-                node_colors.append(color)
+            if node < len(self.graph.x):  # Ensure the node index is within the current graph size
+                x, y, z = self.graph.x[node][2].item(), self.graph.x[node][3].item(), self.graph.x[node][0].item()
+                pos[node] = (x, y, z)
+                if z == self.terrain_z_level:
+                    terrain_type = int(self.graph.x[node][1].item())
+                    color = self.environment.terrain_colour_map.get(terrain_type, (255, 0, 0))
+                    node_colors.append([color[0] / 255.0, color[1] / 255.0, color[2] / 255.0])
+                elif z == self.entity_z_level:
+                    color = entity_colour_map[int(self.graph.x[node][1])]
+                    node_colors.append(color)
+                elif z == self.player_z_level:
+                    color = (0, 0, 0)  # Black for player
+                    # color = entity_colour_map[self.environment.player.id]   
+                    node_colors.append(color)
+            else:
+                print(f"Invalid node index: {node}")
 
-        # assert (pos[0][0], pos[0][1]) == self.player_pos and pos[0][2] == 1, "Player position does not match the graph position"
-        # Create a 3D plot
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        node_xyz = np.array([pos[v] for v in sorted(G)])
-        edge_xyz = np.array([(pos[u], pos[v]) for u, v in G.edges()])
-        try:
-            node_colors = np.array(node_colors)
-        except ValueError:
-            print("# printing node colors")
-            print(node_colors)
-        # Scatter plot for nodes
-        ax.scatter(*node_xyz.T, s=node_size, color=node_colors, edgecolor='w', depthshade=True)
-        # Draw edges
-        for vizedge in edge_xyz:
-            ax.plot(*vizedge.T, color=edge_color)
+        # Visualization continues if positions and node colors are valid
+        if pos and node_colors:
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            # invert x-axis to match the game world
+            ax.invert_xaxis()
+            node_xyz = np.array([pos[v] for v in sorted(G) if v in pos])  # Only include valid nodes
+            edge_xyz = np.array([(pos[u], pos[v]) for u, v in G.edges() if u in pos and v in pos])
 
-        # Configure axis visibility and ticks
-        if show_ticks:
-            # Set tick labels based on the data range
-            ax.set_xticks(np.linspace(min(pos[n][0] for n in G.nodes()), max(pos[n][0] for n in G.nodes()), num=5))
-            ax.set_yticks(np.linspace(min(pos[n][1] for n in G.nodes()), max(pos[n][1] for n in G.nodes()), num=5))
-            ax.set_zticks([0, 1])  # Only two levels: 0 for terrain, 1 for entities
-        else:
-            ax.grid(False)
-            ax.xaxis.set_ticks([])
-            ax.yaxis.set_ticks([])
-            ax.zaxis.set_ticks([])
+            ax.scatter(*node_xyz.T, s=node_size, color=node_colors, edgecolor='w', depthshade=True)
+            for vizedge in edge_xyz:
+                ax.plot(*vizedge.T, color=edge_color)
 
-        ax.set_xlabel("X")
-        ax.set_ylabel("Y")
-        ax.set_zlabel("Terrain/Entity")
-        plt.title("Game World")
-        plt.show()
+            if show_ticks:
+                ax.set_xticks(np.linspace(min(pos[n][0] for n in pos), max(pos[n][0] for n in pos), num=5))
+                ax.set_yticks(np.linspace(min(pos[n][1] for n in pos), max(pos[n][1] for n in pos), num=5))
+                ax.set_zticks([0, 1])  # Assuming z-levels are either 0 or 1
+            else:
+                ax.grid(False)
+                ax.xaxis.set_ticks([])
+                ax.yaxis.set_ticks([])
+                ax.zaxis.set_ticks([])
+
+            ax.set_xlabel("X")
+            ax.set_ylabel("Y")
+            ax.set_zlabel("Terrain/Entity")
+            plt.title("Game World")
+            plt.show()
+
+    def verify_terrain_node_connections(self, position):
+        x, y = position
+        break_flag = False
+        node_idx = self.idx_manager.get_idx(position, self.terrain_z_level)
+        neighbours = self.get_manhattan_neighbours(position)
+        # count number of edges to neighbours
+        count = 0
+        for neighbour in neighbours:
+            if self.idx_manager.verify_node_exists(neighbour, self.terrain_z_level):
+                neighbour_idx = self.idx_manager.get_idx(neighbour, self.terrain_z_level)
+                if (node_idx, neighbour_idx) in self.graph.edge_index.T.tolist() or (neighbour_idx, node_idx) in self.graph.edge_index.T.tolist():
+                    count += 1
+        if count != len(neighbours):
+            print(f"Node at position {position} with type {self.idx_manager.get_type(node_idx)} is missing edges to neighbours")
+            print(f"Node has {count} edges, but should have {len(neighbours)}")
+            break_flag = True
+        # verify that the node is connected to the player node if the self.player_pos == position
+        if self.player_pos == position:
+            if (node_idx, self.idx_manager.player_idx) not in self.graph.edge_index.T.tolist() and (self.idx_manager.player_idx, node_idx) not in self.graph.edge_index.T.tolist():
+                print(f"Player node is not connected to node at position {position} with index {node_idx}")
+                break_flag = True
+        if break_flag:
+            self.visualise_graph()
+            raise ValueError("Invalid terrain node connections")

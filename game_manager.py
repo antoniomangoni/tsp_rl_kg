@@ -83,5 +83,5 @@ class GameManager:
             count += 1  
         pygame.quit()
         print('Game closed')
-        # self.environment.print_environment()
+        self.environment.print_environment()
         self.kg_class.visualise_graph()

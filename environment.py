@@ -174,9 +174,9 @@ class Environment:
         return self.terrain_index_grid, self.entity_index_grid
     
     def print_environment(self):
-        print('Terrain Index Grid:\n')
+        print('Terrain Index Grid:')
         print(self.terrain_index_grid)
-        print('\nEntity Index Grid:\n')
+        print('Entity Index Grid:')
         print(self.entity_index_grid)
         # number_of_fish = 0
         number_of_trees = 0
