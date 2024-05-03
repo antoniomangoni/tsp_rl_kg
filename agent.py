@@ -75,8 +75,8 @@ class Agent:
                 # Skip if the node is out of bounds
                 if not self.environment.within_bounds(x, y):
                     continue
-                if self.kg.terrain_idx_array[x, y] == -1:
-                    self.kg.add_terrain_node(x, y)
+                if not self.kg.idx_manager.verify_node_exists((x, y), self.kg.terrain_z_level):
+                    self.kg.add_terrain_node((x, y))
 
     def build_path(self):
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):

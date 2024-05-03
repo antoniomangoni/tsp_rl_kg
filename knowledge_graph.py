@@ -26,10 +26,10 @@ class IDX_manager:
         del self.id_idx_dict[(pos, z_level)]
 
     def get_idx(self, pos, z_level):
-        try:
+        if self.verify_node_exists(pos, z_level):
             return self.id_idx_dict[(pos, z_level)]
-        except KeyError:
-            print(f"Node at position {pos} and z_level {z_level} does not exist in the graph")
+        else:
+            raise ValueError(f"Node at position {pos} and z_level {z_level} does not exist in the graph")
     
     def get_pos(self, idx):
         return self.idx_id_dict[idx][0]
@@ -183,31 +183,26 @@ class KnowledgeGraph(IDX_manager):
             self.create_terrain_edges(node_index, position)
 
     def remove_entity_node(self, position):
-        for idx in self.idx_pos_dict:
-            print(f"Index {idx} is (pos, type) {self.idx_pos_dict[idx]}")
+        if not self.idx_manager.verify_node_exists(position, self.entity_z_level):
+            print(f"No entity node at position {position} with z_level {self.entity_z_level}")
+            return
 
         entity_idx = self.idx_manager.get_idx(position, self.entity_z_level)
-        assert self.graph.x[entity_idx][1].item() != self.terrain_z_level, "Trying to remove a terrain node as an entity node"
-        if entity_idx == -1:
-            return  # Entity node does not exist
 
         # Remove the node from the node features array
         self.graph.x = torch.cat([self.graph.x[:entity_idx], self.graph.x[entity_idx+1:]], dim=0)
-        self.idx_manager.remove_idx(position, self.entity_z_level)
-
-        # Create mask to find all edges connected to the removed node
-        mask = (self.graph.edge_index == entity_idx).any(dim=0)
         
-        # Remove edges connected to the removed node
+        # Adjust the indices in the edge index tensor before removing edges to maintain consistency
+        adjustment_mask = self.graph.edge_index > entity_idx
+        self.graph.edge_index[adjustment_mask] -= 1
+        
+        # Create mask to find all edges connected to the removed node and remove these edges
+        mask = (self.graph.edge_index == entity_idx).any(dim=0)
         self.graph.edge_index = self.graph.edge_index[:, ~mask]
         self.graph.edge_attr = self.graph.edge_attr[~mask]
 
-        # Adjust the remaining edges' indices that are higher than the removed node's index
-        for i in range(2):
-            higher_indices = self.graph.edge_index[i] > entity_idx
-            self.graph.edge_index[i, higher_indices] -= 1
-        # self.visualise_graph()
-
+        # Remove the index from the IDX manager
+        self.idx_manager.remove_idx(position, self.entity_z_level)
     
     def get_distance(self, completion):
         """Calculates the effective distance for subgraph extraction."""
@@ -238,41 +233,40 @@ class KnowledgeGraph(IDX_manager):
         # Modify the player node features
         self.graph.x[self.idx_manager.player_idx][2:] = torch.tensor([new_pos[0], new_pos[1]], dtype=torch.float)
 
-        # Remove edge to old terrain node
-        # old_terrain_idx = self.terrain_idx_array[old_pos]
+        # Handle old terrain node connections
         old_terrain_idx = self.idx_manager.get_idx(old_pos, self.terrain_z_level)
 
-        if old_terrain_idx != -1:
-            mask = ((self.graph.edge_index[0] == self.idx_manager.player_idx) & (self.graph.edge_index[1] == old_terrain_idx)) | \
-                ((self.graph.edge_index[1] == self.idx_manager.player_idx) & (self.graph.edge_index[0] == old_terrain_idx))
-            self.graph.edge_index = self.graph.edge_index[:, ~mask]
-            self.graph.edge_attr = self.graph.edge_attr[~mask]
+        # Remove edge to old terrain node
+        mask = ((self.graph.edge_index[0] == self.idx_manager.player_idx) & (self.graph.edge_index[1] == old_terrain_idx)) | \
+            ((self.graph.edge_index[1] == self.idx_manager.player_idx) & (self.graph.edge_index[0] == old_terrain_idx))
+        
+        self.graph.edge_index = self.graph.edge_index[:, ~mask]
+        self.graph.edge_attr = self.graph.edge_attr[~mask]
 
-        # Add edge to new terrain node
-        # new_terrain_idx = self.terrain_idx_array[new_pos]
+        # Handle new terrain node connections
         new_terrain_idx = self.idx_manager.get_idx(new_pos, self.terrain_z_level)
-        if new_terrain_idx != -1:
-            self.create_edge(self.idx_manager.player_idx, new_terrain_idx, 0)  # Distance of 0 to own terrain node
+        self.create_edge(self.idx_manager.player_idx, new_terrain_idx, 0)  # Distance of 0 to own terrain node
 
         # Update edge attributes to other entities
         for id, idx in self.idx_manager.id_idx_dict.items():
-            if id[1] != self.entity_z_level:
-                continue
-        # Get the new distance to the player
-        new_distance = self.get_cartesian_distance(new_pos, (id[0][0], id[0][1]))
-        # Find indices of edges between player and this entity to update attributes
-        mask = ((self.graph.edge_index[0] == self.idx_manager.player_idx) & (self.graph.edge_index[1] == idx)) | \
-            ((self.graph.edge_index[1] == self.idx_manager.player_idx) & (self.graph.edge_index[0] == idx))
-        self.graph.edge_attr[mask] = new_distance
+            if id[1] == self.entity_z_level:
+                # Get the new distance to the player
+                new_distance = self.get_cartesian_distance(new_pos, id[0])
+                # Find indices of edges between player and this entity to update attributes
+                mask = ((self.graph.edge_index[0] == self.idx_manager.player_idx) & (self.graph.edge_index[1] == idx)) | \
+                    ((self.graph.edge_index[1] == self.idx_manager.player_idx) & (self.graph.edge_index[0] == idx))
+                self.graph.edge_attr[mask] = new_distance
 
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
+        
         # These colors are in RGB format, normalized to [0, 1] --> green, grey twice, red, brown, black
         entity_colour_map = {2: (0.13, 0.33, 0.16), 3: (0.61, 0.65, 0.62),4: (0.61, 0.65, 0.62),
                              5: (0.78, 0.16, 0.12), 6: (0.46, 0.31, 0.04), 7: (0, 0, 0)}
         
         # Convert to undirected graph for visualization
         G = to_networkx(self.graph, to_undirected=True)
-        
+        print("[visualise_graph()] The size of the graph is: ", self.graph.num_nodes)
+        print("[visualise_graph()] The size of the networkx graph is: ", len(G.nodes))
         # Use a 2D spring layout, as z-coordinates are manually assigned
         pos = nx.spring_layout(G, seed=42)  # 2D layout
         node_colors = []
