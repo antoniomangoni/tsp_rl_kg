@@ -28,15 +28,8 @@ class IDX_Manager:
         return self.idx_id_dict[idx][0]
     
     def get_type(self, idx):
-        return self.idx_id_dict[idx][1]
-
-    def change_player_pos(self, new_pos):
-        features = self.idx_id_dict[self.player_idx]
-        new_features = (new_pos, features[1])
-        self.idx_id_dict[self.player_idx] = new_features
-        del self.id_idx_dict[features]
-        self.id_idx_dict[new_features] = self.player_idx
-
+        return self.idx_id_dict[idx][1]        
+    
     def verify_node_exists(self, pos, z_level):
         # print(f"[verify_node_exists()] Verifying node at position {pos} and z_level {z_level}")
         return (pos, z_level) in self.id_idx_dict

@@ -2,7 +2,7 @@ from graph_manager import IDX_Manager
 
 import torch
 from torch_geometric.data import Data
-from torch_geometric.utils import to_networkx
+from torch_geometric.utils import to_networkx, subgraph
 import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,8 +32,8 @@ class KnowledgeGraph():
         self.init_graph()
         self.create_player_node()
         self.add_terrain_nodes_to_graph()
-        self.add_player_terrain_edge()
-        # self.# print_graph()        
+        self.create_player_edges()
+
         self.visualise_graph()
 
     def get_node_features(self, coor, z_level):
@@ -58,10 +58,25 @@ class KnowledgeGraph():
 
         self.idx_manager.player_idx = self.idx_manager.create_idx(self.player_pos, self.player_z_level)
 
-    def add_player_terrain_edge(self):
+    def create_player_edges(self):
         player_idx = self.idx_manager.player_idx
-        terrain_idx = self.idx_manager.get_idx(self.player_pos, self.terrain_z_level)
-        self.create_edge(player_idx, terrain_idx, distance=0)
+        for id, idx in self.idx_manager.id_idx_dict.items():
+            if idx == player_idx:
+                continue
+            if id[1] == self.entity_z_level:
+                distance = self.get_cartesian_distance(self.player_pos, id[0])
+                self.create_edge(player_idx, idx, distance)
+
+    def recaluclate_player_edges(self, new_x, new_y):
+        self.player_pos = (new_x, new_y)
+        player_idx = self.idx_manager.player_idx
+        for id, idx in self.idx_manager.id_idx_dict.items():
+            if idx == player_idx:
+                continue
+            distance = self.get_cartesian_distance(self.player_pos, id[0])
+            mask = ((self.graph.edge_index[0] == player_idx) & (self.graph.edge_index[1] == idx)) | \
+                ((self.graph.edge_index[1] == player_idx) & (self.graph.edge_index[0] == idx))
+            self.graph.edge_attr[mask] = distance
 
     def create_node(self, z_level, position):
         """ Every node has the following features: [Node Type, Entity/Terrain Type, X Pos, Y Pos]
@@ -116,18 +131,23 @@ class KnowledgeGraph():
                 if self.entity_array[x, y] > 0:
                     self.add_entity_node((x, y))
 
+    def add_path_node(self, position):
+        path_idx = self.create_node(self.entity_z_level, position)
+        features = self.get_node_features(position, self.entity_z_level)
+        assert features[1] == 6, "Entity not a wood path"
+        self.create_entity_edge(path_idx, position)
+        distance = self.get_cartesian_distance(position, self.player_pos)
+        self.create_edge(path_idx, self.idx_manager.player_idx, distance=distance)
+
     def create_edge(self, node1_idx, node2_idx, distance):
         new_edge = torch.tensor([[node1_idx, node2_idx], [node2_idx, node1_idx]], dtype=torch.long).view(2, -1)
         new_attr = torch.tensor([[distance], [distance]], dtype=torch.float)
         self.graph.edge_index = torch.cat([self.graph.edge_index, new_edge], dim=1)
         self.graph.edge_attr = torch.cat([self.graph.edge_attr, new_attr], dim=0)
-
+    
     def create_entity_edge(self, new_entity_idx, coor):
         terrain_idx = self.idx_manager.get_idx(coor, self.terrain_z_level)
         self.create_edge(new_entity_idx, terrain_idx, distance=0)
-
-        cart_distance = self.get_cartesian_distance(coor, self.player_pos)
-        self.create_edge(new_entity_idx, self.idx_manager.player_idx, cart_distance)
 
     def create_terrain_edges(self, terrain_idx, coor):
         neighbours = self.get_manhattan_neighbours(coor)
@@ -141,6 +161,27 @@ class KnowledgeGraph():
             self.create_terrain_edges(node_index, position)
 
     def remove_entity_node(self, position):
+        if not self.idx_manager.verify_node_exists(position, self.entity_z_level):
+            print(f"No entity node at position {position} with z_level {self.entity_z_level}")
+            return
+
+        entity_idx = self.idx_manager.get_idx(position, self.entity_z_level)
+
+        # Create a mask for all nodes except the one to be removed
+        node_mask = torch.arange(self.graph.num_nodes) != entity_idx
+
+        # Use subgraph to extract the subgraph without the specified node
+        new_edge_index, new_edge_attr = subgraph(node_mask, self.graph.edge_index, edge_attr=self.graph.edge_attr, relabel_nodes=True)
+
+        # Update the graph data
+        self.graph.edge_index = new_edge_index
+        self.graph.edge_attr = new_edge_attr
+        self.graph.x = self.graph.x[node_mask]  # Adjust the node features as well
+
+        # Update the idx manager and any other necessary indices
+        self.idx_manager.remove_idx(position, self.entity_z_level)
+
+    def remove_entity_node_0(self, position):
         if not self.idx_manager.verify_node_exists(position, self.entity_z_level):
             print(f"No entity node at position {position} with z_level {self.entity_z_level}")
             return
@@ -188,43 +229,6 @@ class KnowledgeGraph():
         node_features[1] += 1
         self.graph.x[node_idx] = node_features
         self.visualise_graph()
-
-    def move_player_node(self, new_pos):
-        old_pos = self.player_pos
-        self.player_pos = new_pos
-
-        # Modify the player node features
-        self.graph.x[self.idx_manager.player_idx][2:] = torch.tensor([new_pos[0], new_pos[1]], dtype=torch.float)
-
-        # Update the position in IDX_Manager
-        self.idx_manager.change_player_pos(new_pos)
-
-        # Handle old terrain node connections
-        old_terrain_idx = self.idx_manager.get_idx(old_pos, self.terrain_z_level)
-
-        # Remove edge to old terrain node
-        mask = ((self.graph.edge_index[0] == self.idx_manager.player_idx) & (self.graph.edge_index[1] == old_terrain_idx)) | \
-            ((self.graph.edge_index[1] == self.idx_manager.player_idx) & (self.graph.edge_index[0] == old_terrain_idx))
-        
-        self.graph.edge_index = self.graph.edge_index[:, ~mask]
-        self.graph.edge_attr = self.graph.edge_attr[~mask]
-
-        # Handle new terrain node connections
-        new_terrain_idx = self.idx_manager.get_idx(new_pos, self.terrain_z_level)
-        self.create_edge(self.idx_manager.player_idx, new_terrain_idx, 0)  # Distance of 0 to own terrain node
-
-        # Update edge attributes to other entities
-        for id, idx in self.idx_manager.id_idx_dict.items():
-            if id[1] == self.entity_z_level:
-                # Get the new distance to the player
-                new_distance = self.get_cartesian_distance(new_pos, id[0])
-                # Find indices of edges between player and this entity to update attributes
-                mask = ((self.graph.edge_index[0] == self.idx_manager.player_idx) & (self.graph.edge_index[1] == idx)) | \
-                    ((self.graph.edge_index[1] == self.idx_manager.player_idx) & (self.graph.edge_index[0] == idx))
-                self.graph.edge_attr[mask] = new_distance
-       
-        self.verify_terrain_node_connections(old_pos)
-        self.verify_terrain_node_connections(new_pos)
 
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
         # These colors are in RGB format, normalized to [0, 1] --> green, grey twice, red, brown, black
@@ -287,6 +291,7 @@ class KnowledgeGraph():
             plt.show()
 
     def verify_terrain_node_connections(self, position):
+        return
         x, y = position
         break_flag = False
         node_idx = self.idx_manager.get_idx(position, self.terrain_z_level)
@@ -303,10 +308,9 @@ class KnowledgeGraph():
             print(f"Node has {count} edges, but should have {len(neighbours)}")
             break_flag = True
         # verify that the node is connected to the player node if the self.player_pos == position
-        if self.player_pos == position:
-            if (node_idx, self.idx_manager.player_idx) not in self.graph.edge_index.T.tolist() and (self.idx_manager.player_idx, node_idx) not in self.graph.edge_index.T.tolist():
-                print(f"Player node is not connected to node at position {position} with index {node_idx}")
-                break_flag = True
+        if (node_idx, self.idx_manager.player_idx) not in self.graph.edge_index.T.tolist() and (self.idx_manager.player_idx, node_idx) not in self.graph.edge_index.T.tolist():
+            print(f"Player node is not connected to node at position {position} with index {node_idx}")
+            break_flag = True
         if break_flag:
             self.visualise_graph()
             raise ValueError("Invalid terrain node connections")

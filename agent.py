@@ -63,7 +63,7 @@ class Agent:
     def agent_move(self):
         (dx, dy) = choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
         self.environment.move_entity(self.agent, dx, dy)
-        self.kg.move_player_node((self.agent.grid_x, self.agent.grid_y))
+        self.kg.recaluclate_player_edges(self.agent.grid_x, self.agent.grid_y)
 
     def rest_and_see(self):
         """ Looking at the environment is a deliberate action. """
