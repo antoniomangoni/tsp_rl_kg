@@ -100,6 +100,7 @@ class Environment:
         location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
         player = Player(location[0], location[1], self.tile_size)
         self.entity_group.add(player, layer=2)
+        # Cannot use the entity_index_grid to store the player id, as it is already used to store the woodpath id
         self.entity_index_grid[location[0], location[1]] = player.id
         return player
     

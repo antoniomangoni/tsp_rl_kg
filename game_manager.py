@@ -78,6 +78,7 @@ class GameManager:
             self.update()
             self.renderer.render_updated_tiles()
             if count > 1000:
+                print('One thousand steps reached')
                 break
             count += 1  
         pygame.quit()

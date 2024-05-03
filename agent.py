@@ -105,6 +105,7 @@ class Agent:
 
     def collect_resource(self, dx, dy):
         x, y = self.agent.grid_x + dx, self.agent.grid_y + dy
+        assert (x, y) != (self.agent.grid_x, self.agent.grid_y)
         if self.environment.within_bounds(x, y) is False:
             return
         if self.entity_id_grid[x, y] == 0:
