@@ -84,9 +84,11 @@ class Agent:
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
             return
         if self.wood >= 1:
+            print(f'Placing - Wood inventory: {self.wood}')
             self.wood -= 1
             self.environment.place_path(self.agent.grid_x, self.agent.grid_y)
             self.kg.add_entity_node((self.agent.grid_x, self.agent.grid_y))
+            
 
     def place_rock(self):
         if self.stone < 1:
@@ -123,14 +125,17 @@ class Agent:
                 if self.wood >= self.resouce_max:
                     return
                 self.wood += 1
+                # print(f'Collecting - Wood inventory: {self.wood}')
             elif isinstance(resource, MossyRock):
                 if self.stone >= self.resouce_max:
                     return
                 self.stone += 1
+                # print(f'Collecting - Stone inventory: {self.stone}')
             elif isinstance(resource, SnowyRock):
                 if self.stone >= self.resouce_max:
                     return
                 self.stone += 1
+                # print(f'Collecting - Stone inventory: {self.stone}')
             self.environment.delete_entity(resource)
             self.kg.remove_entity_node((x, y))
 

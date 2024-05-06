@@ -77,10 +77,10 @@ class GameManager:
             self.handle_keyboard()
             self.update()
             self.renderer.render_updated_tiles()
-            if count > 1000:
-                print('One thousand steps reached')
-                break
-            count += 1  
+            # if count > 1000:
+            #     print('One thousand steps reached')
+            #     break
+            # count += 1  
         pygame.quit()
         print('Game closed')
         self.environment.print_environment()

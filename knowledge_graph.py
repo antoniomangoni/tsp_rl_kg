@@ -1,4 +1,4 @@
-from graph_manager import IDX_Manager
+from graph_idx_manager import IDX_Manager
 
 import torch
 from torch_geometric.data import Data
@@ -7,11 +7,15 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 class KnowledgeGraph():
     def __init__(self, environment, vision_range, completion=1.0):
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
+
+        self.entity_terrain_edge_array = np.zeros_like(self.terrain_array)
+        self.player_entity_edge_array = np.zeros_like(self.terrain_array)
 
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
         self.entity_array[self.player_pos] = 0  # Remove the player from the entity array
@@ -132,12 +136,19 @@ class KnowledgeGraph():
                     self.add_entity_node((x, y))
 
     def add_path_node(self, position):
+        print(f"[add_path_node()] Adding path node at position {position}")
         path_idx = self.create_node(self.entity_z_level, position)
         features = self.get_node_features(position, self.entity_z_level)
+        print(f"[add_path_node()] Added path node at position {position} with index {path_idx}")
+        self.visualise_graph
         assert features[1] == 6, "Entity not a wood path"
         self.create_entity_edge(path_idx, position)
+        print(f"[add_path_node()] Created edge from path to terrain node")
+        self.visualise_graph
         distance = self.get_cartesian_distance(position, self.player_pos)
         self.create_edge(path_idx, self.idx_manager.player_idx, distance=distance)
+        print(f"[add_path_node()] Created edge from path to player node")
+        self.visualise_graph
 
     def create_edge(self, node1_idx, node2_idx, distance):
         new_edge = torch.tensor([[node1_idx, node2_idx], [node2_idx, node1_idx]], dtype=torch.long).view(2, -1)
@@ -167,42 +178,22 @@ class KnowledgeGraph():
 
         entity_idx = self.idx_manager.get_idx(position, self.entity_z_level)
 
-        # Create a mask for all nodes except the one to be removed
+        # Remove the node from the graph's node features and adjust indices
         node_mask = torch.arange(self.graph.num_nodes) != entity_idx
+        self.graph.x = self.graph.x[node_mask]
 
-        # Use subgraph to extract the subgraph without the specified node
-        new_edge_index, new_edge_attr = subgraph(node_mask, self.graph.edge_index, edge_attr=self.graph.edge_attr, relabel_nodes=True)
-
-        # Update the graph data
-        self.graph.edge_index = new_edge_index
-        self.graph.edge_attr = new_edge_attr
-        self.graph.x = self.graph.x[node_mask]  # Adjust the node features as well
-
-        # Update the idx manager and any other necessary indices
-        self.idx_manager.remove_idx(position, self.entity_z_level)
-
-    def remove_entity_node_0(self, position):
-        if not self.idx_manager.verify_node_exists(position, self.entity_z_level):
-            print(f"No entity node at position {position} with z_level {self.entity_z_level}")
-            return
-
-        entity_idx = self.idx_manager.get_idx(position, self.entity_z_level)
-
-        # Remove the node from the node features array
-        self.graph.x = torch.cat([self.graph.x[:entity_idx], self.graph.x[entity_idx+1:]], dim=0)
-        
-        # Adjust the indices in the edge index tensor before removing edges to maintain consistency
-        adjustment_mask = self.graph.edge_index > entity_idx
+        # Adjust the indices in the edge index tensor
+        adjustment_mask = self.graph.edge_index >= entity_idx
         self.graph.edge_index[adjustment_mask] -= 1
-        
-        # Create mask to find all edges connected to the removed node and remove these edges
-        mask = (self.graph.edge_index == entity_idx).any(dim=0)
-        self.graph.edge_index = self.graph.edge_index[:, ~mask]
-        self.graph.edge_attr = self.graph.edge_attr[~mask]
 
-        # Remove the index from the IDX manager
+        # Remove the edges connected to the node
+        edge_mask = (self.graph.edge_index == entity_idx).any(dim=0)
+        self.graph.edge_index = self.graph.edge_index[:, ~edge_mask]
+        self.graph.edge_attr = self.graph.edge_attr[~edge_mask]
+
+        # Update IDX Manager
         self.idx_manager.remove_idx(position, self.entity_z_level)
-        self.verify_terrain_node_connections(position)
+        # self.verify_terrain_node_connections(position)
     
     def get_distance(self, completion):
         """Calculates the effective distance for subgraph extraction."""
@@ -228,6 +219,7 @@ class KnowledgeGraph():
         # Add 1 to the terrain type to indicate land fill
         node_features[1] += 1
         self.graph.x[node_idx] = node_features
+        print(f"Landfill node at position ({x}, {y}) with index {node_idx}")
         self.visualise_graph()
 
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
@@ -291,7 +283,6 @@ class KnowledgeGraph():
             plt.show()
 
     def verify_terrain_node_connections(self, position):
-        return
         x, y = position
         break_flag = False
         node_idx = self.idx_manager.get_idx(position, self.terrain_z_level)
