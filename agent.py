@@ -63,7 +63,7 @@ class Agent:
     def agent_move(self):
         (dx, dy) = choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
         self.environment.move_entity(self.agent, dx, dy)
-        self.kg.recaluclate_player_edges(self.agent.grid_x, self.agent.grid_y)
+        self.kg.move_player_node(self.agent.grid_x, self.agent.grid_y)
 
     def rest_and_see(self):
         """ Looking at the environment is a deliberate action. """
@@ -75,7 +75,7 @@ class Agent:
                 # Skip if the node is out of bounds
                 if not self.environment.within_bounds(x, y):
                     continue
-                if not self.kg.idx_manager.verify_node_exists((x, y), self.kg.terrain_z_level):
+                if self.kg.idx_manager.get_idx((x, y), self.kg.terrain_z_level):
                     self.kg.add_terrain_node((x, y))
 
     def build_path(self):
@@ -88,7 +88,6 @@ class Agent:
             self.wood -= 1
             self.environment.place_path(self.agent.grid_x, self.agent.grid_y)
             self.kg.add_entity_node((self.agent.grid_x, self.agent.grid_y))
-            
 
     def place_rock(self):
         if self.stone < 1:

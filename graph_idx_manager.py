@@ -1,35 +1,32 @@
-class IDX_Manager:
+class Graph_Manager:
     def __init__(self):
         self.player_idx = None
-        self.idx = 0
-        self.idx_id_dict = {}
-        self.id_idx_dict = {}
-    
-    def create_idx(self, pos, z_level):
-        # print(f"[create_idx()] Creating index {self.idx} for position {pos} and z_level {z_level}")
-        self.idx_id_dict[self.idx] = (pos, z_level)
-        self.id_idx_dict[(pos, z_level)] = self.idx
-        self.idx += 1
-        return self.idx - 1
-    
-    def remove_idx(self, pos, z_level):
-        # print(f"[remove_idx()] Removing index for position {pos} and z_level {z_level}")
-        idx = self.id_idx_dict[(pos, z_level)]
-        del self.idx_id_dict[idx]
-        del self.id_idx_dict[(pos, z_level)]
+        self.node_idx = 0
+        self.node_idx_id_dict = {}
+        self.node_id_idx_dict = {}
+        self.edges = {}  # Maps edge tuples to indices
 
-    def get_idx(self, pos, z_level):
-        if self.verify_node_exists(pos, z_level):
-            return self.id_idx_dict[(pos, z_level)]
-        else:
-            raise ValueError(f"Node at position {pos} and z_level {z_level} does not exist in the graph")
+    def create_idx(self, pos, z_level):
+        node_idx = self.node_idx
+        self.node_idx_id_dict[node_idx] = (pos, z_level)
+        self.node_id_idx_dict[(pos, z_level)] = node_idx
+        self.node_idx += 1
+        return node_idx
+
+    def get_node_idx(self, pos, z_level):
+        return self.node_id_idx_dict.get((pos, z_level))
     
-    def get_pos(self, idx):
-        return self.idx_id_dict[idx][0]
+    def get_node_pos(self, node_idx):
+        return self.node_idx_id_dict.get(node_idx)[0]
+
+    def add_edges(self, node_idx1, node_idx2, edge_index):
+        """Store both directions of the edge along with their indices in the graph tensors."""
+        self.edges[(node_idx1, node_idx2)] = edge_index
+        self.edges[(node_idx2, node_idx1)] = edge_index + 1  # The next index is the reverse edge
+
+    def get_edge_indices(self, node_idx1, node_idx2):
+        """Retrieve indices for both directions of the edge."""
+        direct = self.edges.get((node_idx1, node_idx2))
+        reverse = self.edges.get((node_idx2, node_idx1))
+        return direct, reverse
     
-    def get_type(self, idx):
-        return self.idx_id_dict[idx][1]        
-    
-    def verify_node_exists(self, pos, z_level):
-        # print(f"[verify_node_exists()] Verifying node at position {pos} and z_level {z_level}")
-        return (pos, z_level) in self.id_idx_dict
