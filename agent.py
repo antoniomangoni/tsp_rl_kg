@@ -67,27 +67,31 @@ class Agent:
 
     def rest_and_see(self):
         """ Looking at the environment is a deliberate action. """
-        self.energy += 20
-        self.energy = min(self.energy_max, self.energy)
+        self.energy = min(self.energy_max, self.energy + 20)
         """ Adding a terrain node automatically adds the corresponding entity node"""
         for y in range(self.agent.grid_y - self.vision_range, self.agent.grid_y + self.vision_range + 1):
             for x in range(self.agent.grid_x - self.vision_range, self.agent.grid_x + self.vision_range + 1):
-                # Skip if the node is out of bounds
-                if not self.environment.within_bounds(x, y):
-                    continue
-                if self.kg.idx_manager.get_idx((x, y), self.kg.terrain_z_level):
-                    self.kg.add_terrain_node((x, y))
+                if self.environment.within_bounds(x, y):
+                    self.kg.discover_this_coordinate(x, y)
 
     def build_path(self):
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
             return
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
             return
+        print(f'Current inventory - Wood: {self.wood})')
+        print(f'Player position: {self.agent.grid_x, self.agent.grid_y}')
         if self.wood >= 1:
             print(f'Placing - Wood inventory: {self.wood}')
             self.wood -= 1
             self.environment.place_path(self.agent.grid_x, self.agent.grid_y)
-            self.kg.add_entity_node((self.agent.grid_x, self.agent.grid_y))
+            self.kg.build_path_node(self.agent.grid_x, self.agent.grid_y)
+            assert self.environment.entity_index_grid[self.agent.grid_x, self.agent.grid_y] == 6
+            print(self.environment.entity_index_grid[self.agent.grid_x, self.agent.grid_y])
+            print(self.environment.entity_index_grid)
+            print(f'Entity on tileis {self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].entity_on_tile}')
+            print(f'Entity index is {self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].entity_index}')
+            self.kg.visualise_graph()
 
     def place_rock(self):
         if self.stone < 1:
@@ -102,7 +106,7 @@ class Agent:
         self.stone -= 1
         # print(f'Placing - Stone inventory: {self.stone}')
         self.environment.drop_rock_in_water(self.agent.grid_x, self.agent.grid_y, place)
-        self.kg.landfill_node(self.agent.grid_x, self.agent.grid_y)
+        self.kg.elevate_terrain_node(self.agent.grid_x, self.agent.grid_y)
 
     def collect_resource(self, dx, dy):
         x, y = self.agent.grid_x + dx, self.agent.grid_y + dy
@@ -136,7 +140,7 @@ class Agent:
                 self.stone += 1
                 # print(f'Collecting - Stone inventory: {self.stone}')
             self.environment.delete_entity(resource)
-            self.kg.remove_entity_node((x, y))
+            self.kg.remove_entity_node(x, y)
 
 """
 These are not implemented as they do not fall within the scope of the project.

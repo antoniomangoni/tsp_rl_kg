@@ -1,4 +1,5 @@
 from graph_idx_manager import Graph_Manager
+from entities import WoodPath
 
 import torch
 from torch_geometric.data import Data
@@ -12,6 +13,8 @@ class KnowledgeGraph():
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
+
+        self.wood_path_id = WoodPath(0, 0, 1).id
 
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
         self.entity_array[self.player_pos] = 0  # Remove the player from the entity array
@@ -32,8 +35,6 @@ class KnowledgeGraph():
         self.init_graph_tensors()
         self.complete_graph()
         self.visualise_graph()
-
-        exit()
         
     def create_node_features(self, coor, z_level, mask=0):
         # x, y, z_level, type_id, mask
@@ -57,7 +58,9 @@ class KnowledgeGraph():
             edge_index=torch.zeros((2, num_possible_edges), dtype=torch.long),
             edge_attr=torch.zeros((num_possible_edges, edge_attr_size))
         )
-        print(f'Total possible edges: {num_possible_edges}')
+        print(f'Graph x shape: {self.graph.x.shape}')
+        print(f'Graph edge_index shape: {self.graph.edge_index.shape}')
+        print(f'Graph edge_attr shape: {self.graph.edge_attr.shape}')
 
     def complete_graph(self):
         self.add_nodes()
@@ -67,35 +70,106 @@ class KnowledgeGraph():
     def is_node_active(self, idx):
         if self.graph.x[idx][4] == 1:
             return True
+        else:
+            return False
+            print(f"Node {idx} is not active (1), it is {self.graph.x[idx][4]}")
     
-    def is_edge_active(self, idx1, idx2):
+    def should_edge_be_active(self, idx1, idx2):
         if self.is_node_active(idx1) and self.is_node_active(idx2):
             return True
+    
+    def discover_this_coordinate(self, x, y):
+        if self.discovered_coordinates[x, y] == 1:
+            return
+        self.discovered_coordinates[x, y] = 1
+        self.activate_node_and_its_edges(self.graph_manager.get_node_idx((x, y), self.terrain_z_level))
+        if self.entity_array[x, y] > 1:
+            self.activate_node_and_its_edges(self.graph_manager.get_node_idx((x, y), self.entity_z_level))
         
-    def activate_edge(self, idx1, idx2):
-        edge_idx = self.graph_manager.get_edge_indices((idx1, idx2))
-        self.graph.edge_attr[edge_idx][1] = 1
+        if not self.is_node_active(self.graph_manager.get_node_idx((x, y), self.terrain_z_level)):
+            print(f"Node at {x}, {y} is not active")
 
-    def recalculate_edge_distances_to_player(self):
-        player_idx = self.graph_manager.player_idx
-        for edge in self.graph_manager.edges:
-            if player_idx in edge:
-                idx1, idx2 = edge
-                edge_idx = self.graph_manager.get_edge_indices(idx1, idx2)
-                x1, y1 = self.graph_manager.get_node_pos(idx1)
-                x2, y2 = self.graph_manager.get_node_pos(idx2)
-                distance = self.get_cartesian_distance((x1, y1), (x2, y2))
-                self.graph.edge_attr[edge_idx][0] = distance
+        # self.visualise_graph()
 
-    def activate_node(self, idx):
-        # x, y, z_level, type_id, mask
-        self.graph.x[idx][4] == 1
+    def activate_node_and_its_edges(self, idx):
+        self.set_node_mask_1(idx)
         # activate the nodes edges if the corresponding node is activated
         for edge in self.graph_manager.edges:
             if idx in edge:
-                self.is_node_active(edge[0]) and self.is_node_active(edge[1])
-                # Set second element of edge_attr to 1 to indicate that the edge is active
-                self.graph.edge_attr[self.graph_manager.get_edge_index(edge)][1] = 1
+                self.activate_edge(edge[0], edge[1])
+
+    def deactivate_node_and_its_edges(self, idx):
+        self.set_node_mask_0(idx)
+        for edge in self.graph_manager.edges:
+            if idx in edge:
+                edge_idx_1, edge_idx_2 = self.graph_manager.get_edge_indices(edge[0], edge[1])
+                self.graph.edge_attr[edge_idx_1][1] = 0
+                self.graph.edge_attr[edge_idx_2][1] = 0
+
+    def set_new_node_type(self, idx, new_type):
+        self.graph.x[idx][3] = new_type
+
+    def set_node_mask_1(self, idx):
+        # x, y, z_level, type_id, mask
+        self.graph.x[idx][4] = 1
+
+    def set_node_mask_0(self, idx):
+        self.graph.x[idx][4] = 0
+
+    def activate_edge(self, idx1, idx2):
+        edge_idx_1, edge_idx_2 = self.graph_manager.get_edge_indices(idx1, idx2)
+        self.graph.edge_attr[edge_idx_1][1] = 1
+        self.graph.edge_attr[edge_idx_2][1] = 1
+
+    def build_path_node(self, x, y):
+        # self.entity_array[x, y] = self.wood_path_id
+        assert self.entity_array[x, y] == 6, "Entity type is not 6"
+        node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
+        self.set_new_node_type(node_idx, self.wood_path_id)
+        self.activate_node_and_its_edges(node_idx)
+        self.check_entites_active()
+
+    def elevate_terrain_node(self, x, y):
+        self.terrain_array[x, y] += 1
+        node_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
+        self.set_new_node_type(node_idx, self.terrain_array[x, y])
+
+    def remove_entity_node(self, x, y):
+        self.entity_array[x, y] = 0
+        node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
+        self.set_new_node_type(node_idx, 0)
+        self.deactivate_node_and_its_edges(node_idx)
+
+    def move_player_node(self, x, y):
+        self.player_pos = (x, y)
+        self.discover_this_coordinate(x, y)
+        # change player node features
+        self.graph.x[self.graph_manager.player_idx][0] = x
+        self.graph.x[self.graph_manager.player_idx][1] = y
+        # recalculate edge distances to player
+        self.recalculate_edge_distances_to_player()
+
+    def recalculate_edge_distances_to_player(self):
+        height, width = self.entity_array.shape
+        for x in range(width):
+            for y in range(height):
+                if self.entity_array[x, y] > 1 and self.discovered_coordinates[x, y] == 1:
+                    entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
+                    if entity_idx is not None and self.is_node_active(entity_idx):
+                        player_idx = self.graph_manager.player_idx
+                        entity_pos = (x, y)
+                        player_pos = self.player_pos
+                        distance = self.get_cartesian_distance(entity_pos, player_pos)
+                        edge_indices = self.graph_manager.get_edge_indices(entity_idx, player_idx)
+                        if edge_indices:
+                            edge_idx_1, edge_idx_2 = edge_indices
+                            self.graph.edge_attr[edge_idx_1][0] = distance
+                            self.graph.edge_attr[edge_idx_2][0] = distance
+                        else:
+                            print(f"No edge indices found for nodes {entity_idx} and {player_idx}")
+                    else:
+                        print(f"Entity node {entity_idx} at position {(x, y)} is not active or not found")
+
 
     def create_node(self, coordinates, z_level, mask=0):
         """ Activates a node by setting its features. """
@@ -112,10 +186,10 @@ class KnowledgeGraph():
         for y in range(self.environment.height):
             for x in range(self.environment.width):
                 # Add terrain nodes
-                self.create_node((x, y), self.terrain_z_level, mask=self.discovered_coordinates[y, x])
+                self.create_node((x, y), self.terrain_z_level, mask=self.discovered_coordinates[x, y])
                 # If an entity is present at the location check if it is discovered
                 if self.entity_array[x, y] > 1: # 0 is empty and 1 is fish, which is not implemented
-                    self.create_node((x, y), self.entity_z_level, mask=self.discovered_coordinates[y, x])
+                    self.create_node((x, y), self.entity_z_level, mask=self.discovered_coordinates[x, y])
                 else:
                     # If no entity is present, the node should be masked out independently if the terrain is discovered
                     self.create_node((x, y), self.entity_z_level, mask=0)
@@ -147,8 +221,8 @@ class KnowledgeGraph():
 
     def create_terrain_edges(self):
         height, width = self.environment.height, self.environment.width
-        for y in range(height):
-            for x in range(width):
+        for x in range(width):
+            for y in range(height):
                 current_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
                 # Check and connect the right and bottom neighbors to create undirected edges
                 if x < width - 1:  # Right neighbour
@@ -172,10 +246,10 @@ class KnowledgeGraph():
 
     def calculate_discovered_coordinates(self):
         discovered = np.zeros_like(self.terrain_array)
-        for y in range(self.player_pos[1] - self.distance, self.player_pos[1] + self.distance + 1):
-            for x in range(self.player_pos[0] - self.distance, self.player_pos[0] + self.distance + 1):
+        for x in range(self.player_pos[0] - self.distance, self.player_pos[0] + self.distance + 1):
+            for y in range(self.player_pos[1] - self.distance, self.player_pos[1] + self.distance + 1):
                 if self.environment.within_bounds(x, y):
-                    discovered[y, x] = 1
+                    discovered[x, y] = 1
         return discovered
 
     def compute_total_possible_edges(self):
@@ -204,6 +278,19 @@ class KnowledgeGraph():
                 neighbours.append((new_x, new_y))
         return neighbours
     
+    def check_entites_active(self):
+        flag = False
+        for y in range(self.environment.height):
+            for x in range(self.environment.width):
+                if self.entity_array[x, y] > 1 and self.discovered_coordinates[x, y] == 1:
+                    entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
+                    if not self.is_node_active(entity_idx):
+                        print(f"Entity node {entity_idx} at position {(x, y)} is not active")
+                        flag = True
+
+        if flag:
+            print(self.entity_array)
+    
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
         # Convert to undirected graph for visualization
         G = to_networkx(self.graph, to_undirected=True)
@@ -228,7 +315,7 @@ class KnowledgeGraph():
             ax = fig.add_subplot(111, projection='3d')
             node_xyz = np.array(node_xyz)
             # invert x-axis to match the game world
-            # ax.invert_xaxis()
+            ax.invert_xaxis()
             ax.scatter(*node_xyz.T, s=node_size, color=node_colors, edgecolor='w', depthshade=True)
             # Plot edges
             for edge in G.edges():
