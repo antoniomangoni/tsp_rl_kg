@@ -1,10 +1,8 @@
 from graph_idx_manager import Graph_Manager
-from entities import WoodPath
 
 import torch
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx
-import networkx as nx
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -13,8 +11,6 @@ class KnowledgeGraph():
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
-
-        self.wood_path_id = WoodPath(0, 0, 1).id
 
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
         self.entity_array[self.player_pos] = 0  # Remove the player from the entity array
@@ -122,10 +118,9 @@ class KnowledgeGraph():
         self.graph.edge_attr[edge_idx_2][1] = 1
 
     def build_path_node(self, x, y):
-        # self.entity_array[x, y] = self.wood_path_id
         assert self.entity_array[x, y] == 6, "Entity type is not 6"
         node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-        self.set_new_node_type(node_idx, self.wood_path_id)
+        self.set_new_node_type(node_idx, self.entity_array[x, y])
         self.activate_node_and_its_edges(node_idx)
         self.check_entites_active()
 
