@@ -20,7 +20,7 @@ class GameManager:
         self.agent = None
         self.target_manager = None
 
-        self.agent_vision_range = 0
+        self.agent_vision_range = 2
 
         self.renderer = None
         self.running = True

@@ -79,18 +79,18 @@ class Agent:
             return
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
             return
-        print(f'Current inventory - Wood: {self.wood})')
-        print(f'Player position: {self.agent.grid_x, self.agent.grid_y}')
+        # print(f'Current inventory - Wood: {self.wood})')
+        # print(f'Player position: {self.agent.grid_x, self.agent.grid_y}')
         if self.wood >= 1:
-            print(f'Placing - Wood inventory: {self.wood}')
+            # print(f'Placing - Wood inventory: {self.wood}')
             self.wood -= 1
             self.environment.place_path(self.agent.grid_x, self.agent.grid_y)
             self.kg.build_path_node(self.agent.grid_x, self.agent.grid_y)
-            assert self.environment.entity_index_grid[self.agent.grid_x, self.agent.grid_y] == 6
-            print(self.environment.entity_index_grid[self.agent.grid_x, self.agent.grid_y])
-            print(self.environment.entity_index_grid)
-            print(f'Entity on tileis {self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].entity_on_tile}')
-            print(f'Entity index is {self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].entity_index}')
+            # assert self.environment.entity_index_grid[self.agent.grid_x, self.agent.grid_y] == 6
+            # print(self.environment.entity_index_grid[self.agent.grid_x, self.agent.grid_y])
+            # print(self.environment.entity_index_grid)
+            # print(f'Entity on tileis {self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].entity_on_tile}')
+            # print(f'Entity index is {self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].entity_index}')
             self.kg.visualise_graph()
 
     def place_rock(self):
