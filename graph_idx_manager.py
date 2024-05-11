@@ -21,18 +21,26 @@ class Graph_Manager:
         return self.nodeIdx_id_dict.get(node_idx)[0]
     
     def create_edge_idx(self, node_idx1, node_idx2):
+        if self.current_edge_idx >= self.max_edges:
+            print("Max edges reached.")
+            return
         direct_edge_idx = self.current_edge_idx
         reverse_edge_idx = self.current_edge_idx + 1
-        self.store_edge_indices(node_idx1, node_idx2, direct_edge_idx)
+        self.store_edge_indices(node_idx1, node_idx2, direct_edge_idx, reverse_edge_idx)
         self.current_edge_idx += 2
-        
-    
+        return direct_edge_idx, reverse_edge_idx
 
-
-    def store_edge_indices(self, node_idx1, node_idx2, edge_index):
+    def store_edge_indices(self, node_idx1, node_idx2, direct_edge_idx, reverse_edge_idx):
         """Store both directions of the edge along with their indices in the graph tensors."""
-        self.nodeTuples_edgeIdx_dict[(node_idx1, node_idx2)] = edge_index
-        self.nodeTuples_edgeIdx_dict[(node_idx2, node_idx1)] = edge_index + 1  # The next index is the reverse edge
+        if (node_idx1, node_idx2) in self.nodeTuples_edgeIdx_dict:
+            return
+        if (node_idx2, node_idx1) in self.nodeTuples_edgeIdx_dict:
+            return
+        if len(self.nodeTuples_edgeIdx_dict) >= self.max_edges:
+            print("Max edges reached.")
+            return
+        self.nodeTuples_edgeIdx_dict[(node_idx1, node_idx2)] = direct_edge_idx
+        self.nodeTuples_edgeIdx_dict[(node_idx2, node_idx1)] = reverse_edge_idx 
 
     def retrieve_edge_indices(self, node_idx1, node_idx2):
         """Retrieve indices for both directions of the edge."""
@@ -45,3 +53,8 @@ class Graph_Manager:
         edges = [edge for edge in self.nodeTuples_edgeIdx_dict if node_idx in edge]
         return edges
     
+    def set_max_nodes(self, n):
+        self.max_nodes = n
+
+    def set_max_edges(self, n):
+        self.max_edges = n

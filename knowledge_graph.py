@@ -26,7 +26,7 @@ class KnowledgeGraph():
         self.terrain_z_level = 0
         self.entity_z_level = 1
         self.player_z_level = 2
-        self.current_edge_index = 0  # Initialize the edge index tracker
+        # self.current_edge_index = 0  # Initialize the edge index tracker
 
         self.init_graph_tensors()
         self.complete_graph()
@@ -50,7 +50,10 @@ class KnowledgeGraph():
 
     def init_graph_tensors(self):
         num_possible_nodes = self.environment.width * self.environment.height * 2 + 1  # 2 z-levels and a player node
-        num_possible_edges = self.compute_total_possible_edges()
+        self.graph_manager.set_max_nodes(num_possible_nodes)
+        num_possible_edges, num_terrain_edges, num_entity_edges = self.compute_total_possible_edges()
+        self.graph_manager.set_max_edges(num_possible_edges)
+        print(f"Total possible edges: {num_possible_edges} - of which Terrain edges: {num_terrain_edges}, Entity edges: {num_entity_edges}")
         feature_size = 5 # x, y, z_level, type_id, mask
         edge_attr_size = 2 # distance, mask
         self.graph = Data(
@@ -58,30 +61,29 @@ class KnowledgeGraph():
             edge_index=torch.full((2, num_possible_edges), -1, dtype=torch.long),
             edge_attr=torch.full((num_possible_edges, edge_attr_size), -1.0)
         )
-        print(f'Graph x shape: {self.graph.x.shape}')
-        print(f'Graph edge_index shape: {self.graph.edge_index.shape}')
-        print(f'Graph edge_attr shape: {self.graph.edge_attr.shape}')
+
+        # print(f'Graph x shape: {self.graph.x.shape}')
+        # print(f'Graph edge_index shape: {self.graph.edge_index.shape}')
+        # print(f'Graph edge_attr shape: {self.graph.edge_attr.shape}')
 
     def complete_graph(self):
         self.add_nodes()
         self.create_terrain_edges()
-        # print number of non-zero edges
-        non_zero_edges = torch.sum(self.graph.edge_attr[:, 1]).item()
-        num_edges = self.graph.edge_index.shape[1]
-        terrain_edges = 2 * ((self.environment.width * (self.environment.height - 1)) + (self.environment.height * (self.environment.width - 1)))
-        # assert non_zero_edges == terrain_edges, f"Terrain edges are not equal to non-zero edges: {non_zero_edges} != {terrain_edges}"	
-        self.add_entity_edges()
-        non_zero_edges_ = torch.sum(self.graph.edge_attr[:, 1]).item()
-        # print only the entity edges
-        # assert non_zero_edges_ == len(self.graph.edge_index[0]) - non_zero_edges, f"Entity edges are not equal to non-zero edges: {non_zero_edges_} != {len(self.graph.edge_index[0]) - non_zero_edges}, {self.graph.edge_index}, "
-                
-        print(f"Graph completed with {self.current_edge_index} edges")
-        print(f"Graph x shape: {self.graph.x.shape}")
-        print(f"Graph edge_index shape: {self.graph.edge_index.shape}") 
-        print(f"Graph edge_attr shape: {self.graph.edge_attr.shape}")
-        print(f"Graph edge_index: {self.graph.edge_index}")
+        self.add_entity_edges()  
         self.verify_graph_integrity()
-        exit()
+
+    def count_entity_nodes(self):
+        activated_entities = 0
+        deactivated_entities = 0
+        for node in self.graph.x:
+            if node[2] == self.entity_z_level:
+                if node[4] == 1:
+                    activated_entities += 1
+                else:
+                    deactivated_entities += 1
+        print(f"Activated entities: {activated_entities}, Deactivated entities: {deactivated_entities}")
+        assert activated_entities + deactivated_entities == self.entity_array.size, "Entity nodes do not match the entity array"
+        return activated_entities, deactivated_entities
 
     def verify_graph_integrity(self):
         # Verify all nodes are initialized
@@ -91,9 +93,6 @@ class KnowledgeGraph():
         assert torch.all(self.graph.edge_index >= 0), "Some edges are uninitialized."
         assert torch.all(self.graph.edge_attr[:, 1] >= 0), "Some edge attributes are uninitialized."
         
-        print("Graph integrity verified: All nodes and edges are properly initialized.")
-
-
     def is_node_active(self, idx):
         if self.graph.x[idx][4] == 1:
             return True
@@ -134,18 +133,18 @@ class KnowledgeGraph():
                 if self.graph.edge_attr[edge_idx_2][1] == 0:
                     print(f"Edge {edge_idx_2} is not active")
 
-    def deactivate_node_and_its_edges(self, idx):
-        self.set_node_mask_0(idx)
-        edge_indices = self.graph_manager.retrieve_edges_from_node(idx)
+    def deactivate_node_and_its_edges(self, node_idx):
+        self.set_node_mask_0(node_idx)
+        edge_indices = self.graph_manager.retrieve_edges_from_node(node_idx)
+        print(f'Edges in graph: {self.graph.edge_index[0]}')
+        print(f'Edges in graph: {self.graph.edge_attr[0]}')
+
+        print(f"Edges for node {node_idx}: {edge_indices}")
         for edge_idx in edge_indices:
-            try:
-                self.graph.edge_attr[edge_idx][1] = 0
-            except:
-                print(f"Edge index {edge_idx} not found for node {idx}")
-                print(f"Edges of node {idx}: {edge_indices}")
-                print(f"Stored node indices: {self.graph_manager.nodeTuples_edgeIdx_dict}")
-                print(f"Graph edge indices: {self.graph.edge_index}")
-                exit()
+            print(f"Deactivating edge {edge_idx}")
+            self.graph.edge_attr[edge_idx][1] = 0
+
+        print(f"Lenght of edge indices: {len(edge_indices)}")
 
     def set_new_node_type(self, idx, new_type):
         self.graph.x[idx][3] = new_type
@@ -232,10 +231,10 @@ class KnowledgeGraph():
                 # If an entity is present at the location check if it is discovered
                 self.create_node((x, y), self.entity_z_level, mask=self.discovered_coordinates[x, y])
     
-    def create_edge(self, idx1, coor_1, idx2, coor_2, distance=None, active=None):
+    def create_edge(self, node_idx1, coor_1, node_idx2, coor_2, distance=None, active=None):
         """Create an edge ensuring undirected consistency."""
         if active == None:
-            if self.is_node_active(idx1) and self.is_node_active(idx2):
+            if self.is_node_active(node_idx1) and self.is_node_active(node_idx2):
                 active = True
             else:
                 active = False
@@ -243,15 +242,14 @@ class KnowledgeGraph():
         if distance is None:
             distance = self.get_cartesian_distance(coor_1, coor_2)
         
-        if self.current_edge_index < self.graph.edge_index.shape[1] - 1:  # Ensure there's room for both edges
-            self.graph.edge_index[:, self.current_edge_index] = torch.tensor([idx1, idx2], dtype=torch.long)
-            self.graph.edge_index[:, self.current_edge_index + 1] = torch.tensor([idx2, idx1], dtype=torch.long)
-            self.graph.edge_attr[self.current_edge_index] = torch.tensor([distance, active], dtype=torch.float)
-            self.graph.edge_attr[self.current_edge_index + 1] = torch.tensor([distance, active], dtype=torch.float)
-            self.graph_manager.store_edge_indices(idx1, idx2, self.current_edge_index)
-            self.current_edge_index += 2  # Increment by 2 to account for both directions
-        else:
-            print(f"Exceeded edge array bounds at index {self.current_edge_index}")
+        direct_edge_idx, reverse_edge_idx = self.graph_manager.create_edge_idx(node_idx1, node_idx2)
+        self.add_edge_to_graph(node_idx1, node_idx2, distance, active, direct_edge_idx, reverse_edge_idx)
+
+    def add_edge_to_graph(self, idx1, idx2, distance, active, direct_edge_idx, reverse_edge_idx):
+        self.graph.edge_index[:, direct_edge_idx] = torch.tensor([idx1, idx2], dtype=torch.long)
+        self.graph.edge_index[:, reverse_edge_idx] = torch.tensor([idx2, idx1], dtype=torch.long)
+        self.graph.edge_attr[direct_edge_idx] = torch.tensor([distance, active], dtype=torch.float)
+        self.graph.edge_attr[reverse_edge_idx] = torch.tensor([distance, active], dtype=torch.float)
 
     def create_terrain_edges(self):
         edge_count = 0
@@ -270,14 +268,12 @@ class KnowledgeGraph():
     def add_entity_edges(self):
         for x in range(self.environment.width):
             for y in range(self.environment.height):
-                if self.entity_array[x, y] > 1:
-                    entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-                    terrain_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
-                    player_idx = self.graph_manager.player_idx
-                    # Connect to the terrain node
-                    self.create_edge(entity_idx, (x, y), terrain_idx, (x, y), 0)
-                    # Connect to the player node
-                    self.create_edge(entity_idx, (x, y), player_idx, self.player_pos)
+                entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
+                terrain_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
+                # Connect to the terrain node
+                self.create_edge(entity_idx, (x, y), terrain_idx, (x, y), 0)
+                # Connect to the player node
+                self.create_edge(entity_idx, (x, y), self.graph_manager.player_idx, self.player_pos)
 
     def calculate_discovered_coordinates(self):
         discovered = np.full_like(self.terrain_array, False, dtype=bool)
@@ -289,12 +285,14 @@ class KnowledgeGraph():
 
     def compute_total_possible_edges(self):
         # Intra-terrain edges   
-        edges = 2 * ((self.environment.width * (self.environment.height - 1)) + (self.environment.height * (self.environment.width - 1)))
+        terrain_edges = 2 * ((self.environment.width * (self.environment.height - 1)) + (self.environment.height * (self.environment.width - 1)))
         # Entity edges to terrain nodes and player node
+        entity_edges = 0
         for _ in range(self.environment.width):
             for _ in range(self.environment.height):
-                edges += 4 # 2 edges to terrain nodes and 2 to the player node
-        return edges
+                entity_edges += 4 # 2 edges to terrain nodes and 2 to the player node
+        
+        return terrain_edges + entity_edges, terrain_edges, entity_edges
 
     def get_graph_distance(self, completion):
         """Calculates the effective distance for subgraph extraction."""
