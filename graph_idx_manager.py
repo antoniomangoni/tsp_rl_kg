@@ -32,13 +32,13 @@ class Graph_Manager:
 
     def store_edge_indices(self, node_idx1, node_idx2, direct_edge_idx, reverse_edge_idx):
         """Store both directions of the edge along with their indices in the graph tensors."""
-        if (node_idx1, node_idx2) in self.nodeTuples_edgeIdx_dict:
-            return
-        if (node_idx2, node_idx1) in self.nodeTuples_edgeIdx_dict:
-            return
-        if len(self.nodeTuples_edgeIdx_dict) >= self.max_edges:
-            print("Max edges reached.")
-            return
+        # if (node_idx1, node_idx2) in self.nodeTuples_edgeIdx_dict:
+        #     return
+        # if (node_idx2, node_idx1) in self.nodeTuples_edgeIdx_dict:
+        #     return
+        # if len(self.nodeTuples_edgeIdx_dict) >= self.max_edges:
+        #     print("Max edges reached.")
+        #     return
         self.nodeTuples_edgeIdx_dict[(node_idx1, node_idx2)] = direct_edge_idx
         self.nodeTuples_edgeIdx_dict[(node_idx2, node_idx1)] = reverse_edge_idx 
 
@@ -48,10 +48,16 @@ class Graph_Manager:
         reverse = self.nodeTuples_edgeIdx_dict.get((node_idx2, node_idx1))
         return direct, reverse
     
-    def retrieve_edges_from_node(self, node_idx):
+    def retrieve_edge_node_pairs_from_node(self, node_idx):
+        """Retrieve all node pairs that the node is included in."""
+        node_pairs = [edge for edge in self.nodeTuples_edgeIdx_dict if node_idx in edge]
+        return node_pairs
+    
+    def retrieve_edge_indicies_from_node(self, node_idx):
         """Retrieve all edges from a node, including both incoming and outgoing edges."""
-        edges = [edge for edge in self.nodeTuples_edgeIdx_dict if node_idx in edge]
-        return edges
+        node_pairs = self.retrieve_edge_node_pairs_from_node(node_idx)
+        edge_indices = [self.nodeTuples_edgeIdx_dict.get(pair) for pair in node_pairs]
+        return edge_indices
     
     def set_max_nodes(self, n):
         self.max_nodes = n

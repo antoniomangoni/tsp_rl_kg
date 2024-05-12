@@ -135,7 +135,7 @@ class KnowledgeGraph():
 
     def deactivate_node_and_its_edges(self, node_idx):
         self.set_node_mask_0(node_idx)
-        edge_indices = self.graph_manager.retrieve_edges_from_node(node_idx)
+        edge_indices = self.graph_manager.retrieve_edge_indicies_from_node(node_idx)
         print(f'Edges in graph: {self.graph.edge_index[0]}')
         print(f'Edges in graph: {self.graph.edge_attr[0]}')
 
@@ -245,6 +245,34 @@ class KnowledgeGraph():
         direct_edge_idx, reverse_edge_idx = self.graph_manager.create_edge_idx(node_idx1, node_idx2)
         self.add_edge_to_graph(node_idx1, node_idx2, distance, active, direct_edge_idx, reverse_edge_idx)
 
+        print(f"Edge idx: {direct_edge_idx}, from node {node_idx1} to node {node_idx2}")
+        print(f"Edge idx: {reverse_edge_idx}, from node {node_idx2} to node {node_idx1}")
+
+        edges_of_node1 = self.graph_manager.retrieve_edge_indicies_from_node(node_idx1)
+        edges_of_node2 = self.graph_manager.retrieve_edge_indicies_from_node(node_idx2)
+
+        print(f"Edges of node {node_idx1}: {edges_of_node1}")
+        print(f"Edges of node {node_idx2}: {edges_of_node2}")
+
+        print(self.graph_manager.nodeTuples_edgeIdx_dict.get(edges_of_node1[0]))
+
+        # verify that the edge_idx is in the graph
+        assert direct_edge_idx in edges_of_node1, f"Edge {direct_edge_idx} not found in node {node_idx1}"
+        assert reverse_edge_idx in edges_of_node2, f"Edge {reverse_edge_idx} not found in node {node_idx2}"
+
+        for edge in edges_of_node1:
+            # verify self.graph.edge_attr[edge] exists
+            if self.graph.edge_attr[edge] is None:
+                print(f"Edge {edge} does not exist in the graph")
+            if self.graph.edge_index[0][edge] == -1:
+                print(f"Edge {edge} does not exist in the graph")
+        for edge in edges_of_node2:
+            # verify self.graph.edge_attr[edge] exists
+            if self.graph.edge_attr[edge] is None:
+                print(f"Edge {edge} does not exist in the graph")
+            if self.graph.edge_index[0][edge] == -1:
+                print(f"Edge {edge} does not exist in the graph")
+
     def add_edge_to_graph(self, idx1, idx2, distance, active, direct_edge_idx, reverse_edge_idx):
         self.graph.edge_index[:, direct_edge_idx] = torch.tensor([idx1, idx2], dtype=torch.long)
         self.graph.edge_index[:, reverse_edge_idx] = torch.tensor([idx2, idx1], dtype=torch.long)
@@ -252,7 +280,6 @@ class KnowledgeGraph():
         self.graph.edge_attr[reverse_edge_idx] = torch.tensor([distance, active], dtype=torch.float)
 
     def create_terrain_edges(self):
-        edge_count = 0
         height, width = self.environment.height, self.environment.width
         for x in range(width):
             for y in range(height):
