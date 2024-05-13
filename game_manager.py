@@ -44,22 +44,20 @@ class GameManager:
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
-        self.kg_class = KnowledgeGraph(self.environment, self.agent_vision_range, self.kg_completness)
-        self.knowledge_graph = self.kg_class.graph
-        self.agent_controler = Agent(self.environment, self.agent_vision_range, self.kg_class)
+
+        self.agent_controler = Agent(self.environment, self.agent_vision_range)
         self.agent = self.agent_controler.agent
         
         self.target_manager = Target_Manager(self.environment)
+
+    def init_knowledge_graph(self):
+        self.kg_class = KnowledgeGraph(self.environment, self.agent_vision_range, self.kg_completness)
+        self.agent_controler.get_kg(self.kg_class)
 
     def initialise_rendering(self):
         self.renderer = Renderer(self.environment, self.agent_controler)
         self.screen = pygame.display.set_mode((self.map_size * self.tile_size, self.map_size * self.tile_size))
         self.renderer.init_render()
-
-    def handle_keyboard(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
 
     def update(self):
         self.agent_controler.agent_action(8)
@@ -69,19 +67,18 @@ class GameManager:
         pygame.display.flip()
 
     def run(self):
-        count = 0
+        self.init_knowledge_graph()
         self.initialise_rendering()
         while self.running:
-            # pygame.time.delay(100)
-            #  exit()
-            self.handle_keyboard()
             self.update()
             self.renderer.render_updated_tiles()
-            # if count > 1000:
-            #     print('One thousand steps reached')
-            #     break
-            # count += 1  
+
         pygame.quit()
         print('Game closed')
         self.environment.print_environment()
         self.kg_class.visualise_graph()
+
+    def handle_keyboard(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False

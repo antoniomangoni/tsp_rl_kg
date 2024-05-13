@@ -1,20 +1,19 @@
 from random import choice
-import pygame
-import numpy as np
+
 
 from environment import Environment
 from entities import Fish, Tree, MossyRock, SnowyRock, Outpost, WoodPath
 from terrains import DeepWater, Water
+from knowledge_graph import KnowledgeGraph as KG
 # from agent_model import AgentModel
-from knowledge_graph import KnowledgeGraph
 
 
 class Agent:
-    def __init__(self, environment : Environment, agent_vision_range : int, kg : KnowledgeGraph):
+    def __init__(self, environment : Environment, agent_vision_range : int):
         self.environment = environment
         self.terrain_id_grid = self.environment.terrain_index_grid
         self.entity_id_grid = self.environment.entity_index_grid
-        self.kg = kg
+        self.kg = None
         self.agent = self.environment.player
 
         self.running = True
@@ -31,6 +30,9 @@ class Agent:
         self.stone = 0
         self.fish = 0
         self.water = 0
+
+    def get_kg(self, kg : KG):
+        self.kg = kg
 
     def agent_step(self):
         self.energy -= self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].energy_requirement

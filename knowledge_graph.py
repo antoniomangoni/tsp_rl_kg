@@ -26,11 +26,10 @@ class KnowledgeGraph():
         self.terrain_z_level = 0
         self.entity_z_level = 1
         self.player_z_level = 2
-        # self.current_edge_index = 0  # Initialize the edge index tracker
 
         self.init_graph_tensors()
         self.complete_graph()
-        self.visualise_graph()
+        # self.visualise_graph()
 
     def create_node(self, coordinates, z_level, mask=0):
         x, y, z_level, type_id, mask = self.create_node_features(coordinates, z_level, mask)
@@ -343,8 +342,7 @@ class KnowledgeGraph():
         # self.check_path_nodes()
         # Convert to undirected graph for visualization
         G = to_networkx(self.graph, to_undirected=True)
-        # print("[visualise_graph()] The size of the graph is: ", self.graph.num_nodes)
-        # print("[visualise_graph()] The size of the networkx graph is: ", len(G.nodes))
+
         # Use a 2D spring layout, as z-coordinates are manually assigned
         pos = {} # nx.spring_layout(G, seed=42)  # 2D layout
         node_xyz = []

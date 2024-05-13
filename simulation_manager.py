@@ -3,16 +3,18 @@ import matplotlib.pyplot as plt
 from game_manager import GameManager
 
 class SimulationManager:
-    def __init__(self, number_of_environments=500, number_of_curricula=60):
+    def __init__(self, number_of_environments=500, percentage_of_curricula=0.5):
         self.game_managers = []
         self.curriculum_indices = []
         self.create_games(number_of_environments)
+        number_of_curricula = min(int(number_of_environments * percentage_of_curricula), number_of_environments)
+        number_of_curricula = max(1, number_of_curricula)
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
         self.plot_curriculum(step_size)
 
     def create_games(self, number_of_games):
         for _ in range(number_of_games):
-            game_manager = GameManager(map_size=32, tile_size=6)
+            game_manager = GameManager(map_pixel_size=32, screen_size=800, kg_completness=1)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 
