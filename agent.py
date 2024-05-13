@@ -42,56 +42,66 @@ class Agent:
             self.agent_action(self.agent_model.predict(self.environment.terrain_object_grid, self.agent.grid_x, self.agent.grid_y))
 
     def agent_action(self, action):
-        action = choice(range(8))
+        action = choice(range(11))
         if action == 0:
-            self.agent_move()
+            # Left
+            self.move_agent(-1, 0)
         elif action == 1:
-            self.rest_and_see()
+            # Right
+            self.move_agent(1, 0)
         elif action == 2:
-            self.build_path()
+            # Up
+            self.move_agent(0, 1)
         elif action == 3:
-            self.place_rock()
+            # Down
+            self.move_agent(0, -1)
         elif action == 4:
-            self.collect_resource(0, 1)
+            self.scout()
         elif action == 5:
-            self.collect_resource(0, -1)
+            self.build_path()
         elif action == 6:
-            self.collect_resource(1, 0)
+            self.place_rock()
         elif action == 7:
+            self.collect_resource(0, 1)
+        elif action == 8:
+            self.collect_resource(0, -1)
+        elif action == 9:
+            self.collect_resource(1, 0)
+        elif action == 10:
             self.collect_resource(-1, 0)
 
-    def agent_move(self):
-        (dx, dy) = choice([(0, 1), (0, -1), (1, 0), (-1, 0)])
+    def move_agent(self, dx, dy):
         self.environment.move_entity(self.agent, dx, dy)
         self.kg.move_player_node(self.agent.grid_x, self.agent.grid_y)
 
-    def rest_and_see(self):
+    def scout(self):
         """ Looking at the environment is a deliberate action. """
         self.energy = min(self.energy_max, self.energy + 20)
         """ Adding a terrain node automatically adds the corresponding entity node"""
-        for y in range(self.agent.grid_y - self.vision_range, self.agent.grid_y + self.vision_range + 1):
-            for x in range(self.agent.grid_x - self.vision_range, self.agent.grid_x + self.vision_range + 1):
+
+        discovered_now = 0
+        vision = self.vision_range * 2
+        
+        for y in range(self.agent.grid_y - vision, self.agent.grid_y + vision + 1):
+            for x in range(self.agent.grid_x - vision, self.agent.grid_x + vision + 1):
                 if self.environment.within_bounds(x, y):
-                    self.kg.discover_this_coordinate(x, y)
+                    boo = self.kg.discover_this_coordinate(x, y)
+                    if boo:
+                        discovered_now += 1
+
+        return discovered_now
 
     def build_path(self):
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
             return
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
             return
-        # print(f'Current inventory - Wood: {self.wood})')
-        # print(f'Player position: {self.agent.grid_x, self.agent.grid_y}')
         if self.wood >= 1:
             # print(f'Placing - Wood inventory: {self.wood}')
             self.wood -= 1
             self.environment.place_path(self.agent.grid_x, self.agent.grid_y)
             self.kg.build_path_node(self.agent.grid_x, self.agent.grid_y)
-            # assert self.environment.entity_index_grid[self.agent.grid_x, self.agent.grid_y] == 6
-            # print(self.environment.entity_index_grid[self.agent.grid_x, self.agent.grid_y])
-            # print(self.environment.entity_index_grid)
-            # print(f'Entity on tileis {self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].entity_on_tile}')
-            # print(f'Entity index is {self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].entity_index}')
-            self.kg.visualise_graph()
+
 
     def place_rock(self):
         if self.stone < 1:

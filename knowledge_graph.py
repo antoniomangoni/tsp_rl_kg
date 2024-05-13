@@ -76,14 +76,6 @@ class KnowledgeGraph():
         self.add_entity_edges()  
         self.verify_graph_integrity()
 
-        print(f'Graph x shape: {self.graph.x.shape}')
-        print(f'Graph edge_index shape: {self.graph.edge_index.shape}')
-        print(f'Graph edge_attr shape: {self.graph.edge_attr.shape}')
-
-        # print(f'Graph x: {self.graph.x}')
-        # print(f'Graph edge_index: {self.graph.edge_index}')
-        # print(f'Graph edge_attr: {self.graph.edge_attr}')
-        exit()
 
     def count_entity_nodes(self):
         activated_entities = 0
@@ -112,28 +104,34 @@ class KnowledgeGraph():
         else:
             return False
     
-    def should_edge_be_active(self, idx1, idx2):
-        if self.is_node_active(idx1) and self.is_node_active(idx2):
+    def should_edge_be_active(self, node_idx1, node_idx2):
+        if self.is_node_active(node_idx1) and self.is_node_active(node_idx2):
             return True
     
     def discover_this_coordinate(self, x, y):
         if self.discovered_coordinates[x, y]:
-            return
+            return False
         self.discovered_coordinates[x, y] = 1
         terrain_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
-        self.activate_node_and_its_edges(terrain_idx)
+        self.activate_node_and_maybe_its_edges(terrain_idx)
         if self.entity_array[x, y] > 1:
-            self.activate_node_and_its_edges(self.graph_manager.get_node_idx((x, y), self.entity_z_level))
+            self.activate_node_and_maybe_its_edges(self.graph_manager.get_node_idx((x, y), self.entity_z_level))
+        return True
         
-        if not self.is_node_active(terrain_idx):
-            print(f"Terrain node at {x}, {y} is not active, its mask is {self.graph.x[terrain_idx][4]}")
 
-    def activate_node_and_its_edges(self, idx):
+    def activate_node_and_maybe_its_edges(self, idx):
         self.set_node_mask_1(idx)
         # activate the nodes edges if the corresponding node is activated
-        for edge in self.graph_manager.nodeTuples_edgeIdx_dict:
-            if idx in edge:
-                self.activate_edge(edge[0], edge[1])
+        node_pairs = self.graph_manager.retrieve_edge_node_pairs_from_node(idx)
+        for node_pair in node_pairs:
+            node_idx1, node_idx2 = node_pair
+            if self.should_edge_be_active(node_idx1, node_idx2):
+                self.activate_edge(node_idx1, node_idx2)
+
+    def activate_edge(self, node_idx1, node_idx2):
+        direct_edge_idx, reverse_edge_idx = self.graph_manager.retrieve_edge_indices(node_idx1, node_idx2)
+        self.set_edge_mask_1(direct_edge_idx)
+        self.set_edge_mask_1(reverse_edge_idx)
 
     def check_edges_active_of_node(self, idx):
         print(f"Checking edges of node {idx}")
@@ -149,36 +147,30 @@ class KnowledgeGraph():
     def deactivate_node_and_its_edges(self, node_idx):
         self.set_node_mask_0(node_idx)
         edge_indices = self.graph_manager.retrieve_edge_indicies_from_node(node_idx)
-        print(f'Edges in graph: {self.graph.edge_index[0]}')
-        print(f'Edges in graph: {self.graph.edge_attr[0]}')
-
-        print(f"Edges for node {node_idx}: {edge_indices}")
         for edge_idx in edge_indices:
-            print(f"Deactivating edge {edge_idx}")
-            self.graph.edge_attr[edge_idx][1] = 0
-
-        print(f"Lenght of edge indices: {len(edge_indices)}")
+            self.set_edge_mask_0(edge_idx)
 
     def set_new_node_type(self, idx, new_type):
         self.graph.x[idx][3] = new_type
+
+    def set_node_mask_0(self, idx):
+        self.graph.x[idx][4] = 0
 
     def set_node_mask_1(self, idx):
         # x, y, z_level, type_id, mask
         self.graph.x[idx][4] = 1
 
-    def set_node_mask_0(self, idx):
-        self.graph.x[idx][4] = 0
+    def set_edge_mask_0(self, idx):
+        self.graph.edge_attr[idx][1] = 0
 
-    def activate_edge(self, node_idx1, node_idx2):
-        direct_edge_idx, reverse_edge_idx = self.graph_manager.retrieve_edge_indices(node_idx1, node_idx2)
-        self.graph.edge_attr[direct_edge_idx][1] = 1
-        self.graph.edge_attr[reverse_edge_idx][1] = 1
+    def set_edge_mask_1(self, idx):
+        self.graph.edge_attr[idx][1] = 1
 
     def build_path_node(self, x, y):
         assert self.entity_array[x, y] == 6, "Entity type is not 6"
         node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
         self.set_new_node_type(node_idx, self.entity_array[x, y])
-        self.activate_node_and_its_edges(node_idx)
+        self.activate_node_and_maybe_its_edges(node_idx)
         self.check_entites_active()
 
     def elevate_terrain_node(self, x, y):
@@ -348,7 +340,7 @@ class KnowledgeGraph():
                     print(f"Path node {node_idx} is not active")
     
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
-        self.check_path_nodes()
+        # self.check_path_nodes()
         # Convert to undirected graph for visualization
         G = to_networkx(self.graph, to_undirected=True)
         # print("[visualise_graph()] The size of the graph is: ", self.graph.num_nodes)
