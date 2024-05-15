@@ -1,8 +1,7 @@
 from random import choice
 
-
 from environment import Environment
-from entities import Fish, Tree, MossyRock, SnowyRock, Outpost, WoodPath
+from entities import Tree, MossyRock, SnowyRock, Outpost, WoodPath
 from terrains import DeepWater, Water
 from knowledge_graph import KnowledgeGraph as KG
 # from agent_model import AgentModel
