@@ -8,10 +8,9 @@ from renderer import Renderer
 from target import Target_Manager
 
 from knowledge_graph import KnowledgeGraph
-# from knowledge_graph import KG as KnowledgeGraph
 
 class GameManager:
-    def __init__(self, map_pixel_size=32, screen_size=800, kg_completness=1):
+    def __init__(self, map_pixel_size=32, screen_size=800, kg_completness=1, agent_vision_range=2):
         self.map_size = map_pixel_size
         self.tile_size = screen_size // map_pixel_size
         self.environment = None
@@ -20,12 +19,12 @@ class GameManager:
         self.agent = None
         self.target_manager = None
 
-        self.agent_vision_range = 2
+        self.agent_vision_range = agent_vision_range
 
         self.renderer = None
         self.running = True
 
-        self.init_pygame()
+        # self.init_pygame()
         self.initialize_components()
         # self.test()
 
@@ -61,17 +60,23 @@ class GameManager:
 
     def update(self):
         self.agent_controler.agent_action(8)
+        self.environment.update_heat_map(self.agent.grid_x, self.agent.grid_y, self.target_manager.min_path_length)
 
     def render(self):
         self.renderer.render()
+        self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
         pygame.display.flip()
 
     def run(self):
+        self.init_pygame()
+
         self.init_knowledge_graph()
         self.initialise_rendering()
         while self.running:
             self.update()
             self.renderer.render_updated_tiles()
+            # wait for a while
+            # pygame.time.wait(1000)
 
         pygame.quit()
         print('Game closed')

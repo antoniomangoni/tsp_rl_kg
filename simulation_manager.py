@@ -3,10 +3,10 @@ import matplotlib.pyplot as plt
 from game_manager import GameManager
 
 class SimulationManager:
-    def __init__(self, number_of_environments=500, number_of_curricula=10):
+    def __init__(self, number_of_environments=500, number_of_curricula=10, agent_vision_range=2):
         self.game_managers = []
         self.curriculum_indices = []
-        self.create_games(number_of_environments)
+        self.create_games(number_of_environments, agent_vision_range)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
         self.step_size = round(step_size, 2)
@@ -15,7 +15,7 @@ class SimulationManager:
 
     def create_games(self, number_of_games):
         for _ in range(number_of_games):
-            game_manager = GameManager(map_pixel_size=32, screen_size=800, kg_completness=1)
+            game_manager = GameManager(map_pixel_size=32, screen_size=800, kg_completness=1, agent_vision_range=2)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 
@@ -36,7 +36,7 @@ class SimulationManager:
                 simulation_indices.append(closest_index)
         return simulation_indices, step_size
 
-    def plot_curriculum(self, x_values, y_values, indices, simulation_points, xlabel, ylabel, title):
+    def plot_curriculum(self, x_values, y_values, indices, simulation_points, xlabel, ylabel, title = "Not named"):
         """
         Generalized function to plot curriculum data with optional step size annotation.
 
@@ -53,7 +53,7 @@ class SimulationManager:
         plt.figure(figsize=(8, 4))
         ax1 = plt.gca()  # Get current axis
         ax1.plot(x_values, y_values, label='Energy for trade route', color='blue')
-        ax1.scatter(indices, simulation_points, color='red', zorder=5, label='Selected Simulation Points', s=50)
+        ax1.scatter(indices, simulation_points, color='red', zorder=5, label='Selected Simulation Points', s=10)
         ax1.set_xlabel(xlabel)
         ax1.set_ylabel(ylabel)
         ax1.set_title(title)
@@ -66,6 +66,7 @@ class SimulationManager:
         ax2.tick_params(right=False, labelright=False)  # Turn off ticks and tick labels for the secondary axis
 
         plt.tight_layout()
+        plt.savefig(f'Writing/{title}.png')
         plt.show()
 
     def create_plots(self, energy_values, curriculum_indices):

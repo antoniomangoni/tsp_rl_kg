@@ -10,6 +10,9 @@ class Renderer:
         self.tile_size = environment.tile_size
         self.window_width = environment.width * self.tile_size
         self.window_height = environment.height * self.tile_size
+
+        self.heatmap_colour = (255, 0, 0)  # Colour for the heatmap overlay is red
+
         self.ui_height = 100  # Height for the UI panel at the bottom
         self.surface = pygame.display.set_mode((self.window_width, self.window_height + self.ui_height))
         
@@ -62,6 +65,22 @@ class Renderer:
         # Redraw the entity if present on this tile
         if terrain_tile.entity_on_tile is not None:
             self.surface.blit(terrain_tile.entity_on_tile.image, (x * self.tile_size, y * self.tile_size))
+
+    def render_heatmap(self, max_intensity, bool_heatmap=False):
+        if not bool_heatmap:
+            return
+
+        for x in range(self.environment.width):
+            for y in range(self.environment.height):
+                intensity = self.environment.heat_map[x, y]
+                if intensity > 0:
+                    alpha = int((intensity / max_intensity) * 255)  # Scale intensity to 0-255 range
+                    color = (*self.heatmap_colour[:3], alpha)  # Add alpha to the heatmap color
+                    heat_rect = pygame.Surface((self.tile_size, self.tile_size))
+                    heat_rect.set_alpha(alpha)
+                    heat_rect.fill(color[:3])
+                    self.surface.blit(heat_rect, (x * self.tile_size, y * self.tile_size))
+        pygame.display.update()
 
     def render_ui(self):
         # First, clear the UI area to ensure a clean slate for UI rendering

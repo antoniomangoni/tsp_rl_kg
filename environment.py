@@ -11,6 +11,7 @@ class Environment:
         self.terrain_index_grid = np.zeros_like(self.heightmap)
         self.entity_index_grid = np.zeros_like(self.heightmap)
         self.terrain_object_grid = np.zeros_like(self.heightmap, dtype=object)
+        
         self.tile_size = tile_size
         self.width, self.height = heightmap.shape
         self.number_of_outposts = number_of_outposts
@@ -33,6 +34,14 @@ class Environment:
 
         self.environment_changed_flag = False
         self.changed_tiles_list = []
+
+        self.heat_map = np.zeros_like(self.heightmap)
+
+    def update_heat_map(self, x, y, intensity=10):
+        # Reduce all values by 1 and clip to the range [0, intensity]
+        self.heat_map = np.clip(self.heat_map - 1, 0, intensity)
+        # Increase the value at (x, y) by intensity, ensuring it doesn't exceed the max intensity
+        self.heat_map[x, y] = np.clip(self.heat_map[x, y] + intensity, 0, intensity)
 
     def get_terrain_colour_map(self):
         terrain = Terrain(0, 0, self.tile_size, 0)
