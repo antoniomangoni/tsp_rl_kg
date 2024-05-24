@@ -3,19 +3,25 @@ import matplotlib.pyplot as plt
 from game_manager import GameManager
 
 class SimulationManager:
-    def __init__(self, number_of_environments=500, number_of_curricula=10, agent_vision_range=2):
+    def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10):
         self.game_managers = []
         self.curriculum_indices = []
-        self.create_games(number_of_environments, agent_vision_range)
+        self.create_games(number_of_environments, game_manager_args)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
         self.step_size = round(step_size, 2)
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
+        print(f"Curriculum step size: ~{self.step_size} energy units")
         self.create_plots(energy_values, self.curriculum_indices)
 
-    def create_games(self, number_of_games):
+    def create_games(self, number_of_games, game_manager_args):
+        map_pixel_size = game_manager_args['map_pixel_size']
+        screen_size = game_manager_args['screen_size']
+        kg_completness = game_manager_args['kg_completness']
+        agent_vision_range = game_manager_args['agent_vision_range']
+
         for _ in range(number_of_games):
-            game_manager = GameManager(map_pixel_size=32, screen_size=800, kg_completness=1, agent_vision_range=2)
+            game_manager = GameManager(map_pixel_size, screen_size, kg_completness, agent_vision_range)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 
