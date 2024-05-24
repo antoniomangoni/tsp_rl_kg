@@ -24,9 +24,7 @@ class GameManager:
         self.renderer = None
         self.running = True
 
-        # self.init_pygame()
         self.initialize_components()
-        # self.test()
 
     def init_pygame(self):
         pygame.init()
@@ -49,6 +47,7 @@ class GameManager:
         
         self.target_manager = Target_Manager(self.environment)
 
+
     def init_knowledge_graph(self):
         self.kg_class = KnowledgeGraph(self.environment, self.agent_vision_range, self.kg_completness)
         self.agent_controler.get_kg(self.kg_class)
@@ -59,31 +58,36 @@ class GameManager:
         self.renderer.init_render()
 
     def update(self):
-        self.agent_controler.agent_action(8)
+        self.agent_controler.agent_action(11)
         self.environment.update_heat_map(self.agent.grid_x, self.agent.grid_y, self.target_manager.min_path_length)
 
     def render(self):
-        self.renderer.render()
-        self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
+        self.renderer.render_updated_tiles()
+        # self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
         pygame.display.flip()
+
+    def start_game(self):
+        self.init_pygame()
+        self.init_knowledge_graph()
+        self.initialise_rendering()
+
+    def game_step(self):
+        self.update()
+        self.render()
+
+    def end_game(self):
+        self.running = False
+        pygame.quit()
 
     def run(self):
         self.init_pygame()
-
         self.init_knowledge_graph()
         self.initialise_rendering()
         while self.running:
-            self.update()
-            self.renderer.render_updated_tiles()
-            # wait for a while
+            self.game_step()
             # pygame.time.wait(1000)
 
         pygame.quit()
         print('Game closed')
         self.environment.print_environment()
         self.kg_class.visualise_graph()
-
-    def handle_keyboard(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
