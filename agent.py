@@ -15,32 +15,21 @@ class Agent:
         self.kg = None
         self.agent = self.environment.player
 
-        self.running = True
-
-        self.energy_max = 100
         self.resouce_max = 5
-        self.hunger_thirst_max = 20
         self.vision_range = agent_vision_range 
 
-        self.energy = 100 # Decrease when moving or collecting resources, increase when resting
-        self.hunger = 0 # Eat fish to derease
-        self.thirst = 0 # Drink water to decrease
+        self.energy_spent = 0
+        self.action_energy_cost = 3
+
         self.wood = 0
         self.stone = 0
-        self.fish = 0
         self.water = 0
 
     def get_kg(self, kg : KG):
         self.kg = kg
 
     def agent_step(self):
-        self.energy -= self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].energy_requirement
-        self.hunger += 1
-        self.thirst += 1
-        if self.energy <= 0 or self.hunger >= 20 or self.thirst >= 20:
-            self.running = False
-        if self.running:
-            self.agent_action(self.agent_model.predict(self.environment.terrain_object_grid, self.agent.grid_x, self.agent.grid_y))
+        self.agent_action(self.agent_model.predict(self.environment.terrain_object_grid, self.agent.grid_x, self.agent.grid_y))
 
     def agent_action(self, action):
         action = choice(range(11))
@@ -56,7 +45,10 @@ class Agent:
         elif action == 3:
             # Down
             self.move_agent(0, -1)
-        elif action == 4:
+
+        self.energy_spent += self.action_energy_cost
+
+        if action == 4:
             self.scout()
         elif action == 5:
             self.build_path()
@@ -74,10 +66,10 @@ class Agent:
     def move_agent(self, dx, dy):
         self.environment.move_entity(self.agent, dx, dy)
         self.kg.move_player_node(self.agent.grid_x, self.agent.grid_y)
+        self.energy_spent += self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].energy_requirement
 
     def scout(self):
         """ Looking at the environment is a deliberate action. """
-        self.energy = min(self.energy_max, self.energy + 20)
         """ Adding a terrain node automatically adds the corresponding entity node"""
 
         discovered_now = 0
@@ -130,11 +122,6 @@ class Agent:
         if resource is None or isinstance(resource, Outpost) or isinstance(resource, WoodPath):
             return
         else:
-            """ Fish have been removed as they are uncencessary for the scope of the project. """	
-            # if isinstance(resource, Fish):
-            #     if self.fish >= self.resouce_max:
-            #         return
-            #     self.fish += 1
             if isinstance(resource, Tree):
                 if self.wood >= self.resouce_max:
                     return

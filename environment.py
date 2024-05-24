@@ -122,7 +122,7 @@ class Environment:
     def move_entity(self, entity, dx, dy):
         new_x, new_y = entity.grid_x + dx, entity.grid_y + dy
         if not self.is_move_valid(new_x, new_y):
-            return
+            return False, False
         old_x, old_y = entity.grid_x, entity.grid_y
 
         self.terrain_object_grid[old_x, old_y].remove_entity()

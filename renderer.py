@@ -30,7 +30,7 @@ class Renderer:
         self.surface.blit(self.terrain_surface, (0, 0))
         # Draw all entities for the first time
         self.environment.entity_group.draw(self.surface)
-        self.render_ui()
+        # self.render_ui()
         pygame.display.flip()
 
     def render_updated_tiles(self):
@@ -55,7 +55,7 @@ class Renderer:
         # Clear the list of changed tiles after updating
         self.environment.changed_tiles_list.clear()
         self.environment.environment_changed_flag = False
-        self.render_changed_ui()
+        # self.render_changed_ui()
 
     def update_tile(self, x, y):
         # Directly access and redraw the terrain tile
@@ -86,37 +86,20 @@ class Renderer:
         # First, clear the UI area to ensure a clean slate for UI rendering
         self.clear_ui_area()
         
-        # Render the status bars for energy, hunger, and thirst
-        self.render_status_bars()
-        
         # Render the inventory text
         self.render_inventory_text()
 
     def render_changed_ui(self):
         # Update the status bars and inventory text
-        self.render_status_bars()
         self.render_inventory_text()
 
     def clear_ui_area(self):
         # Fill the UI background to clear previous frame's UI elements
         pygame.draw.rect(self.surface, (0, 0, 0), (0, self.window_height, self.window_width, self.ui_height))
 
-    def render_status_bars(self):
-        # Define bar properties
-        bars_info = [
-            (self.agent.energy, self.agent.energy_max, (255, 0, 0), "Energy"),
-            (self.agent.hunger, self.agent.hunger_thirst_max, (0, 255, 0), "Hunger"),
-            (self.agent.thirst, self.agent.hunger_thirst_max, (0, 0, 255), "Thirst")
-        ]
-        y_offset = 10
-        for value, max_value, color, label in bars_info:
-            self.render_bar(20, self.window_height + y_offset, value, max_value, color, label)
-            y_offset += 25
-
     def render_inventory_text(self):
         # Render inventory items as text
         inventory_items = [
-            ('fish', self.agent.fish),
             ('water', self.agent.water),
             ('wood', self.agent.wood),
             ('stone', self.agent.stone)
