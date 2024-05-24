@@ -10,7 +10,7 @@ from target import Target_Manager
 from knowledge_graph import KnowledgeGraph
 
 class GameManager:
-    def __init__(self, map_pixel_size=32, screen_size=800, kg_completness=1, agent_vision_range=2):
+    def __init__(self, map_pixel_size=32, screen_size=800, kg_completness=1, vision_range=2):
         self.map_size = map_pixel_size
         self.tile_size = screen_size // map_pixel_size
         self.environment = None
@@ -19,7 +19,7 @@ class GameManager:
         self.agent = None
         self.target_manager = None
 
-        self.agent_vision_range = agent_vision_range
+        self.vision_range = vision_range
 
         self.renderer = None
         self.running = True
@@ -42,14 +42,14 @@ class GameManager:
         heightmap = heightmap_generator.generate()
         self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
 
-        self.agent_controler = Agent(self.environment, self.agent_vision_range)
+        self.agent_controler = Agent(self.environment, self.vision_range)
         self.agent = self.agent_controler.agent
         
         self.target_manager = Target_Manager(self.environment)
 
 
     def init_knowledge_graph(self):
-        self.kg_class = KnowledgeGraph(self.environment, self.agent_vision_range, self.kg_completness)
+        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, self.kg_completness)
         self.agent_controler.get_kg(self.kg_class)
 
     def initialise_rendering(self):
@@ -57,11 +57,7 @@ class GameManager:
         self.screen = pygame.display.set_mode((self.map_size * self.tile_size, self.map_size * self.tile_size))
         self.renderer.init_render()
 
-    def update(self):
-        self.agent_controler.agent_action(11)
-        self.environment.update_heat_map(self.agent.grid_x, self.agent.grid_y, self.target_manager.min_path_length)
-
-    def render(self):
+    def rerender(self):
         self.renderer.render_updated_tiles()
         # self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
         pygame.display.flip()
@@ -71,13 +67,17 @@ class GameManager:
         self.init_knowledge_graph()
         self.initialise_rendering()
 
-    def game_step(self):
-        self.update()
-        self.render()
-
     def end_game(self):
         self.running = False
         pygame.quit()
+
+    def update(self):
+        self.agent_controler.agent_action(11)
+        self.environment.update_heat_map(self.agent.grid_x, self.agent.grid_y, self.target_manager.min_path_length)
+
+    def game_step(self):
+        self.update()
+        self.rerender()
 
     def run(self):
         self.init_pygame()

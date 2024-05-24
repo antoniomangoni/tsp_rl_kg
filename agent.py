@@ -8,7 +8,7 @@ from knowledge_graph import KnowledgeGraph as KG
 
 
 class Agent:
-    def __init__(self, environment : Environment, agent_vision_range : int):
+    def __init__(self, environment : Environment, vision_range : int):
         self.environment = environment
         self.terrain_id_grid = self.environment.terrain_index_grid
         self.entity_id_grid = self.environment.entity_index_grid
@@ -16,7 +16,7 @@ class Agent:
         self.agent = self.environment.player
 
         self.resouce_max = 5
-        self.vision_range = agent_vision_range 
+        self.vision_range = vision_range 
 
         self.energy_spent = 0
         self.action_energy_cost = 3

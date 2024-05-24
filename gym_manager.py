@@ -15,18 +15,20 @@ class CustomEnv(gym.Env):
 
         self.map_pixel_size = game_manager_args['map_pixel_size']
         self.screen_size = game_manager_args['screen_size']
-        self.kg_completness = game_manager_args['kg_completness']
+        self.kg_completeness = game_manager_args['kg_completeness']
         self.vision_range = game_manager_args['vision_range']
     
         # Initialize SimulationManager
-        self.simulation_manager = SimulationManager(simulation_manager_args['number_of_environments'], 
-                                                    simulation_manager_args['number_of_curricula'],
-                                                    game_manager_args)
+        self.simulation_manager = SimulationManager(
+            simulation_manager_args['number_of_environments'], 
+            simulation_manager_args['number_of_curricula'],
+            game_manager_args
+        )
         
         self.current_game_index = 0
         self.set_current_game_manager()
 
-        self.agent_model = AgentModel(self.vision_range, num_graph_features=16, num_actions=11)
+        self.agent_model = AgentModel(self.vision_range, num_graph_features=self.num_graph_features, num_actions=self.num_actions)
 
         # Define observation and action spaces
         vision_shape = (3, 2 * self.vision_range + 1, 2 * self.vision_range + 1)
@@ -36,19 +38,15 @@ class CustomEnv(gym.Env):
             'graph': spaces.Box(low=-np.inf, high=np.inf, shape=graph_shape, dtype=np.float32)
         })
 
-        self.action_space = spaces.Discrete(11)
+        self.action_space = spaces.Discrete(self.num_actions)
 
     def set_current_game_manager(self):
         self.current_game_manager = self.simulation_manager.game_managers[self.current_game_index]
-        self.current_game_manager.init_pygame()
-        self.current_game_manager.initialise_rendering()
+        self.current_game_manager.start_game()
 
         self.environment = self.current_game_manager.environment
         self.agent_controler = self.current_game_manager.agent_controler
-
         self.knowledge_graph = self.current_game_manager.kg_class
-
-        self.current_game_manager.initialise_rendering()
 
     def reset(self):
         self.current_game_index = (self.current_game_index + 1) % len(self.simulation_manager.game_managers)
@@ -65,9 +63,12 @@ class CustomEnv(gym.Env):
         info = {}
 
         return observation, reward, done, info
+    
+    def progress_step(self):
+        self.current_game_manager.game_step()
 
     def render(self, mode='human'):
-        self.current_game_manager.render()
+        self.current_game_manager.rerender()
 
     def _get_observation(self):
         vision = self._get_vision()
