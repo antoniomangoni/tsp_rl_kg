@@ -2,6 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 import torch
+import pygame
 
 from agent_model import AgentModel
 from simulation_manager import SimulationManager
@@ -16,7 +17,7 @@ class CustomEnv(gym.Env):
         self.map_pixel_size = game_manager_args['map_pixel_size']
         self.screen_size = game_manager_args['screen_size']
         self.kg_completeness = game_manager_args['kg_completeness']
-        self.vision_range = game_manager_args['vision_range']
+        self.vision_range = game_manager_args['agent_vision_range']
     
         # Initialize SimulationManager
         self.simulation_manager = SimulationManager(
@@ -32,13 +33,17 @@ class CustomEnv(gym.Env):
 
         # Define observation and action spaces
         vision_shape = (3, 2 * self.vision_range + 1, 2 * self.vision_range + 1)
-        graph_shape = (self.knowledge_graph.graph.x.shape[0], self.knowledge_graph.graph.x.shape[1])
+        graph_shape = self.get_graph_shape()
         self.observation_space = spaces.Dict({
             'vision': spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.uint8),
             'graph': spaces.Box(low=-np.inf, high=np.inf, shape=graph_shape, dtype=np.float32)
         })
 
         self.action_space = spaces.Discrete(self.num_actions)
+
+    def get_graph_shape(self):
+        sub_graph = self.knowledge_graph.get_subgraph()
+        return sub_graph.x.shape
 
     def set_current_game_manager(self):
         self.current_game_manager = self.simulation_manager.game_managers[self.current_game_index]
@@ -79,15 +84,26 @@ class CustomEnv(gym.Env):
         vision_range = self.vision_range
         agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
         x, y = agent_pos
-        vision = self.environment.get_vision(x, y, vision_range)
-        return vision
+
+        # Calculate the region to capture
+        tile_size = self.current_game_manager.tile_size
+        vision_pixel_size = (2 * vision_range + 1) * tile_size
+        agent_pixel_x = x * tile_size
+        agent_pixel_y = y * tile_size
+        vision_rect = pygame.Rect(agent_pixel_x - vision_range * tile_size, agent_pixel_y - vision_range * tile_size, vision_pixel_size, vision_pixel_size)
+
+        # Capture the vision region
+        vision_surface = self.current_game_manager.renderer.surface.subsurface(vision_rect).copy()
+        vision_array = pygame.surfarray.array3d(vision_surface)
+
+        # Convert from (width, height, channels) to (channels, height, width) for PyTorch
+        vision_array = np.transpose(vision_array, (2, 1, 0))
+        return vision_array
 
     def _get_graph_data(self):
-        graph_data = self.knowledge_graph.graph
-        return graph_data
+        return self.knowledge_graph.get_subgraph()
 
     def _calculate_reward(self):
         # Define your reward function here
         reward = 0
         return reward
-

@@ -47,7 +47,6 @@ class GameManager:
         
         self.target_manager = Target_Manager(self.environment)
 
-
     def init_knowledge_graph(self):
         self.kg_class = KnowledgeGraph(self.environment, self.vision_range, self.kg_completness)
         self.agent_controler.get_kg(self.kg_class)

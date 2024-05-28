@@ -2,7 +2,7 @@ import random
 import pygame
 import numpy as np
 
-from entities import Player, Outpost, WoodPath, Fish, Tree, MossyRock, SnowyRock
+from entities import Player, Outpost, WoodPath, Tree, MossyRock, SnowyRock
 from terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
 
 class Environment:
