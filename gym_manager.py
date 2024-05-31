@@ -1,7 +1,6 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-import torch
 import pygame
 
 from agent_model import AgentModel
@@ -11,7 +10,6 @@ class CustomEnv(gym.Env):
     def __init__(self, game_manager_args, simulation_manager_args, model_args):
         super(CustomEnv, self).__init__()
 
-        self.num_graph_features = model_args['num_graph_features']
         self.num_actions = model_args['num_actions']
 
         self.map_pixel_size = game_manager_args['map_pixel_size']
@@ -29,8 +27,6 @@ class CustomEnv(gym.Env):
         self.current_game_index = 0
         self.set_current_game_manager()
 
-        self.agent_model = AgentModel(self.vision_range, num_graph_features=self.num_graph_features, num_actions=self.num_actions)
-
         # Define observation and action spaces
         vision_shape = (3, 2 * self.vision_range + 1, 2 * self.vision_range + 1)
         graph_shape = self.get_graph_shape()
@@ -39,10 +35,13 @@ class CustomEnv(gym.Env):
             'graph': spaces.Box(low=-np.inf, high=np.inf, shape=graph_shape, dtype=np.float32)
         })
 
+        self.agent_model = AgentModel(vision_shape, graph_shape, self.num_actions,
+                                      self.kg.num_node_features, self.kg.num_edge_features)
+
         self.action_space = spaces.Discrete(self.num_actions)
 
     def get_graph_shape(self):
-        sub_graph = self.knowledge_graph.get_subgraph()
+        sub_graph = self.kg.get_subgraph()
         return sub_graph.x.shape
 
     def set_current_game_manager(self):
@@ -51,7 +50,7 @@ class CustomEnv(gym.Env):
 
         self.environment = self.current_game_manager.environment
         self.agent_controler = self.current_game_manager.agent_controler
-        self.knowledge_graph = self.current_game_manager.kg_class
+        self.kg = self.current_game_manager.kg_class
 
     def reset(self):
         self.current_game_index = (self.current_game_index + 1) % len(self.simulation_manager.game_managers)
@@ -101,7 +100,7 @@ class CustomEnv(gym.Env):
         return vision_array
 
     def _get_graph_data(self):
-        return self.knowledge_graph.get_subgraph()
+        return self.kg.get_subgraph()
 
     def _calculate_reward(self):
         # Define your reward function here

@@ -60,17 +60,16 @@ class KnowledgeGraph():
         return x, y, z_level, type_id, mask
 
     def init_graph_tensors(self):
-        num_possible_nodes = self.environment.width * self.environment.height * 2 + 1  # 2 z-levels and a player node
-        self.graph_manager.set_max_nodes(num_possible_nodes)
-        num_possible_edges, num_terrain_edges, num_entity_edges = self.compute_total_possible_edges()
-        self.graph_manager.set_max_edges(num_possible_edges)
-        print(f"Total possible edges: {num_possible_edges} - of which Terrain edges: {num_terrain_edges}, Entity edges: {num_entity_edges}")
+        self.num_possible_nodes = self.environment.width * self.environment.height * 2 + 1  # 2 z-levels and a player node
+        self.graph_manager.set_max_nodes(self.num_possible_nodes)
+        self.num_possible_edges, _, _ = self.compute_total_possible_edges()
+        self.graph_manager.set_max_edges(self.num_possible_edges)
         feature_size = 5 # x, y, z_level, type_id, mask
         edge_attr_size = 2 # distance, mask
         self.graph = Data(
-            x=torch.full((num_possible_nodes, feature_size), -1, dtype=torch.short),
-            edge_index=torch.full((2, num_possible_edges), -1, dtype=torch.short),
-            edge_attr=torch.full((num_possible_edges, edge_attr_size), -1, dtype=torch.short)
+            x=torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.short),
+            edge_index=torch.full((2, self.num_possible_edges), -1, dtype=torch.short),
+            edge_attr=torch.full((self.num_possible_edges, edge_attr_size), -1, dtype=torch.short)
         )
         # Preallocated tensors for updates
         self.single_node_feature = torch.empty((feature_size), dtype=torch.short)

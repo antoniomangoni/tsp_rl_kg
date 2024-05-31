@@ -29,7 +29,7 @@ class Environment:
         self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
 
         self.initialize_environment()
-        self.add_outposts()
+        self.outpost_locations = self.add_outposts()
         self.player = self.init_player()
 
         self.environment_changed_flag = False

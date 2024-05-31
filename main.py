@@ -3,7 +3,6 @@
 if __name__ == '__main__':
 
     model_args = {
-        'num_graph_features': 16,
         'num_actions': 11
     }
 
