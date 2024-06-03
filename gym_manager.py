@@ -45,12 +45,13 @@ class CustomEnv(gym.Env):
         return sub_graph.x.shape
 
     def set_current_game_manager(self):
-        self.current_game_manager = self.simulation_manager.game_managers[self.current_game_index]
-        self.current_game_manager.start_game()
+        self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
+        self.current_gm.start_game()
 
-        self.environment = self.current_game_manager.environment
-        self.agent_controler = self.current_game_manager.agent_controler
-        self.kg = self.current_game_manager.kg_class
+        self.environment = self.current_gm.environment
+        self.agent_controler = self.current_gm.agent_controler
+        self.kg = self.current_gm.kg_class
+        self.outpost_coords = self.environment.outpost_locations
 
     def reset(self):
         self.current_game_index = (self.current_game_index + 1) % len(self.simulation_manager.game_managers)
@@ -69,10 +70,10 @@ class CustomEnv(gym.Env):
         return observation, reward, done, info
     
     def progress_step(self):
-        self.current_game_manager.game_step()
+        self.current_gm.game_step()
 
     def render(self, mode='human'):
-        self.current_game_manager.rerender()
+        self.current_gm.rerender()
 
     def _get_observation(self):
         vision = self._get_vision()
@@ -85,14 +86,14 @@ class CustomEnv(gym.Env):
         x, y = agent_pos
 
         # Calculate the region to capture
-        tile_size = self.current_game_manager.tile_size
+        tile_size = self.current_gm.tile_size
         vision_pixel_size = (2 * vision_range + 1) * tile_size
         agent_pixel_x = x * tile_size
         agent_pixel_y = y * tile_size
         vision_rect = pygame.Rect(agent_pixel_x - vision_range * tile_size, agent_pixel_y - vision_range * tile_size, vision_pixel_size, vision_pixel_size)
 
         # Capture the vision region
-        vision_surface = self.current_game_manager.renderer.surface.subsurface(vision_rect).copy()
+        vision_surface = self.current_gm.renderer.surface.subsurface(vision_rect).copy()
         vision_array = pygame.surfarray.array3d(vision_surface)
 
         # Convert from (width, height, channels) to (channels, height, width) for PyTorch
@@ -103,6 +104,52 @@ class CustomEnv(gym.Env):
         return self.kg.get_subgraph()
 
     def _calculate_reward(self):
-        # Define your reward function here
-        reward = 0
+        """
+        Calculate the reward for the agent based on the current path length and energy consumption.
+        """
+        # Get the agent's current path and position
+        agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
+
+        # Check if the agent has reached all outposts
+        all_outposts_visited = self._check_all_outposts_visited()
+        
+        if all_outposts_visited:
+            # Calculate the total path length and energy consumption
+            path_length = self._calculate_path_length()
+            energy_consumption = self.agent_controler.energy_spent
+
+            # Get the optimal path length and energy consumption from the target manager
+            optimal_path_length = self.target_manager.min_path_length
+            optimal_energy_consumption = self.target_manager.target_route_energy
+
+            # Reward for minimizing path length and energy consumption
+            length_reward = max(0, optimal_path_length - path_length)
+            energy_reward = max(0, optimal_energy_consumption - energy_consumption)
+
+            # Completion reward
+            completion_reward = 100  # Arbitrary large reward for completion
+
+            # Total reward
+            reward = length_reward + energy_reward + completion_reward
+        else:
+            # Penalty for not visiting all outposts
+            reward = -10  # Arbitrary penalty value
+
         return reward
+
+    def _calculate_path_length(self):
+        """
+        Calculate the current total path length based on the agent's position and visited outposts.
+        """
+        # Assume a method to get the agent's visited path
+        visited_path = self.agent_controler.get_visited_path()
+        total_length = sum(self.target_manager.calculate_distance(visited_path[i], visited_path[i+1])
+                        for i in range(len(visited_path) - 1))
+        return total_length
+
+    def _check_all_outposts_visited(self):
+        """
+        Check if the agent has visited all outposts.
+        """
+        visited_outposts = self.agent_controler.get_visited_outposts()
+        return set(visited_outposts) == set(self.outpost_coords)

@@ -12,7 +12,7 @@ class AgentModel(nn.Module):
         
         combined_input_size = self.vision_processor.output + self.graph_processor.output
         self.fc1 = nn.Linear(combined_input_size, 128)
-        self.dropout = nn.Dropout(p=0.5)  # Added dropout for regularization
+        self.dropout = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(128, num_actions)
         
         self._initialize_weights()  # Initialize weights
@@ -23,7 +23,7 @@ class AgentModel(nn.Module):
         
         combined = torch.cat((vision_features, graph_features), dim=1)
         combined = F.relu(self.fc1(combined))
-        combined = self.dropout(combined)  # Apply dropout
+        combined = self.dropout(combined)
         action_probs = self.fc2(combined)
         
         return action_probs

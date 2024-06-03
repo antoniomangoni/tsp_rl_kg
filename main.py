@@ -7,7 +7,7 @@ if __name__ == '__main__':
     }
 
     simulation_manager_args = {
-        'number_of_environments': 10,
+        'number_of_environments': 2,
         'number_of_curricula': 5
     }
 

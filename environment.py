@@ -27,15 +27,18 @@ class Environment:
         self.terrain_colour_map = self.get_terrain_colour_map()
         self.suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
         self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
+        self.outposts_visited = set()
 
         self.initialize_environment()
-        self.outpost_locations = self.add_outposts()
+        self.add_outposts()
+
         self.player = self.init_player()
 
         self.environment_changed_flag = False
         self.changed_tiles_list = []
 
         self.heat_map = np.zeros_like(self.heightmap)
+
 
     def update_heat_map(self, x, y, intensity=10):
         # Reduce all values by 1 and clip to the range [0, intensity]
@@ -120,16 +123,16 @@ class Environment:
             terrain.energy_requirement = max(0, terrain.energy_requirement - 2)
 
     def move_entity(self, entity, dx, dy):
-        new_x, new_y = entity.grid_x + dx, entity.grid_y + dy
+        current_x, current_y = entity.grid_x, entity.grid_y
+        new_x, new_y = current_x + dx, current_y + dy
         if not self.is_move_valid(new_x, new_y):
-            return False, False
-        old_x, old_y = entity.grid_x, entity.grid_y
+            return current_x, current_y
 
-        self.terrain_object_grid[old_x, old_y].remove_entity()
+        self.terrain_object_grid[current_x, current_y].remove_entity()
         entity.move(dx, dy)
         self.terrain_object_grid[new_x, new_y].add_entity(entity)
         # We never remove the entity from the entity_group, so no need to re-add it
-        self.environment_changed(old_x, old_y, new_x, new_y)
+        self.environment_changed(current_x, current_y, new_x, new_y)
         return new_x, new_y
     
     def delete_entity(self, entity):

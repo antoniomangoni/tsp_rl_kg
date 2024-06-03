@@ -64,9 +64,13 @@ class Agent:
             self.collect_resource(-1, 0)
 
     def move_agent(self, dx, dy):
-        self.environment.move_entity(self.agent, dx, dy)
-        self.kg.move_player_node(self.agent.grid_x, self.agent.grid_y)
-        self.energy_spent += self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y].energy_requirement
+        new_x, new_y = self.environment.move_entity(self.agent, dx, dy)
+        self.kg.move_player_node(new_x, new_y)
+        self.energy_spent += self.environment.terrain_object_grid[new_x, new_y].energy_requirement
+        if (new_x, new_y) in self.environment.outpost_locations and (new_x, new_y) not in self.environment.outposts_visited:
+            self.environment.outposts_visited.add((new_x, new_y))
+            return True
+        
 
     def scout(self):
         """ Looking at the environment is a deliberate action. """
@@ -94,7 +98,6 @@ class Agent:
             self.wood -= 1
             self.environment.place_path(self.agent.grid_x, self.agent.grid_y)
             self.kg.build_path_node(self.agent.grid_x, self.agent.grid_y)
-
 
     def place_rock(self):
         if self.stone < 1:

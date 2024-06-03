@@ -4,7 +4,6 @@ from itertools import permutations
 import numpy as np
 from queue import PriorityQueue
 
-
 class Target_Manager:
     def __init__(self, environment):
         self.environment = environment
