@@ -19,6 +19,8 @@ class GameManager:
         self.agent = None
         self.target_manager = None
 
+        self.route_energy_list = []
+
         self.vision_range = vision_range
 
         self.renderer = None

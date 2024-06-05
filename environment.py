@@ -15,6 +15,8 @@ class Environment:
         self.tile_size = tile_size
         self.width, self.height = heightmap.shape
         self.number_of_outposts = number_of_outposts
+        self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
+
         self.entity_group = pygame.sprite.LayeredUpdates() # pygame.sprite.Group()
         self.terrain_definitions = {
             0: {'class': DeepWater, 'entity_prob': 0},
@@ -26,8 +28,6 @@ class Environment:
         }
         self.terrain_colour_map = self.get_terrain_colour_map()
         self.suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
-        self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
-        self.outposts_visited = set()
 
         self.initialize_environment()
         self.add_outposts()

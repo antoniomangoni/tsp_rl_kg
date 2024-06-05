@@ -10,6 +10,17 @@ class CustomEnv(gym.Env):
     def __init__(self, game_manager_args, simulation_manager_args, model_args):
         super(CustomEnv, self).__init__()
 
+        self.new_outpost_reward = 10
+        self.completion_reward = 100
+        self.route_improvement_reward = 200
+        self.current_reward = 0
+        self.penalty = -1
+
+        self.max_not_improvement_routes = 5
+        self.num_not_improvement_routes = 0
+        self.best_route_energy = np.inf
+        self.outposts_visited = set()
+
         self.num_actions = model_args['num_actions']
 
         self.map_pixel_size = game_manager_args['map_pixel_size']
@@ -52,18 +63,66 @@ class CustomEnv(gym.Env):
         self.agent_controler = self.current_gm.agent_controler
         self.kg = self.current_gm.kg_class
         self.outpost_coords = self.environment.outpost_locations
+        self.best_route_energy = 0
+
+    def _calculate_reward(self):
+        """
+        Calculate the reward for the agent based on visiting new outposts and the total route energy.
+        """
+        # Get the agent's current position
+        agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
+        self.current_reward = 0
+        if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:
+            if not bool(self.outposts_visited):
+                self.first_outpost_energy_tracker = self.agent_controler.energy_spent
+
+            self.outposts_visited.add(agent_pos)
+            self.current_reward = self.new_outpost_reward
+
+            # Check if all outposts have been visited
+            if len(self.outposts_visited) == self.environment.number_of_outposts:
+                self.current_reward += self.completion_reward
+                # Calculate the total route energy
+                total_route_energy = self.agent_controler.energy_spent - self.first_outpost_energy_tracker
+                self.current_gm.route_energy_list.append(total_route_energy)
+
+                # Check for early stopping condition (route energy improvement)
+                if total_route_energy < self.best_route_energy:
+                    self.current_reward += self.route_improvement_reward
+                    self.best_route_energy = total_route_energy
+                    self.num_not_improvement_routes = 0
+                else:
+                    self.num_not_improvement_routes += 1
+                if self.num_not_improvement_routes >= self.max_not_improvement_routes:
+                    self.early_stop = True
+
+                # Reset for the next round
+                self.outposts_visited.clear()
+
+            return self.current_reward
+
+        return self.penalty
 
     def reset(self):
+        """
+        Reset the environment and return the initial observation.
+        """
         self.current_game_index = (self.current_game_index + 1) % len(self.simulation_manager.game_managers)
         self.set_current_game_manager()
+        self.best_route_energy = np.inf
+        self.early_stop = False
+        self.num_not_improvement_routes = 0
         observation = self._get_observation()
         return observation
 
     def step(self, action):
+        """
+        Perform the given action in the environment and return the result.
+        """
         # Perform action in the environment
         self.agent_controler.agent_action(action)
         reward = self._calculate_reward()
-        done = not self.agent_controler.running
+        done = not self.agent_controler.running or self.early_stop
         observation = self._get_observation()
         info = {}
 
@@ -71,9 +130,6 @@ class CustomEnv(gym.Env):
     
     def progress_step(self):
         self.current_gm.game_step()
-
-    def render(self, mode='human'):
-        self.current_gm.rerender()
 
     def _get_observation(self):
         vision = self._get_vision()
@@ -102,54 +158,3 @@ class CustomEnv(gym.Env):
 
     def _get_graph_data(self):
         return self.kg.get_subgraph()
-
-    def _calculate_reward(self):
-        """
-        Calculate the reward for the agent based on the current path length and energy consumption.
-        """
-        # Get the agent's current path and position
-        agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-
-        # Check if the agent has reached all outposts
-        all_outposts_visited = self._check_all_outposts_visited()
-        
-        if all_outposts_visited:
-            # Calculate the total path length and energy consumption
-            path_length = self._calculate_path_length()
-            energy_consumption = self.agent_controler.energy_spent
-
-            # Get the optimal path length and energy consumption from the target manager
-            optimal_path_length = self.target_manager.min_path_length
-            optimal_energy_consumption = self.target_manager.target_route_energy
-
-            # Reward for minimizing path length and energy consumption
-            length_reward = max(0, optimal_path_length - path_length)
-            energy_reward = max(0, optimal_energy_consumption - energy_consumption)
-
-            # Completion reward
-            completion_reward = 100  # Arbitrary large reward for completion
-
-            # Total reward
-            reward = length_reward + energy_reward + completion_reward
-        else:
-            # Penalty for not visiting all outposts
-            reward = -10  # Arbitrary penalty value
-
-        return reward
-
-    def _calculate_path_length(self):
-        """
-        Calculate the current total path length based on the agent's position and visited outposts.
-        """
-        # Assume a method to get the agent's visited path
-        visited_path = self.agent_controler.get_visited_path()
-        total_length = sum(self.target_manager.calculate_distance(visited_path[i], visited_path[i+1])
-                        for i in range(len(visited_path) - 1))
-        return total_length
-
-    def _check_all_outposts_visited(self):
-        """
-        Check if the agent has visited all outposts.
-        """
-        visited_outposts = self.agent_controler.get_visited_outposts()
-        return set(visited_outposts) == set(self.outpost_coords)
