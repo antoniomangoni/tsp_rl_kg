@@ -1,4 +1,8 @@
-# from gym_manager import CustomEnv
+import gymnasium as gym
+from stable_baselines3 import PPO
+
+from custom_env import CustomEnv
+from simulation_manager import SimulationManager
 
 if __name__ == '__main__':
 
@@ -7,8 +11,8 @@ if __name__ == '__main__':
     }
 
     simulation_manager_args = {
-        'number_of_environments': 2,
-        'number_of_curricula': 5
+        'number_of_environments': 10,
+        'number_of_curricula': 3
     }
 
     game_manager_args = {
@@ -17,7 +21,12 @@ if __name__ == '__main__':
         'kg_completness': 1,
         'vision_range': 2
     }
+
+    # env = CustomEnv(game_manager_args, simulation_manager_args, model_args)
     
+    # # Instantiate the RL model (e.g., PPO)
+    # model = PPO('CnnPolicy', env, verbose=1)
+
     # gym_env = CustomEnv(game_manager_args, simulation_manager_args, model_args)
 
     
@@ -28,5 +37,8 @@ if __name__ == '__main__':
     # game_manager.run()
 
     from simulation_manager import SimulationManager
-    simulation_manager = SimulationManager(game_manager_args, simulation_manager_args['number_of_environments'], simulation_manager_args['number_of_curricula'])
+    simulation_manager = SimulationManager(game_manager_args,
+                                           simulation_manager_args['number_of_environments'],
+                                           simulation_manager_args['number_of_curricula'])
+    
     simulation_manager.game_managers[0].run()

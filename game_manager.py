@@ -1,5 +1,6 @@
 import numpy as np
 import pygame
+import random
 
 from heightmap_generator import HeightmapGenerator
 from environment import Environment
@@ -77,7 +78,7 @@ class GameManager:
         self.environment.update_heat_map(self.agent.grid_x, self.agent.grid_y, self.target_manager.min_path_length)
 
     def game_step(self):
-        self.update()
+        self.agent_controler.agent_action(random.randint(0, 10))
         self.rerender()
 
     def run(self):

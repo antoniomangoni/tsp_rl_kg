@@ -1,11 +1,7 @@
-from random import choice
-
 from environment import Environment
 from entities import Tree, MossyRock, SnowyRock, Outpost, WoodPath
 from terrains import DeepWater, Water
 from knowledge_graph import KnowledgeGraph as KG
-# from agent_model import AgentModel
-
 
 class Agent:
     def __init__(self, environment : Environment, vision_range : int):
@@ -23,45 +19,34 @@ class Agent:
 
         self.wood = 0
         self.stone = 0
-        self.water = 0
+        self.movement_actions = {
+            0: (-1, 0),  # Left
+            1: (1, 0),   # Right
+            2: (0, 1),   # Up
+            3: (0, -1),  # Down
+        }
+        self.other_actions = {
+            4: self.scout,
+            5: self.build_path,
+            6: self.place_rock,
+            7: lambda: self.collect_resource(0, 1),
+            8: lambda: self.collect_resource(0, -1),
+            9: lambda: self.collect_resource(1, 0),
+            10: lambda: self.collect_resource(-1, 0),
+        }
 
     def get_kg(self, kg : KG):
         self.kg = kg
 
-    def agent_step(self):
-        self.agent_action(self.agent_model.predict(self.environment.terrain_object_grid, self.agent.grid_x, self.agent.grid_y))
-
     def agent_action(self, action):
-        action = choice(range(11))
-        if action == 0:
-            # Left
-            self.move_agent(-1, 0)
-        elif action == 1:
-            # Right
-            self.move_agent(1, 0)
-        elif action == 2:
-            # Up
-            self.move_agent(0, 1)
-        elif action == 3:
-            # Down
-            self.move_agent(0, -1)
-
-        self.energy_spent += self.action_energy_cost
-
-        if action == 4:
-            self.scout()
-        elif action == 5:
-            self.build_path()
-        elif action == 6:
-            self.place_rock()
-        elif action == 7:
-            self.collect_resource(0, 1)
-        elif action == 8:
-            self.collect_resource(0, -1)
-        elif action == 9:
-            self.collect_resource(1, 0)
-        elif action == 10:
-            self.collect_resource(-1, 0)
+        if action in self.movement_actions:
+            dx, dy = self.movement_actions[action]
+            self.move_agent(dx, dy)
+        elif action in self.other_actions:
+            self.other_actions[action]()
+            self.energy_spent += self.action_energy_cost
+        else:
+            raise ValueError("Invalid action")
 
     def move_agent(self, dx, dy):
         new_x, new_y = self.environment.move_entity(self.agent, dx, dy)

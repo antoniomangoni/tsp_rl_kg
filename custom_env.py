@@ -30,9 +30,9 @@ class CustomEnv(gym.Env):
     
         # Initialize SimulationManager
         self.simulation_manager = SimulationManager(
+            game_manager_args,
             simulation_manager_args['number_of_environments'], 
-            simulation_manager_args['number_of_curricula'],
-            game_manager_args
+            simulation_manager_args['number_of_curricula']
         )
         
         self.current_game_index = 0
