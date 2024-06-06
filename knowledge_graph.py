@@ -232,7 +232,6 @@ class KnowledgeGraph():
     def add_nodes(self):
         # Adding player node
         self.graph_manager.player_idx = self.create_node(self.player_pos, self.player_z_level, mask=1)
-        print(f"Player node index: {self.graph_manager.player_idx}, player position: {self.player_pos}")
         for y in range(self.environment.height):
             for x in range(self.environment.width):
                 # Add terrain nodes

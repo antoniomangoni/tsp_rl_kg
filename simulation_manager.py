@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import csv
+
 from game_manager import GameManager
 
 class SimulationManager:
@@ -17,11 +19,11 @@ class SimulationManager:
     def create_games(self, number_of_games, game_manager_args):
         map_pixel_size = game_manager_args['map_pixel_size']
         screen_size = game_manager_args['screen_size']
-        kg_completness = game_manager_args['kg_completness']
+        kg_completeness = game_manager_args['kg_completeness']
         vision_range = game_manager_args['vision_range']
 
         for _ in range(number_of_games):
-            game_manager = GameManager(map_pixel_size, screen_size, kg_completness, vision_range)
+            game_manager = GameManager(map_pixel_size, screen_size, kg_completeness, vision_range)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 
@@ -97,3 +99,25 @@ class SimulationManager:
         self.plot_curriculum(x_values, simulation_points, x_values, simulation_points,
                              xlabel='Curriculum order index', ylabel='Energy required for trade route',
                              title='Energy Plot Indexed by Curriculum Order')
+        
+    def save_data(self, static_file_path='Writing/static_data.csv', game_data_file_path='Writing/game_data.csv'):
+        # Write static data to CSV
+        with open(static_file_path, mode='w', newline='') as static_file:
+            writer = csv.writer(static_file)
+            writer.writerow(['Curriculum step size', f"{self.step_size} energy units"])
+            writer.writerow(['Number of Environments', len(self.game_managers)])
+            writer.writerow(['Number of Curricula', len(self.curriculum_indices)])
+            writer.writerow(['KG Completeness', self.game_managers[0].kg_completeness])
+            writer.writerow(['Vision Range', self.game_managers[0].vision_range])
+            writer.writerow(['Map Pixel Size', self.game_managers[0].map_pixel_size])
+            writer.writerow(['Tile Size', self.game_managers[0].tile_size])
+
+        # Write game data to CSV
+        with open(game_data_file_path, mode='w', newline='') as game_data_file:
+            writer = csv.writer(game_data_file)
+            writer.writerow(['Curriculum Index', 'Target Route Energy', 'Achieved Route Energies'])
+
+            for index in self.curriculum_indices:
+                target_route_energy = self.game_managers[index].target_manager.target_route_energy
+                achieved_route_energies = self.game_managers[index].route_energy_list
+                writer.writerow([index, target_route_energy, ','.join(map(str, achieved_route_energies))])

@@ -14,7 +14,7 @@ class CustomEnv(gym.Env):
         self.completion_reward = 100
         self.route_improvement_reward = 200
         self.current_reward = 0
-        self.penalty = -1
+        self.penalty = -0.1
 
         self.max_not_improvement_routes = 5
         self.num_not_improvement_routes = 0
@@ -26,7 +26,7 @@ class CustomEnv(gym.Env):
         self.map_pixel_size = game_manager_args['map_pixel_size']
         self.screen_size = game_manager_args['screen_size']
         self.kg_completeness = game_manager_args['kg_completeness']
-        self.vision_range = game_manager_args['agent_vision_range']
+        self.vision_range = game_manager_args['vision_range']
     
         # Initialize SimulationManager
         self.simulation_manager = SimulationManager(
@@ -40,20 +40,17 @@ class CustomEnv(gym.Env):
 
         # Define observation and action spaces
         vision_shape = (3, 2 * self.vision_range + 1, 2 * self.vision_range + 1)
-        graph_shape = self.get_graph_shape()
+
+        graph_x_shape = self.kg.graph.x.shape
+        graph_edge_shape = self.kg.graph.edge_attr.shape
+
         self.observation_space = spaces.Dict({
             'vision': spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.uint8),
-            'graph': spaces.Box(low=-np.inf, high=np.inf, shape=graph_shape, dtype=np.float32)
+            'graph': spaces.Box(low=-np.inf, high=np.inf, shape=graph_x_shape, dtype=np.float32)
         })
 
-        self.agent_model = AgentModel(vision_shape, graph_shape, self.num_actions,
-                                      self.kg.num_node_features, self.kg.num_edge_features)
-
+        self.agent_model = AgentModel(vision_shape, graph_x_shape, graph_edge_shape, self.num_actions)
         self.action_space = spaces.Discrete(self.num_actions)
-
-    def get_graph_shape(self):
-        sub_graph = self.kg.get_subgraph()
-        return sub_graph.x.shape
 
     def set_current_game_manager(self):
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
@@ -103,11 +100,15 @@ class CustomEnv(gym.Env):
 
         return self.penalty
 
-    def reset(self):
+    def reset(self, index=None):
         """
         Reset the environment and return the initial observation.
         """
-        self.current_game_index = (self.current_game_index + 1) % len(self.simulation_manager.game_managers)
+        if index is None:
+            self.current_game_index = (self.current_game_index + 1) % len(self.simulation_manager.game_managers)
+        else:
+            self.current_game_index = index
+        
         self.set_current_game_manager()
         self.best_route_energy = np.inf
         self.early_stop = False
@@ -121,15 +122,15 @@ class CustomEnv(gym.Env):
         """
         # Perform action in the environment
         self.agent_controler.agent_action(action)
+        # Update the screen
+        self.current_gm.rerender()
+
         reward = self._calculate_reward()
         done = not self.agent_controler.running or self.early_stop
         observation = self._get_observation()
         info = {}
 
         return observation, reward, done, info
-    
-    def progress_step(self):
-        self.current_gm.game_step()
 
     def _get_observation(self):
         vision = self._get_vision()
@@ -158,3 +159,25 @@ class CustomEnv(gym.Env):
 
     def _get_graph_data(self):
         return self.kg.get_subgraph()
+    
+    def evaluate_model(self, model):
+        """
+        Evaluate the trained model across different environments of increasing difficulty.
+        """
+        
+        obs = self.reset(-1)
+        done = False
+        total_reward = 0
+        while not done:
+            action, _ = model.predict(obs)
+            obs, reward, done, info = self.step(action)
+            total_reward += reward
+        print(f"Last Environment: Total Reward = {total_reward}")
+        print(f"Route Energy List: {self.current_gm.route_energy_list}")
+
+    def close(self):
+        """
+        Close the environment.
+        """
+        self.current_gm.end_game()
+        self.simulation_manager.save_data()

@@ -66,6 +66,11 @@ class Renderer:
         if terrain_tile.entity_on_tile is not None:
             self.surface.blit(terrain_tile.entity_on_tile.image, (x * self.tile_size, y * self.tile_size))
 
+
+    ###################################################################
+    #   UI has not been implemented in this version of the renderer   #
+    ###################################################################
+
     def render_heatmap(self, max_intensity, bool_heatmap=False):
         if not bool_heatmap:
             return

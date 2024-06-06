@@ -11,11 +11,11 @@ from target import Target_Manager
 from knowledge_graph import KnowledgeGraph
 
 class GameManager:
-    def __init__(self, map_pixel_size=32, screen_size=800, kg_completness=1, vision_range=2):
+    def __init__(self, map_pixel_size=32, screen_size=800, kg_completeness=1, vision_range=2):
         self.map_size = map_pixel_size
         self.tile_size = screen_size // map_pixel_size
         self.environment = None
-        self.kg_completness = kg_completness
+        self.kg_completeness = kg_completeness
         self.agent_controler = None
         self.agent = None
         self.target_manager = None
@@ -51,7 +51,7 @@ class GameManager:
         self.target_manager = Target_Manager(self.environment)
 
     def init_knowledge_graph(self):
-        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, self.kg_completness)
+        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, self.kg_completeness)
         self.agent_controler.get_kg(self.kg_class)
 
     def initialise_rendering(self):
@@ -73,18 +73,18 @@ class GameManager:
         self.running = False
         pygame.quit()
 
-    def update(self):
-        self.agent_controler.agent_action(11)
-        self.environment.update_heat_map(self.agent.grid_x, self.agent.grid_y, self.target_manager.min_path_length)
 
+    #####################################################################################
+    #   This is the main game loop that runs the game when the model is not being used  #
+    #####################################################################################
+ 
     def game_step(self):
         self.agent_controler.agent_action(random.randint(0, 10))
+        # self.environment.update_heat_map(self.agent.grid_x, self.agent.grid_y, self.target_manager.min_path_length)
         self.rerender()
 
     def run(self):
-        self.init_pygame()
-        self.init_knowledge_graph()
-        self.initialise_rendering()
+        self.start_game()
         while self.running:
             self.game_step()
             # pygame.time.wait(1000)
