@@ -2,6 +2,8 @@ from stable_baselines3 import PPO
 from custom_env import CustomEnv
 import numpy as np
 
+from agent_model import AgentModel
+
 # Define the arguments for the environment and model
 model_args = {
     'num_actions': 11
@@ -13,7 +15,7 @@ simulation_manager_args = {
 }
 
 game_manager_args = {
-    'map_pixel_size': 16,
+    'map_pixel_size': 32,
     'screen_size': 800,
     'kg_completeness': 1,
     'vision_range': 2
@@ -46,8 +48,25 @@ def evaluate_policy(self, model, env, n_eval_episodes=10):
 # Bind the new method to the CustomEnv instance
 CustomEnv.evaluate_policy = evaluate_policy
 
-# Instantiate the RL model (PPO in this case)
-model = PPO('MultiInputPolicy', env, verbose=2)
+# Define model initialization parameters directly from environment setup
+vision_shape = (3, 2 * game_manager_args['vision_range'] + 1, 2 * game_manager_args['vision_range'] + 1)
+num_graph_features = env.kg.graph.x.shape[1]
+num_edge_features = env.kg.graph.edge_attr.shape[1]
+
+model = PPO("MultiInputPolicy", env, policy_kwargs={
+    'features_extractor_class': AgentModel,
+    'features_extractor_kwargs': {
+        'num_graph_features': num_graph_features,
+        'num_edge_names': num_edge_features,
+        'num_actions': model_args['num_actions']
+    }
+}, verbose=1)
+"""
+the observation is the vision and the whole graph.
+Then the graph is separated into its nodes and egdes in the model.
+also why are the num_actions in the features if they are the outputs?
+"""
+
 
 # Train the model
 total_timesteps = 100000

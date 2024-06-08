@@ -30,13 +30,6 @@ class KnowledgeGraph():
         self.init_graph_tensors()
         self.complete_graph()
         # self.visualise_graph()
-    
-    def get_subgraph(self):
-        # Extract subgraph around the given terrain node using self.distance
-        node_idx = self.graph_manager.get_node_idx(self.player_pos, self.terrain_z_level)
-        subgraph_nodes, subgraph_edges = subgraph(node_idx, self.distance, self.graph.edge_index, relabel_nodes=True)
-        subgraph_data = Data(x=self.graph.x[subgraph_nodes], edge_index=subgraph_edges)
-        return subgraph_data
 
     def create_node(self, coordinates, z_level, mask=0):
         x, y, z_level, type_id, mask = self.create_node_features(coordinates, z_level, mask)
@@ -403,3 +396,11 @@ class KnowledgeGraph():
         elif z == self.player_z_level:
             return (0, 0, 0)  # black for player
         return None
+
+
+    def get_subgraph(self):
+        # Extract subgraph around the given terrain node using self.distance
+        node_idx = self.graph_manager.get_node_idx(self.player_pos, self.terrain_z_level)
+        subgraph_nodes, subgraph_edges = subgraph(node_idx, self.distance, self.graph.edge_index, relabel_nodes=True)
+        subgraph_data = Data(x=self.graph.x[subgraph_nodes], edge_index=subgraph_edges)
+        return subgraph_data
