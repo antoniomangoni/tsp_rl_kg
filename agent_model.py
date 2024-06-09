@@ -28,10 +28,10 @@ class VisionProcessor(BaseFeaturesExtractor):
 
 
 class GraphProcessor(nn.Module):
-    def __init__(self, num_graph_features, num_edge_features, output=128):
+    def __init__(self, num_graph_node_features, output=128):
         super(GraphProcessor, self).__init__()
         self.output = output
-        self.conv1 = GATConv(num_graph_features, output // 2, heads=2, concat=True)
+        self.conv1 = GATConv(num_graph_node_features, output // 2, heads=2, concat=True)
         self.conv2 = GATConv(output, output // 2, heads=2, concat=True)
 
     def forward(self, graph_data):
@@ -58,15 +58,14 @@ class GraphProcessor(nn.Module):
 
         return x
 
-
 class AgentModel(nn.Module):
-    def __init__(self, observation_space, num_graph_features, num_edge_features, num_actions):
+    def __init__(self, observation_space, num_graph_x_features, num_actions):
         super(AgentModel, self).__init__()
         # Extract the necessary vision shape from observation space
         vision_shape = observation_space.spaces['vision'].shape
         
         self.vision_processor = VisionProcessor(vision_shape, features_dim=128)
-        self.graph_processor = GraphProcessor(num_graph_features, num_edge_features, output=128)
+        self.graph_processor = GraphProcessor(num_graph_x_features, output=128)
         
         combined_input_size = self.vision_processor.features_dim + self.graph_processor.output
         self.fc1 = nn.Linear(combined_input_size, 128)

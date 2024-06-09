@@ -32,23 +32,36 @@ class CustomEnv(gym.Env):
         
         self.current_game_index = 0
         self.set_current_game_manager()
-        
+
+        num_nodes = self.kg.graph.num_nodes  # The constant number of nodes
+        num_edges = self.kg.graph.num_edges  # The constant number of edges
+        num_node_features = self.kg.graph.num_node_features  # Features per node
+        num_edge_features = self.kg.graph.num_edge_features  # Features per edge
+
         vision_shape = (3, 2 * self.vision_range + 1, 2 * self.vision_range + 1)
-        graph_x_shape = self.kg.graph.x.shape
-        graph_edge_attr_shape = self.kg.graph.edge_attr.shape
+        vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.uint8)
+
+        # Node features: Assuming num_node_features is the number of features each node has
+        node_feature_space = spaces.Box(low=0, high=7, shape=(num_node_features,), dtype=np.uint8)  # Ensure it's a tuple
+
+        # Edge attributes: Assuming num_edge_features is the number of features each edge has
+        edge_attr_space = spaces.Box(low=0, high=1000, shape=(num_edge_features,), dtype=np.uint8)  # Ensure it's a tuple
+
+        # Graph space setup
+        graph_space = spaces.Graph(node_space=node_feature_space, edge_space=edge_attr_space)
+
+        # Combined observation space
+        self.observation_space = spaces.Dict({
+            'vision': vision_space,
+            'graph': graph_space
+        })
 
         print("custom_env.py, __init__")
         print(f"Vision shape: {vision_shape} (channels, height, width)")
-        print(f"Graph X shape: {graph_x_shape} (nodes, features)")
-        print(f"Graph Edge Attr shape: {graph_edge_attr_shape} (edges, features)")
+        print(f"Graph X shape: (num_nodes, num_node_features) ({num_nodes}, {num_node_features})")
+        print(f"Graph Edge Attr shape: (num_edges, num_edge_features) ({num_edges}, {num_edge_features})")
 
-        self.observation_space = spaces.Dict({
-            'vision': spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.uint8),
-            'graph_x': spaces.Box(low=-np.inf, high=np.inf, shape=graph_x_shape, dtype=np.float32),
-            'graph_edge_attr': spaces.Box(low=-np.inf, high=np.inf, shape=graph_edge_attr_shape, dtype=np.float32)
-        })
-
-        self.agent_model = AgentModel(vision_shape, graph_x_shape[0], graph_edge_attr_shape[0], self.num_actions)
+        self.agent_model = AgentModel(self.observation_space, num_node_features, self.num_actions)
         self.action_space = spaces.Discrete(self.num_actions)
 
     def set_current_game_manager(self):
@@ -106,10 +119,10 @@ class CustomEnv(gym.Env):
         return observation, reward, done, info
 
     def _get_observation(self):
-        vision = self._get_vision()
-        graph_data = self.current_gm.kg_class.graph
         # Ensure the observation is returned as a dictionary with specific keys
-        return {'vision': vision, 'graph': graph_data}
+        return {'vision': self._get_vision(),
+                 'graph': self.current_gm.kg_class.get_subgraph()
+                }
 
     def _get_vision(self):
         # Calculate the size of the vision area in pixels
@@ -131,14 +144,16 @@ class CustomEnv(gym.Env):
         # Convert the surface to an array
         vision_array = pygame.surfarray.array3d(vision_view)
 
-        # Pad the array if it's smaller than expected due to being near the edge
+        # The array needs to be transposed from (width, height, channels) to (channels, height, width)
+        vision_array = np.transpose(vision_array, (2, 0, 1))
+
+        # Prepare the padded array with the expected shape
         expected_shape = (3, vision_pixel_size, vision_pixel_size)  # RGB channels
         padded_array = np.zeros(expected_shape, dtype=np.uint8)
-        h, w = vision_array.shape[1], vision_array.shape[2]
-        padded_array[:, :h, :w] = vision_array
 
-        # Convert from (width, height, channels) to (channels, height, width) for PyTorch
-        padded_array = np.transpose(padded_array, (2, 0, 1))
+        # Only update the valid area, avoiding shape mismatch
+        _, h, w = vision_array.shape  # Extract actual dimensions after transpose
+        padded_array[:, :h, :w] = vision_array
 
         return padded_array
 

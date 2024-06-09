@@ -39,7 +39,6 @@ class Environment:
 
         self.heat_map = np.zeros_like(self.heightmap)
 
-
     def update_heat_map(self, x, y, intensity=10):
         # Reduce all values by 1 and clip to the range [0, intensity]
         self.heat_map = np.clip(self.heat_map - 1, 0, intensity)

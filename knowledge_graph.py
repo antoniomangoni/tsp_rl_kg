@@ -29,7 +29,7 @@ class KnowledgeGraph():
 
         self.init_graph_tensors()
         self.complete_graph()
-        # self.visualise_graph()
+        self.visualise_graph()
 
     def create_node(self, coordinates, z_level, mask=0):
         x, y, z_level, type_id, mask = self.create_node_features(coordinates, z_level, mask)
@@ -74,7 +74,6 @@ class KnowledgeGraph():
         self.add_entity_edges()  
         self.verify_graph_integrity()
 
-
     def count_entity_nodes(self):
         activated_entities = 0
         deactivated_entities = 0
@@ -115,7 +114,6 @@ class KnowledgeGraph():
         if self.entity_array[x, y] > 1:
             self.activate_node_and_maybe_its_edges(self.graph_manager.get_node_idx((x, y), self.entity_z_level))
         return True
-        
 
     def activate_node_and_maybe_its_edges(self, idx):
         self.set_node_mask_1(idx)
@@ -283,6 +281,14 @@ class KnowledgeGraph():
                 if self.environment.within_bounds(x, y):
                     discovered[x, y] = 1
         return discovered
+    
+    def set_current_completness(self):
+        # set all discovered coordinates to 0
+        self.discovered_coordinates = np.zeros_like(self.terrain_array, dtype=int)
+        for x in range(self.player_pos[0] - self.distance, self.player_pos[0] + self.distance + 1):
+            for y in range(self.player_pos[1] - self.distance, self.player_pos[1] + self.distance + 1):
+                if self.environment.within_bounds(x, y):
+                    self.discovered_coordinates[x, y] = 1
 
     def compute_total_possible_edges(self):
         # Intra-terrain edges   
@@ -397,10 +403,11 @@ class KnowledgeGraph():
             return (0, 0, 0)  # black for player
         return None
 
-
     def get_subgraph(self):
         # Extract subgraph around the given terrain node using self.distance
         node_idx = self.graph_manager.get_node_idx(self.player_pos, self.terrain_z_level)
-        subgraph_nodes, subgraph_edges = subgraph(node_idx, self.distance, self.graph.edge_index, relabel_nodes=True)
+        subgraph_nodes, subgraph_edges = subgraph(node_idx, self.distance, self.graph.edge_index)
         subgraph_data = Data(x=self.graph.x[subgraph_nodes], edge_index=subgraph_edges)
         return subgraph_data
+    
+    
