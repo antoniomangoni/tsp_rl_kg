@@ -2,7 +2,7 @@ from graph_idx_manager import Graph_Manager
 
 import torch
 from torch_geometric.data import Data
-from torch_geometric.utils import to_networkx, subgraph
+from torch_geometric.utils import to_networkx, k_hop_subgraph
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -29,7 +29,7 @@ class KnowledgeGraph():
 
         self.init_graph_tensors()
         self.complete_graph()
-        self.visualise_graph()
+        # self.visualise_graph()
 
     def create_node(self, coordinates, z_level, mask=0):
         x, y, z_level, type_id, mask = self.create_node_features(coordinates, z_level, mask)
@@ -60,13 +60,13 @@ class KnowledgeGraph():
         feature_size = 5 # x, y, z_level, type_id, mask
         edge_attr_size = 2 # distance, mask
         self.graph = Data(
-            x=torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.short),
-            edge_index=torch.full((2, self.num_possible_edges), -1, dtype=torch.short),
-            edge_attr=torch.full((self.num_possible_edges, edge_attr_size), -1, dtype=torch.short)
+            x=torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.int),
+            edge_index=torch.full((2, self.num_possible_edges), -1, dtype=torch.int),
+            edge_attr=torch.full((self.num_possible_edges, edge_attr_size), -1, dtype=torch.int)
         )
         # Preallocated tensors for updates
-        self.single_node_feature = torch.empty((feature_size), dtype=torch.short)
-        self.single_edge_feature = torch.empty((edge_attr_size), dtype=torch.short)
+        self.single_node_feature = torch.empty((feature_size), dtype=torch.int)
+        self.single_edge_feature = torch.empty((edge_attr_size), dtype=torch.int)
 
     def complete_graph(self):
         self.add_nodes()
@@ -217,7 +217,7 @@ class KnowledgeGraph():
         if features is None:
             return None
         node_idx = self.graph_manager.create_idx(coordinates, z_level)
-        self.graph.x[node_idx] = torch.tensor(features, dtype=torch.short)
+        self.graph.x[node_idx] = torch.tensor(features, dtype=torch.int)
         return node_idx
     
     def add_nodes(self):
@@ -245,8 +245,8 @@ class KnowledgeGraph():
         self.add_edge_to_graph(node_idx1, node_idx2, distance, active, direct_edge_idx, reverse_edge_idx)
 
     def add_edge_to_graph(self, idx1, idx2, distance, active, direct_edge_idx, reverse_edge_idx):
-        self.graph.edge_index[:, direct_edge_idx] = torch.tensor([idx1, idx2], dtype=torch.short)
-        self.graph.edge_index[:, reverse_edge_idx] = torch.tensor([idx2, idx1], dtype=torch.short)
+        self.graph.edge_index[:, direct_edge_idx] = torch.tensor([idx1, idx2], dtype=torch.int)
+        self.graph.edge_index[:, reverse_edge_idx] = torch.tensor([idx2, idx1], dtype=torch.int)
         self.graph.edge_attr[direct_edge_idx] = torch.tensor([distance, active], dtype=torch.float)
         self.graph.edge_attr[reverse_edge_idx] = torch.tensor([distance, active], dtype=torch.float)
 
@@ -404,10 +404,18 @@ class KnowledgeGraph():
         return None
 
     def get_subgraph(self):
-        # Extract subgraph around the given terrain node using self.distance
         node_idx = self.graph_manager.get_node_idx(self.player_pos, self.terrain_z_level)
-        subgraph_nodes, subgraph_edges = subgraph(node_idx, self.distance, self.graph.edge_index)
-        subgraph_data = Data(x=self.graph.x[subgraph_nodes], edge_index=subgraph_edges)
+
+        subset, edge_index, mapping, edge_mask = k_hop_subgraph(
+            node_idx=node_idx,
+            num_hops=self.distance,
+            edge_index=self.graph.edge_index
+        )
+
+        subgraph_data = Data(
+            x=self.graph.x[subset],  # Node features of the subgraph
+            edge_index=edge_index,   # Edges of the subgraph
+            edge_attr=self.graph.edge_attr[edge_mask]  # Edge attributes of the subgraph
+        )
+
         return subgraph_data
-    
-    
