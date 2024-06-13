@@ -66,7 +66,12 @@ class Renderer:
         if terrain_tile.entity_on_tile is not None:
             self.surface.blit(terrain_tile.entity_on_tile.image, (x * self.tile_size, y * self.tile_size))
 
-
+    def get_clamped_view_view(self, x, y, width, height):
+        # Ensure the view area is within the bounds of the game screen
+        view_rect = pygame.Rect(x, y, width, height)
+        view_rect.clamp_ip(self.surface.get_rect())
+        return self.surface.subsurface(view_rect)
+    
     ###################################################################
     #   UI has not been implemented in this version of the renderer   #
     ###################################################################

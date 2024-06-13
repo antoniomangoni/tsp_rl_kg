@@ -16,9 +16,9 @@ if __name__ == '__main__':
     }
 
     game_manager_args = {
-        'map_pixel_size': 16,
-        'screen_size': 800,
-        'kg_completeness': 1,
+        'num_tiles': 16,
+        'screen_size': 1200,
+        'kg_completeness': 0.1,
         'vision_range': 2
     }
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     
 
     from game_manager import GameManager
-    game_manager = GameManager(game_manager_args['map_pixel_size'], game_manager_args['screen_size'],
+    game_manager = GameManager(game_manager_args['num_tiles'], game_manager_args['screen_size'],
                                game_manager_args['kg_completeness'], game_manager_args['vision_range'])
                                
     game_manager.run()

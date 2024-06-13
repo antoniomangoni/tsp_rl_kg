@@ -5,25 +5,26 @@ import csv
 from game_manager import GameManager
 
 class SimulationManager:
-    def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10):
+    def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10, plot=False):
         self.game_managers = []
         self.curriculum_indices = []
-        self.create_games(number_of_environments, game_manager_args)
+        self.create_games(number_of_environments, game_manager_args, plot)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
         self.step_size = round(step_size, 2)
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
         print(f"Curriculum step size: ~{self.step_size} energy units")
-        self.create_plots(energy_values, self.curriculum_indices)
+        if plot:
+            self.create_plots(energy_values, self.curriculum_indices)
 
-    def create_games(self, number_of_games, game_manager_args):
+    def create_games(self, number_of_games, game_manager_args, plot):
         map_pixel_size = game_manager_args['map_pixel_size']
         screen_size = game_manager_args['screen_size']
         kg_completeness = game_manager_args['kg_completeness']
         vision_range = game_manager_args['vision_range']
 
         for _ in range(number_of_games):
-            game_manager = GameManager(map_pixel_size, screen_size, kg_completeness, vision_range)
+            game_manager = GameManager(map_pixel_size, screen_size, kg_completeness, vision_range, plot)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 

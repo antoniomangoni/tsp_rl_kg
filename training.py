@@ -15,14 +15,14 @@ simulation_manager_args = {
 }
 
 game_manager_args = {
-    'map_pixel_size': 16,
+    'map_pixel_size': 8,
     'screen_size': 400,
     'kg_completeness': 1,
-    'vision_range': 2
+    'vision_range': 1
 }
 
 # Initialize the custom environment
-env = CustomEnv(game_manager_args, simulation_manager_args, model_args)
+env = CustomEnv(game_manager_args, simulation_manager_args, model_args, plot=False)
 
 # Print the observation space details
 print("Observation Space:", env.observation_space)

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class KnowledgeGraph():
-    def __init__(self, environment, vision_range, completion=1.0):
+    def __init__(self, environment, vision_range, completion=1.0, plot=False):
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
@@ -29,7 +29,8 @@ class KnowledgeGraph():
 
         self.init_graph_tensors()
         self.complete_graph()
-        # self.visualise_graph()
+        if plot:
+            self.visualise_graph()
 
     def create_node(self, coordinates, z_level, mask=0):
         x, y, z_level, type_id, mask = self.create_node_features(coordinates, z_level, mask)

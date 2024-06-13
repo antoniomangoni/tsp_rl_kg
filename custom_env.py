@@ -7,7 +7,7 @@ from agent_model import AgentModel
 from simulation_manager import SimulationManager
 
 class CustomEnv(gym.Env):
-    def __init__(self, game_manager_args, simulation_manager_args, model_args):
+    def __init__(self, game_manager_args, simulation_manager_args, model_args, plot = False):
         super(CustomEnv, self).__init__()
         self.new_outpost_reward = 10
         self.completion_reward = 100
@@ -27,7 +27,8 @@ class CustomEnv(gym.Env):
         self.simulation_manager = SimulationManager(
             game_manager_args,
             simulation_manager_args['number_of_environments'], 
-            simulation_manager_args['number_of_curricula']
+            simulation_manager_args['number_of_curricula'],
+            plot = plot
         )
         
         self.current_game_index = 0
@@ -38,6 +39,7 @@ class CustomEnv(gym.Env):
         num_node_features = self.kg.graph.num_node_features  # Features per node
         num_edge_features = self.kg.graph.num_edge_features  # Features per edge
 
+        self.vision_pixel_size = (2 * self.vision_range + 1) * self.current_gm.tile_size
         vision_shape = (3, 2 * self.vision_range + 1, 2 * self.vision_range + 1)
         vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.uint8)
 
@@ -107,6 +109,8 @@ class CustomEnv(gym.Env):
         self.early_stop = False
         self.num_not_improvement_routes = 0
         observation = self._get_observation()
+        assert self.observation_space['vision'].contains(observation['vision']), f"Vision data out of bounds: {observation['vision']}"
+        assert self.observation_space['graph'].contains(observation['graph']), f"Graph data out of bounds: {observation['graph']}"
         return observation
 
     def step(self, action):
@@ -124,38 +128,32 @@ class CustomEnv(gym.Env):
                  'graph': self.current_gm.kg_class.get_subgraph()
                 }
 
+    def get_clamped_surface(self):
+        # Ensure the surface area is within the bounds of the game screen
+        x = (self.agent_controler.agent.grid_x - self.vision_range) * self.current_gm.tile_size
+        y = (self.agent_controler.agent.grid_y - self.vision_range) * self.current_gm.tile_size
+        width = height = self.vision_pixel_size
+        surface_rect = pygame.Rect(x, y, width, height)
+        surface_rect.clamp_ip(self.current_gm.renderer.surface.get_rect())
+        return self.current_gm.renderer.surface.subsurface(surface_rect)
+
     def _get_vision(self):
         # Calculate the size of the vision area in pixels
-        vision_pixel_size = (2 * self.vision_range + 1) * self.current_gm.tile_size
+        vision_surface = self.get_clamped_surface()
 
-        # Calculate the top-left corner of the vision rectangle in pixel coordinates
-        vision_rect_x = (self.agent_controler.agent.grid_x - self.vision_range) * self.current_gm.tile_size
-        vision_rect_y = (self.agent_controler.agent.grid_y - self.vision_range) * self.current_gm.tile_size
-
-        # Define the vision rectangle
-        vision_rect = pygame.Rect(vision_rect_x, vision_rect_y, vision_pixel_size, vision_pixel_size)
-
-        # Ensure the vision rectangle is within the bounds of the game screen
-        vision_rect.clamp_ip(self.current_gm.renderer.surface.get_rect())
-
-        # Get a view of the vision rectangle
-        vision_view = self.current_gm.renderer.surface.subsurface(vision_rect)
+        # save the vision view to a file
+        pygame.image.save(vision_surface, "vision_view.png")
 
         # Convert the surface to an array
-        vision_array = pygame.surfarray.array3d(vision_view)
+        vision_array = pygame.surfarray.array3d(vision_surface)
+        print("custom_env.py, _get_vision, vision_array.shape:", vision_array.shape)
 
         # The array needs to be transposed from (width, height, channels) to (channels, height, width)
         vision_array = np.transpose(vision_array, (2, 0, 1))
 
-        # Prepare the padded array with the expected shape
-        expected_shape = (3, vision_pixel_size, vision_pixel_size)  # RGB channels
-        padded_array = np.zeros(expected_shape, dtype=np.uint8)
+        return vision_array
 
-        # Only update the valid area, avoiding shape mismatch
-        _, h, w = vision_array.shape  # Extract actual dimensions after transpose
-        padded_array[:, :h, :w] = vision_array
 
-        return padded_array
 
     def evaluate_policy(self, model, n_eval_episodes=10):
         all_episode_rewards = []

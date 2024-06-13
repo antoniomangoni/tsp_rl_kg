@@ -11,9 +11,9 @@ from target import Target_Manager
 from knowledge_graph import KnowledgeGraph
 
 class GameManager:
-    def __init__(self, map_pixel_size=32, screen_size=800, kg_completeness=1, vision_range=2):
-        self.map_size = map_pixel_size
-        self.tile_size = screen_size // map_pixel_size
+    def __init__(self, num_tiles=32, screen_size=800, kg_completeness=1, vision_range=2, plot=False):
+        self.num_tiles = num_tiles
+        self.tile_size = screen_size // num_tiles
         self.environment = None
         self.kg_completeness = kg_completeness
         self.agent_controler = None
@@ -26,6 +26,7 @@ class GameManager:
 
         self.renderer = None
         self.running = True
+        self.plot = plot
 
         self.initialize_components()
 
@@ -36,8 +37,8 @@ class GameManager:
     def initialize_components(self):
         # Generate heightmap
         heightmap_generator = HeightmapGenerator(
-            width=self.map_size, 
-            height=self.map_size, 
+            width=self.num_tiles, 
+            height=self.num_tiles, 
             scale=10, 
             terrain_thresholds=np.array([0.2, 0.38, 0.5, 0.7, 0.9, 1.0]), 
             octaves=3, persistence=0.2, lacunarity=2.0
@@ -51,12 +52,12 @@ class GameManager:
         self.target_manager = Target_Manager(self.environment)
 
     def init_knowledge_graph(self):
-        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, self.kg_completeness)
+        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, self.kg_completeness, self.plot)
         self.agent_controler.get_kg(self.kg_class)
 
     def initialise_rendering(self):
         self.renderer = Renderer(self.environment, self.agent_controler)
-        self.screen = pygame.display.set_mode((self.map_size * self.tile_size, self.map_size * self.tile_size))
+        self.screen = pygame.display.set_mode((self.num_tiles * self.tile_size, self.num_tiles * self.tile_size))
         self.renderer.init_render()
 
     def rerender(self):
@@ -89,7 +90,7 @@ class GameManager:
             self.game_step()
             # pygame.time.wait(1000)
             # save the surface to an image
-            pygame.image.save(self.screen, "screenshot.jpeg")
+            pygame.image.save(self.screen, "small_game_background.jpeg")
             exit()
 
         pygame.quit()
