@@ -19,7 +19,7 @@ class CustomEnv(gym.Env):
         self.best_route_energy = np.inf
         self.outposts_visited = set()
         self.num_actions = model_args['num_actions']
-        self.map_pixel_size = game_manager_args['map_pixel_size']
+        self.num_tiles = game_manager_args['num_tiles']
         self.screen_size = game_manager_args['screen_size']
         self.kg_completeness = game_manager_args['kg_completeness']
         self.vision_range = game_manager_args['vision_range']
@@ -39,8 +39,8 @@ class CustomEnv(gym.Env):
         num_node_features = self.kg.graph.num_node_features  # Features per node
         num_edge_features = self.kg.graph.num_edge_features  # Features per edge
 
-        self.vision_pixel_size = (2 * self.vision_range + 1) * self.current_gm.tile_size
-        vision_shape = (3, 2 * self.vision_range + 1, 2 * self.vision_range + 1)
+        self.vision_pixel_side_size = (2 * self.vision_range + 1) * self.current_gm.tile_size
+        vision_shape = (3, self.vision_pixel_side_size, self.vision_pixel_side_size)
         vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.uint8)
 
         # Node features: Assuming num_node_features is the number of features each node has
@@ -132,7 +132,7 @@ class CustomEnv(gym.Env):
         # Ensure the surface area is within the bounds of the game screen
         x = (self.agent_controler.agent.grid_x - self.vision_range) * self.current_gm.tile_size
         y = (self.agent_controler.agent.grid_y - self.vision_range) * self.current_gm.tile_size
-        width = height = self.vision_pixel_size
+        width = height = self.vision_pixel_side_size
         surface_rect = pygame.Rect(x, y, width, height)
         surface_rect.clamp_ip(self.current_gm.renderer.surface.get_rect())
         return self.current_gm.renderer.surface.subsurface(surface_rect)
@@ -142,7 +142,7 @@ class CustomEnv(gym.Env):
         vision_surface = self.get_clamped_surface()
 
         # save the vision view to a file
-        pygame.image.save(vision_surface, "vision_view.png")
+        # pygame.image.save(vision_surface, "vision_view.png")
 
         # Convert the surface to an array
         vision_array = pygame.surfarray.array3d(vision_surface)
@@ -152,8 +152,6 @@ class CustomEnv(gym.Env):
         vision_array = np.transpose(vision_array, (2, 0, 1))
 
         return vision_array
-
-
 
     def evaluate_policy(self, model, n_eval_episodes=10):
         all_episode_rewards = []

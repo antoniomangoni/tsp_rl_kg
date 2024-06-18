@@ -13,18 +13,18 @@ class SimulationManager:
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
         self.step_size = round(step_size, 2)
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
-        print(f"Curriculum step size: ~{self.step_size} energy units")
+        # print(f"Curriculum step size: ~{self.step_size} energy units")
         if plot:
             self.create_plots(energy_values, self.curriculum_indices)
 
     def create_games(self, number_of_games, game_manager_args, plot):
-        map_pixel_size = game_manager_args['map_pixel_size']
+        num_tiles = game_manager_args['num_tiles']
         screen_size = game_manager_args['screen_size']
         kg_completeness = game_manager_args['kg_completeness']
         vision_range = game_manager_args['vision_range']
 
         for _ in range(number_of_games):
-            game_manager = GameManager(map_pixel_size, screen_size, kg_completeness, vision_range, plot)
+            game_manager = GameManager(num_tiles, screen_size, kg_completeness, vision_range, plot)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 
@@ -110,7 +110,7 @@ class SimulationManager:
             writer.writerow(['Number of Curricula', len(self.curriculum_indices)])
             writer.writerow(['KG Completeness', self.game_managers[0].kg_completeness])
             writer.writerow(['Vision Range', self.game_managers[0].vision_range])
-            writer.writerow(['Map Pixel Size', self.game_managers[0].map_pixel_size])
+            writer.writerow(['Map Pixel Size', self.game_managers[0].num_tiles])
             writer.writerow(['Tile Size', self.game_managers[0].tile_size])
 
         # Write game data to CSV
