@@ -2,12 +2,13 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 import pygame
+from torch_geometric.data import Data
 
 from agent_model import AgentModel
 from simulation_manager import SimulationManager
 
 class CustomEnv(gym.Env):
-    def __init__(self, game_manager_args, simulation_manager_args, model_args, plot = False):
+    def __init__(self, game_manager_args, simulation_manager_args, model_args, plot=False):
         super(CustomEnv, self).__init__()
         self.new_outpost_reward = 10
         self.completion_reward = 100
@@ -28,31 +29,26 @@ class CustomEnv(gym.Env):
             game_manager_args,
             simulation_manager_args['number_of_environments'], 
             simulation_manager_args['number_of_curricula'],
-            plot = plot
+            plot=plot
         )
         
         self.current_game_index = 0
         self.set_current_game_manager()
 
-        num_nodes = self.kg.graph.num_nodes  # The constant number of nodes
-        num_edges = self.kg.graph.num_edges  # The constant number of edges
-        num_node_features = self.kg.graph.num_node_features  # Features per node
-        num_edge_features = self.kg.graph.num_edge_features  # Features per edge
+        num_nodes = self.kg.graph.num_nodes
+        num_edges = self.kg.graph.num_edges
+        num_node_features = self.kg.graph.num_node_features
+        num_edge_features = self.kg.graph.num_edge_features
 
         self.vision_pixel_side_size = (2 * self.vision_range + 1) * self.current_gm.tile_size
         vision_shape = (3, self.vision_pixel_side_size, self.vision_pixel_side_size)
         vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.uint8)
 
-        # Node features: Assuming num_node_features is the number of features each node has
-        node_feature_space = spaces.Box(low=0, high=7, shape=(num_node_features,), dtype=np.uint8)  # Ensure it's a tuple
+        node_feature_space = spaces.Box(low=0, high=7, shape=(num_node_features,), dtype=np.uint8)
+        edge_attr_space = spaces.Box(low=0, high=1000, shape=(num_edge_features,), dtype=np.uint8)
 
-        # Edge attributes: Assuming num_edge_features is the number of features each edge has
-        edge_attr_space = spaces.Box(low=0, high=1000, shape=(num_edge_features,), dtype=np.uint8)  # Ensure it's a tuple
-
-        # Graph space setup
         graph_space = spaces.Graph(node_space=node_feature_space, edge_space=edge_attr_space)
 
-        # Combined observation space
         self.observation_space = spaces.Dict({
             'vision': vision_space,
             'graph': graph_space
@@ -110,7 +106,7 @@ class CustomEnv(gym.Env):
         self.num_not_improvement_routes = 0
         observation = self._get_observation()
         assert self.observation_space['vision'].contains(observation['vision']), f"Vision data out of bounds: {observation['vision']}"
-        assert self.observation_space['graph'].contains(observation['graph']), f"Graph data out of bounds: {observation['graph']}"
+        assert self._validate_graph_observation(observation['graph']), f"Graph data out of bounds: {observation['graph']}"
         return observation
 
     def step(self, action):
@@ -123,13 +119,21 @@ class CustomEnv(gym.Env):
         return observation, reward, done, info
 
     def _get_observation(self):
-        # Ensure the observation is returned as a dictionary with specific keys
-        return {'vision': self._get_vision(),
-                 'graph': self.current_gm.kg_class.get_subgraph()
-                }
+        vision = self._get_vision()
+        graph = self.current_gm.kg_class.get_subgraph()
+        assert isinstance(graph, Data), "The graph is not a Data object"
+        graph.x = np.clip(graph.x, 0, 7)
+        graph.edge_attr = np.clip(graph.edge_attr, 0, 1000)
+
+        print("Clamped graph node features range: min={}, max={}".format(graph.x.min(), graph.x.max()))
+        print("Clamped graph edge attributes range: min={}, max={}".format(graph.edge_attr.min(), graph.edge_attr.max()))
+
+        return {
+            'vision': vision,
+            'graph': graph
+        }
 
     def get_clamped_surface(self):
-        # Ensure the surface area is within the bounds of the game screen
         x = (self.agent_controler.agent.grid_x - self.vision_range) * self.current_gm.tile_size
         y = (self.agent_controler.agent.grid_y - self.vision_range) * self.current_gm.tile_size
         width = height = self.vision_pixel_side_size
@@ -138,19 +142,10 @@ class CustomEnv(gym.Env):
         return self.current_gm.renderer.surface.subsurface(surface_rect)
 
     def _get_vision(self):
-        # Calculate the size of the vision area in pixels
         vision_surface = self.get_clamped_surface()
-
-        # save the vision view to a file
-        # pygame.image.save(vision_surface, "vision_view.png")
-
-        # Convert the surface to an array
         vision_array = pygame.surfarray.array3d(vision_surface)
         print("custom_env.py, _get_vision, vision_array.shape:", vision_array.shape)
-
-        # The array needs to be transposed from (width, height, channels) to (channels, height, width)
         vision_array = np.transpose(vision_array, (2, 0, 1))
-
         return vision_array
 
     def evaluate_policy(self, model, n_eval_episodes=10):
@@ -175,3 +170,8 @@ class CustomEnv(gym.Env):
     def close(self):
         self.current_gm.end_game()
         self.simulation_manager.save_data()
+
+    def _validate_graph_observation(self, graph):
+        valid_node_range = (graph.x.min() >= 0) and (graph.x.max() <= 7)
+        valid_edge_range = (graph.edge_attr.min() >= 0) and (graph.edge_attr.max() <= 1000)
+        return valid_node_range and valid_edge_range

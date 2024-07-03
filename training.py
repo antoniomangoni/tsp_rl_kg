@@ -1,7 +1,6 @@
 from stable_baselines3 import PPO
-from custom_env import CustomEnv
-import numpy as np
 
+from custom_env import CustomEnv
 from agent_model import AgentModel
 
 # Define the arguments for the environment and model
@@ -50,15 +49,25 @@ the observation is the vision and the whole graph.
 Then the graph is separated into its nodes and egdes in the model.
 """
 print("Observation Space:", env.observation_space)
-# Instantiate the PPO agent
+
+# Get details from the initialized environment necessary for the model
+vision_shape = env.observation_space['vision'].shape
+num_nodes = env.kg.graph.num_nodes
+num_node_features = env.kg.graph.num_node_features
+num_edge_features = env.kg.graph.num_edge_features
+
+# Define features extractor configuration
+features_extractor_kwargs = {
+    'vision_shape': vision_shape,
+    'num_graph_features': num_node_features,
+    'num_edge_features': num_edge_features,
+    'num_actions': env.num_actions
+}
+
+# Instantiate the PPO agent with MultiInputPolicy
 rl_model = PPO("MultiInputPolicy", env, policy_kwargs={
     'features_extractor_class': AgentModel,
-    'features_extractor_kwargs': {
-        'vision_shape': vision_shape,
-        'num_graph_features': num_graph_features,
-        'num_edge_features': num_edge_features,
-        'num_actions': model_args['num_actions']
-    }
+    'features_extractor_kwargs': features_extractor_kwargs
 }, verbose=1)
 
 # Train the model
