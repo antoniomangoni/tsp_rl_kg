@@ -1,7 +1,9 @@
 from stable_baselines3 import PPO
-
+import torch
 from custom_env import CustomEnv
 from agent_model import AgentModel
+import os
+os.environ['PYGAME_DETECT_AVX2'] = '1'
 
 # Define the arguments for the environment and model
 model_args = {
@@ -25,11 +27,12 @@ env = CustomEnv(game_manager_args, simulation_manager_args, model_args, plot=Fal
 
 # Print the observation space details
 print("Observation Space:", env.observation_space)
-print("Sample Observation from reset:", env.reset())
-
-# Check if observation matches the defined space
-sample_obs = env.reset()
-# assert env.observation_space.contains(sample_obs), "The sample observation does not match the defined observation space"
+sample_obs, _ = env.reset()  # Unpack the observation and info
+print("Sample Observation from reset:")
+print("Vision shape:", sample_obs['vision'].shape)
+print("Node features shape:", sample_obs['node_features'].shape)
+print("Edge attributes shape:", sample_obs['edge_attr'].shape)
+print("Edge index shape:", sample_obs['edge_index'].shape)
 
 # Bind the new method to the CustomEnv instance
 CustomEnv.evaluate_policy = env.evaluate_policy
@@ -64,10 +67,15 @@ features_extractor_kwargs = {
     'num_actions': env.num_actions
 }
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
+rl_model = PPO("MultiInputPolicy", env, device=device, verbose=1)
+
 # Instantiate the PPO agent with MultiInputPolicy
 rl_model = PPO("MultiInputPolicy", env, policy_kwargs={
     'features_extractor_class': AgentModel,
-    'features_extractor_kwargs': features_extractor_kwargs
+    'features_extractor_kwargs': {'features_dim': 256},  # You can adjust this value
+    'net_arch': [dict(pi=[64, 64], vf=[64, 64])]  # You can adjust these values
 }, verbose=1)
 
 # Train the model
@@ -79,7 +87,7 @@ rl_model.save("ppo_custom_env")
 env.simulation_manager.save_data()
 
 # Evaluate the model
-mean_reward, std_reward = env.evaluate_policy(rl_model, rl_model.get_env(), n_eval_episodes=10)
+mean_reward, std_reward = env.evaluate_policy(rl_model, n_eval_episodes=10)
 print(f"Mean reward: {mean_reward} +/- {std_reward}")
 
 # Close the environment

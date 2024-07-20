@@ -13,7 +13,7 @@ from knowledge_graph import KnowledgeGraph
 class GameManager:
     def __init__(self, num_tiles=32, screen_size=800, kg_completeness=1, vision_range=2, plot=False):
         self.num_tiles = num_tiles
-        self.tile_size = screen_size // num_tiles
+        self.tile_size: int = screen_size // num_tiles
         self.environment = None
         self.kg_completeness = kg_completeness
         self.agent_controler = None
