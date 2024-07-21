@@ -170,13 +170,14 @@ class CustomEnv(gym.Env):
         all_episode_rewards = []
 
         for episode in range(n_eval_episodes):
-            obs = self.reset()
+            obs, _ = self.reset()  # Unpack the observation and info
             done = False
+            truncated = False
             episode_rewards = 0
 
-            while not done:
+            while not (done or truncated):
                 action, _ = model.predict(obs, deterministic=True)
-                obs, reward, done, info = self.step(action)
+                obs, reward, done, truncated, info = self.step(action)  # Unpack all returned values
                 episode_rewards += reward
 
             all_episode_rewards.append(episode_rewards)
@@ -184,7 +185,7 @@ class CustomEnv(gym.Env):
         mean_reward = np.mean(all_episode_rewards)
         std_reward = np.std(all_episode_rewards)
         return mean_reward, std_reward
-
+    
     def close(self):
         self.current_gm.end_game()
         self.simulation_manager.save_data()

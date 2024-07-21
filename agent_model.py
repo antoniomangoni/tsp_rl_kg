@@ -54,9 +54,10 @@ class AgentModel(BaseFeaturesExtractor):
         super().__init__(observation_space, features_dim=features_dim)
         
         vision_shape = observation_space.spaces['vision'].shape
+        num_node_features = observation_space.spaces['node_features'].shape[1]
         
         self.vision_processor = VisionProcessor(vision_shape, features_dim=128)
-        self.graph_processor = GraphProcessor(observation_space.spaces['node_features'].shape[1], output=128)
+        self.graph_processor = GraphProcessor(num_node_features, output=128)
         
         combined_input_size = self.vision_processor.features_dim + self.graph_processor.output
         self.fc1 = nn.Linear(combined_input_size, 128)
@@ -68,19 +69,18 @@ class AgentModel(BaseFeaturesExtractor):
     def forward(self, observations):
         vision_features = self.vision_processor(observations['vision'])
         
+        # Create a PyTorch Geometric Data object from flattened observations
         graph_data = Data(
             x=observations['node_features'].float(),
             edge_index=observations['edge_index'].long(),
             edge_attr=observations['edge_attr'].float()
         )
         
-        graph_features = self.graph_processor(graph_data)
+        # Ensure all tensors are on the same device
+        device = vision_features.device
+        graph_data = graph_data.to(device)
         
-        # Ensure both features have the same batch dimension
-        if len(vision_features.shape) == 2:
-            vision_features = vision_features.unsqueeze(0)
-        if len(graph_features.shape) == 1:
-            graph_features = graph_features.unsqueeze(0)
+        graph_features = self.graph_processor(graph_data)
         
         combined = torch.cat((vision_features, graph_features), dim=1)
         combined = F.relu(self.fc1(combined))
