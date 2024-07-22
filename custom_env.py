@@ -59,11 +59,6 @@ class CustomEnv(gym.Env):
             'edge_index': edge_index_space
         })
 
-        # print("custom_env.py, __init__")
-        # print(f"Vision shape: {vision_shape} (channels, height, width)")
-        # print(f"Graph X shape: (num_nodes, num_node_features) ({num_nodes}, {num_node_features})")
-        # print(f"Graph Edge Attr shape: (num_edges, num_edge_features) ({num_edges}, {num_edge_features})")
-
         self.action_space = spaces.Discrete(self.num_actions)
 
     def set_current_game_manager(self):
@@ -195,3 +190,4 @@ class CustomEnv(gym.Env):
         valid_edge_attr_range = (observation['edge_attr'].min() >= 0) and (observation['edge_attr'].max() <= 232)
         valid_edge_index_range = (observation['edge_index'].min() >= 0) and (observation['edge_index'].max() <= 128)
         return valid_node_range and valid_edge_attr_range and valid_edge_index_range
+    

@@ -23,14 +23,16 @@ simulation_manager_args = {
 }
 game_manager_args = {
     'num_tiles': 8,
-    'screen_size': 400,
+    'screen_size': 200,
     'kg_completeness': 1,
     'vision_range': 1
 }
 
 # Function to create a vectorized environment
 def make_env():
-    return lambda: CustomEnv(game_manager_args, simulation_manager_args, model_args, plot=False)
+    def _init():
+        return CustomEnv(game_manager_args, simulation_manager_args, model_args)
+    return _init
 
 # Function to run the training
 def train(rl_model, total_timesteps, callback):
@@ -38,19 +40,12 @@ def train(rl_model, total_timesteps, callback):
 
 def main():
     # Create a vectorized environment
-    num_envs = 12  # Adjust based on your CPU cores
+    num_envs = 8  # Adjust based on your CPU cores
     env = SubprocVecEnv([make_env() for _ in range(num_envs)])
-    
+
     # Set up the device (GPU if available, otherwise CPU)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    
-    # Create a single environment instance for shape information
-    single_env = make_env()()
-    vision_shape = single_env.observation_space['vision'].shape
-    num_nodes = single_env.kg.graph.num_nodes
-    num_node_features = single_env.kg.graph.num_node_features
-    num_edge_features = single_env.kg.graph.num_edge_features
     
     # Instantiate the PPO agent with MultiInputPolicy
     rl_model = PPO("MultiInputPolicy", 
