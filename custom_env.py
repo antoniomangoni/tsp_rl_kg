@@ -3,13 +3,18 @@ from gymnasium import spaces
 import numpy as np
 import pygame
 from torch_geometric.data import Data
-
+import logging
+logger = logging.getLogger(__name__)
 from agent_model import AgentModel
 from simulation_manager import SimulationManager
+
+def manhattan_distance(pos1, pos2):
+        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
 class CustomEnv(gym.Env):
     def __init__(self, game_manager_args, simulation_manager_args, model_args, plot=False):
         super(CustomEnv, self).__init__()
+        logger.info("Initializing CustomEnv")
         self.new_outpost_reward = 10
         self.completion_reward = 100
         self.route_improvement_reward = 200
@@ -19,6 +24,9 @@ class CustomEnv(gym.Env):
         self.num_not_improvement_routes = 0
         self.best_route_energy = np.inf
         self.outposts_visited = set()
+        self.closer_to_outpost_reward = 0.5  # Adjust this value as needed
+        self.farther_from_outpost_penalty = -0.3  # Adjust this value as needed
+
         self.num_actions = model_args['num_actions']
         self.num_tiles = game_manager_args['num_tiles']
         self.screen_size = game_manager_args['screen_size']
@@ -32,7 +40,7 @@ class CustomEnv(gym.Env):
             plot=plot
         )
         
-        self.current_game_index = 0
+        self.current_game_index = -1 # set to -1 so reset increments to 0
         self.set_current_game_manager()
 
         num_nodes = self.kg.graph.num_nodes
@@ -60,8 +68,14 @@ class CustomEnv(gym.Env):
         })
 
         self.action_space = spaces.Discrete(self.num_actions)
+        self.step_count = 0
+        self.max_episode_steps = 1000  # Maximum number of steps per episode
+        self.episode_step = 0
+        self.total_reward = 0
+        logger.info("CustomEnv initialized successfully")
 
     def set_current_game_manager(self):
+        logger.info(f"Setting current game manager to index {self.current_game_index}")
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
         self.current_gm.start_game()
         self.environment = self.current_gm.environment
@@ -69,32 +83,51 @@ class CustomEnv(gym.Env):
         self.kg = self.current_gm.kg_class
         self.outpost_coords = self.environment.outpost_locations
         self.best_route_energy = 0
+        logger.info("Current game manager set successfully")
 
     def _calculate_reward(self):
+        logger.debug("Calculating reward")
         agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        self.current_reward = 0
+        reward = 0
+
         if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:
-            if not bool(self.outposts_visited):
-                self.first_outpost_energy_tracker = self.agent_controler.energy_spent
+            reward += self.new_outpost_reward
             self.outposts_visited.add(agent_pos)
-            self.current_reward = self.new_outpost_reward
-            if len(self.outposts_visited) == self.environment.number_of_outposts:
-                self.current_reward += self.completion_reward
-                total_route_energy = self.agent_controler.energy_spent - self.first_outpost_energy_tracker
-                self.current_gm.route_energy_list.append(total_route_energy)
-                if total_route_energy < self.best_route_energy:
-                    self.current_reward += self.route_improvement_reward
-                    self.best_route_energy = total_route_energy
-                    self.num_not_improvement_routes = 0
-                else:
-                    self.num_not_improvement_routes += 1
-                if self.num_not_improvement_routes >= self.max_not_improvement_routes:
-                    self.early_stop = True
-                self.outposts_visited.clear()
-            return self.current_reward
-        return self.penalty
+            logger.debug(f"Agent reached new outpost. Reward: {self.new_outpost_reward}")
+
+            if len(self.outposts_visited) == len(self.outpost_coords):
+                reward += self.completion_reward
+                logger.debug(f"All outposts visited. Additional reward: {self.completion_reward}")
+                self.early_stop = True
+
+        else:
+            unvisited_outposts = [outpost for outpost in self.outpost_coords if outpost not in self.outposts_visited]
+            if unvisited_outposts:
+                prev_min_distance = self.previous_min_distance if hasattr(self, 'previous_min_distance') else float('inf')
+                current_min_distance = min(manhattan_distance(agent_pos, outpost) for outpost in unvisited_outposts)
+                
+                if current_min_distance < prev_min_distance:
+                    reward += self.closer_to_outpost_reward
+                    logger.debug(f"Agent moved closer to an outpost. Reward: {self.closer_to_outpost_reward}")
+                elif current_min_distance > prev_min_distance:
+                    reward += self.farther_from_outpost_penalty
+                    logger.debug(f"Agent moved away from outposts. Penalty: {self.farther_from_outpost_penalty}")
+                
+                self.previous_min_distance = current_min_distance
+            else:
+                reward += self.penalty
+                logger.debug(f"No unvisited outposts. Penalty: {self.penalty}")
+
+        logger.debug(f"Calculated reward: {reward}, Outposts visited: {len(self.outposts_visited)}/{len(self.outpost_coords)}")
+        return reward
 
     def reset(self, seed=None, options=None):
+        logger.info("Resetting environment")
+        self.episode_step = 0
+        self.total_reward = 0
+        self.outposts_visited.clear()
+        self.early_stop = False
+        self.step_count = 0
         super().reset(seed=seed)
         if seed is not None:
             np.random.seed(seed)
@@ -112,21 +145,46 @@ class CustomEnv(gym.Env):
         self.best_route_energy = np.inf
         self.early_stop = False
         self.num_not_improvement_routes = 0
+        self.previous_min_distance = float('inf')  # Initialize in the reset method
         observation = self._get_observation()
         assert self.observation_space['vision'].contains(observation['vision']), f"Vision data out of bounds: min={observation['vision'].min()}, max={observation['vision'].max()}"
-        return observation, {}  # Return observation and an empty info dict
+        # logger.info(f"Environment reset complete. Initial observation: {observation}")
+        return observation, {}
 
     def step(self, action):
+        logger.debug(f"Taking step {self.episode_step} with action {action}")
+        self.episode_step += 1
+        
+        prev_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
         self.agent_controler.agent_action(action)
+        new_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
+        
         self.current_gm.rerender()
         reward = self._calculate_reward()
-        terminated = self.early_stop
-        truncated = False  # You may want to implement a time limit or other truncation condition
+        self.total_reward += reward
+        
+        terminated = self.early_stop or self.episode_step >= self.max_episode_steps
+        truncated = self.episode_step >= self.max_episode_steps
+        
         observation = self._get_observation()
-        info = {}
+        info = {
+            "episode_step": self.episode_step,
+            "prev_position": prev_position,
+            "new_position": new_position,
+            "energy_spent": self.agent_controler.energy_spent,
+            "outposts_visited": len(self.outposts_visited),
+            "total_reward": self.total_reward
+        }
+        
+        logger.debug(f"Step complete. Reward: {reward}, Total Reward: {self.total_reward}, Terminated: {terminated}, Truncated: {truncated}, Info: {info}")
+        
+        if terminated or truncated:
+            logger.info(f"Episode ended. Total steps: {self.episode_step}, Total reward: {self.total_reward}, Outposts visited: {len(self.outposts_visited)}/{len(self.outpost_coords)}")
+        
         return observation, reward, terminated, truncated, info
 
     def _get_observation(self):
+        logger.debug("Getting observation")
         vision = self._get_vision()
         graph = self.current_gm.kg_class.get_subgraph()
 
@@ -140,6 +198,7 @@ class CustomEnv(gym.Env):
         edge_index = np.zeros((2, self.max_edges), dtype=np.int64)
         edge_index[:, :graph.num_edges] = graph.edge_index.numpy()
 
+        logger.debug("Observation retrieved")
         return {
             'vision': vision.astype(np.float32) / 255.0,  # Normalize to [0, 1]
             'node_features': node_features,
@@ -160,26 +219,6 @@ class CustomEnv(gym.Env):
         vision_array = pygame.surfarray.array3d(vision_surface).astype(np.float32)
         vision_array = np.transpose(vision_array, (2, 0, 1))  # Change from (H, W, C) to (C, H, W)
         return vision_array
-
-    def evaluate_policy(self, model, n_eval_episodes=10):
-        all_episode_rewards = []
-
-        for episode in range(n_eval_episodes):
-            obs, _ = self.reset()  # Unpack the observation and info
-            done = False
-            truncated = False
-            episode_rewards = 0
-
-            while not (done or truncated):
-                action, _ = model.predict(obs, deterministic=True)
-                obs, reward, done, truncated, info = self.step(action)  # Unpack all returned values
-                episode_rewards += reward
-
-            all_episode_rewards.append(episode_rewards)
-
-        mean_reward = np.mean(all_episode_rewards)
-        std_reward = np.std(all_episode_rewards)
-        return mean_reward, std_reward
     
     def close(self):
         self.current_gm.end_game()
