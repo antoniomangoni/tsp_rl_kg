@@ -153,7 +153,7 @@ class AblationStudy:
             experiment_name = f"kg_completeness_{kg_completeness}"
             self.logger.info(f"Running experiment: {experiment_name}")
             
-            trainer = Trainer()
+            trainer = Trainer(kg_completeness)
             trainer.setup(self.base_config)
             trainer.env_manager.set_kg_completeness(trainer.env, kg_completeness)
             trainer.env_manager.set_kg_completeness(trainer.eval_env, kg_completeness)
@@ -173,23 +173,24 @@ class AblationStudy:
         self.logger.info("Ablation study results saved to ablation_study_results.json")
 
 class Trainer:
-    def __init__(self):
+    def __init__(self, current_kg_completeness):
         self.logger = Logger('ablation_study.log')
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.logger.info(f"Using device: {self.device}")
+        self.current_kg_completeness = current_kg_completeness
 
     def setup(self, config):
         self.config = config
-        self.env_manager = EnvironmentManager(config['game_manager_args'], 
+        self.env_manager: EnvironmentManager = EnvironmentManager(config['game_manager_args'], 
                                               config['simulation_manager_args'], 
                                               config['model_args'])
         
         self.logger.info("Creating environment")
-        self.env = self.env_manager.make_env()
+        self.env: CustomEnv = self.env_manager.make_env()
         self.logger.info("Environment created successfully")
 
         self.logger.info("Creating evaluation environment")
-        self.eval_env = self.env_manager.make_env()
+        self.eval_env: CustomEnv = self.env_manager.make_env()
         self.logger.info("Evaluation environment created successfully")
 
         # # Explicitly set KG completeness for both training and evaluation environments
@@ -223,7 +224,9 @@ class Trainer:
         mean_reward, std_reward = self.model_trainer.evaluate_model(self.eval_env)
 
         self.logger.info("Closing environments")
+        self.env.set_kg_completeness(self.current_kg_completeness)
         self.env.close()
+        self.eval_env.set_kg_completeness(self.current_kg_completeness)
         self.eval_env.close()
         self.logger.info("Environments closed successfully")
 
