@@ -20,11 +20,11 @@ class SimulationManager:
     def create_games(self, number_of_games, game_manager_args, plot):
         num_tiles = game_manager_args['num_tiles']
         screen_size = game_manager_args['screen_size']
-        kg_completeness = game_manager_args['kg_completeness']
+        # kg_completeness = game_manager_args['kg_completeness']
         vision_range = game_manager_args['vision_range']
 
         for _ in range(number_of_games):
-            game_manager = GameManager(num_tiles, screen_size, kg_completeness, vision_range, plot)
+            game_manager = GameManager(num_tiles, screen_size, vision_range, plot)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 
@@ -101,14 +101,14 @@ class SimulationManager:
                              xlabel='Curriculum order index', ylabel='Energy required for trade route',
                              title='Energy Plot Indexed by Curriculum Order')
         
-    def save_data(self, static_file_path='Writing/static_data.csv', game_data_file_path='Writing/game_data.csv'):
+    def save_data(self, kg_completeness, static_file_path='Writing/static_data.csv', game_data_file_path='Writing/game_data.csv'):
         # Write static data to CSV
         with open(static_file_path, mode='w', newline='') as static_file:
             writer = csv.writer(static_file)
             writer.writerow(['Curriculum step size', f"{self.step_size} energy units"])
             writer.writerow(['Number of Environments', len(self.game_managers)])
             writer.writerow(['Number of Curricula', len(self.curriculum_indices)])
-            writer.writerow(['KG Completeness', self.game_managers[0].kg_completeness])
+            writer.writerow(['KG Completeness', kg_completeness])
             writer.writerow(['Vision Range', self.game_managers[0].vision_range])
             writer.writerow(['Map Pixel Size', self.game_managers[0].num_tiles])
             writer.writerow(['Tile Size', self.game_managers[0].tile_size])

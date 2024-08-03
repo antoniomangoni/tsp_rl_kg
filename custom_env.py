@@ -30,7 +30,7 @@ class CustomEnv(gym.Env):
         self.num_actions = model_args['num_actions']
         self.num_tiles = game_manager_args['num_tiles']
         self.screen_size = game_manager_args['screen_size']
-        self.kg_completeness = game_manager_args['kg_completeness']
+        # self.kg_completeness = game_manager_args['kg_completeness']
         self.vision_range = game_manager_args['vision_range']
     
         self.simulation_manager = SimulationManager(
@@ -69,10 +69,14 @@ class CustomEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
-        self.max_episode_steps = 1000  # Maximum number of steps per episode
+        self.max_episode_steps = 20#000  # Maximum number of steps per episode
         self.episode_step = 0
         self.total_reward = 0
         logger.info("CustomEnv initialized successfully")
+
+    def set_kg_completeness(self, completeness):
+        logger.info(f"Setting KG completeness to {completeness} using SimulationManager")
+        self.kg_completeness = completeness
 
     def set_current_game_manager(self):
         logger.info(f"Setting current game manager to index {self.current_game_index}")
@@ -186,7 +190,7 @@ class CustomEnv(gym.Env):
     def _get_observation(self):
         logger.debug("Getting observation")
         vision = self._get_vision()
-        graph = self.current_gm.kg_class.get_subgraph()
+        graph: Data = self.current_gm.kg_class.get_subgraph()
 
         # Ensure correct shapes
         node_features = np.zeros((self.max_nodes, graph.num_node_features), dtype=np.float32)
@@ -222,7 +226,7 @@ class CustomEnv(gym.Env):
     
     def close(self):
         self.current_gm.end_game()
-        self.simulation_manager.save_data()
+        self.simulation_manager.save_data(self.kg_completeness)
 
     def _validate_graph_observation(self, observation):
         valid_node_range = (observation['node_features'].min() >= 0) and (observation['node_features'].max() <= 7)

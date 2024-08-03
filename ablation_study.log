@@ -1,0 +1,384 @@
+2024-08-03 17:42:32,164 - INFO - Starting Ablation Study
+2024-08-03 17:42:32,164 - INFO - Running experiment: kg_completeness_0.25
+2024-08-03 17:42:32,241 - INFO - Using device: cuda
+2024-08-03 17:42:32,241 - INFO - Using device: cuda
+2024-08-03 17:42:32,241 - INFO - Creating environment
+2024-08-03 17:42:32,241 - INFO - Creating environment
+2024-08-03 17:42:32,690 - INFO - Environment created successfully
+2024-08-03 17:42:32,690 - INFO - Environment created successfully
+2024-08-03 17:42:32,691 - INFO - Creating evaluation environment
+2024-08-03 17:42:32,691 - INFO - Creating evaluation environment
+2024-08-03 17:42:32,756 - INFO - Evaluation environment created successfully
+2024-08-03 17:42:32,756 - INFO - Evaluation environment created successfully
+2024-08-03 17:42:32,757 - INFO - Creating PPO model
+2024-08-03 17:42:32,757 - INFO - Creating PPO model
+2024-08-03 17:42:34,765 - INFO - PPO model created successfully
+2024-08-03 17:42:34,765 - INFO - PPO model created successfully
+2024-08-03 17:42:34,766 - INFO - Starting model training
+2024-08-03 17:42:34,766 - INFO - Starting model training
+2024-08-03 17:42:34,767 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 17:42:34,767 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 17:43:14,038 - INFO - Starting Ablation Study
+2024-08-03 17:43:14,038 - INFO - Running experiment: kg_completeness_0.25
+2024-08-03 17:43:14,068 - INFO - Using device: cuda
+2024-08-03 17:43:14,068 - INFO - Using device: cuda
+2024-08-03 17:43:14,068 - INFO - Creating environment
+2024-08-03 17:43:14,068 - INFO - Creating environment
+2024-08-03 17:43:14,465 - INFO - Environment created successfully
+2024-08-03 17:43:14,465 - INFO - Environment created successfully
+2024-08-03 17:43:14,466 - INFO - Creating evaluation environment
+2024-08-03 17:43:14,466 - INFO - Creating evaluation environment
+2024-08-03 17:43:14,532 - INFO - Evaluation environment created successfully
+2024-08-03 17:43:14,532 - INFO - Evaluation environment created successfully
+2024-08-03 17:43:14,532 - INFO - Creating PPO model
+2024-08-03 17:43:14,532 - INFO - Creating PPO model
+2024-08-03 17:43:16,645 - INFO - PPO model created successfully
+2024-08-03 17:43:16,645 - INFO - PPO model created successfully
+2024-08-03 17:43:16,647 - INFO - Starting model training
+2024-08-03 17:43:16,647 - INFO - Starting model training
+2024-08-03 17:43:16,648 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 17:43:16,648 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 17:43:50,658 - INFO - Recent mean reward: 0.93
+2024-08-03 17:43:50,658 - INFO - Recent mean reward: 0.93
+2024-08-03 17:43:50,659 - INFO - Recent mean episode length: 20.00
+2024-08-03 17:43:50,659 - INFO - Recent mean episode length: 20.00
+2024-08-03 17:43:50,660 - INFO - Episode info buffer size: 100
+2024-08-03 17:43:50,660 - INFO - Episode info buffer size: 100
+2024-08-03 17:43:50,660 - INFO - Sample episode info: {'r': 1.1, 'l': 20, 't': 20.333441}
+2024-08-03 17:43:50,660 - INFO - Sample episode info: {'r': 1.1, 'l': 20, 't': 20.333441}
+2024-08-03 17:43:50,660 - INFO - Recent policy loss: 0.00000
+2024-08-03 17:43:50,660 - INFO - Recent policy loss: 0.00000
+2024-08-03 17:43:50,661 - INFO - Recent value loss: 0.20049
+2024-08-03 17:43:50,661 - INFO - Recent value loss: 0.20049
+2024-08-03 17:43:50,661 - INFO - Model training completed or stopped
+2024-08-03 17:43:50,661 - INFO - Model training completed or stopped
+2024-08-03 17:43:50,677 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 17:43:50,677 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 17:43:51,726 - INFO - Model saved successfully
+2024-08-03 17:43:51,726 - INFO - Model saved successfully
+2024-08-03 17:43:51,726 - INFO - Starting final model evaluation
+2024-08-03 17:43:51,726 - INFO - Starting final model evaluation
+2024-08-03 17:43:53,158 - INFO - Final evaluation: Mean reward: 0.49 +/- 0.75
+2024-08-03 17:43:53,158 - INFO - Final evaluation: Mean reward: 0.49 +/- 0.75
+2024-08-03 17:43:53,159 - INFO - Closing environments
+2024-08-03 17:43:53,159 - INFO - Closing environments
+2024-08-03 17:43:53,235 - ERROR - An error occurred during the ablation study: 'CustomEnv' object has no attribute 'kg_completeness'
+2024-08-03 17:43:53,235 - ERROR - An error occurred during the ablation study: 'CustomEnv' object has no attribute 'kg_completeness'
+2024-08-03 17:43:53,241 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 251, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 161, in run
+    result = trainer.run(experiment_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 217, in run
+    self.env.close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 117, in close
+    super().close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\gymnasium\core.py", line 475, in close
+    return self.env.close()
+           ^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 228, in close
+    self.simulation_manager.save_data(self.kg_completeness)
+                                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomEnv' object has no attribute 'kg_completeness'
+
+2024-08-03 17:43:53,241 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 251, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 161, in run
+    result = trainer.run(experiment_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 217, in run
+    self.env.close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 117, in close
+    super().close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\gymnasium\core.py", line 475, in close
+    return self.env.close()
+           ^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 228, in close
+    self.simulation_manager.save_data(self.kg_completeness)
+                                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomEnv' object has no attribute 'kg_completeness'
+
+2024-08-03 17:51:40,128 - INFO - Starting Ablation Study
+2024-08-03 17:51:40,128 - INFO - Running experiment: kg_completeness_0.25
+2024-08-03 17:51:40,198 - INFO - Using device: cuda
+2024-08-03 17:51:40,198 - INFO - Using device: cuda
+2024-08-03 17:51:40,199 - INFO - Creating environment
+2024-08-03 17:51:40,199 - INFO - Creating environment
+2024-08-03 17:51:40,577 - INFO - Environment created successfully
+2024-08-03 17:51:40,577 - INFO - Environment created successfully
+2024-08-03 17:51:40,577 - INFO - Creating evaluation environment
+2024-08-03 17:51:40,577 - INFO - Creating evaluation environment
+2024-08-03 17:51:40,624 - INFO - Evaluation environment created successfully
+2024-08-03 17:51:40,624 - INFO - Evaluation environment created successfully
+2024-08-03 17:51:40,624 - ERROR - KG completeness not specified in config
+2024-08-03 17:51:40,624 - ERROR - KG completeness not specified in config
+2024-08-03 17:51:40,627 - ERROR - An error occurred during the ablation study: cannot access local variable 'kg_completeness' where it is not associated with a value
+2024-08-03 17:51:40,627 - ERROR - An error occurred during the ablation study: cannot access local variable 'kg_completeness' where it is not associated with a value
+2024-08-03 17:51:40,628 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 157, in run
+    trainer.setup(self.base_config)
+  File "c:\Users\anton\Dev\ABM\training.py", line 200, in setup
+    self.env.set_kg_completeness(kg_completeness)
+                                 ^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'kg_completeness' where it is not associated with a value
+
+2024-08-03 17:51:40,628 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 157, in run
+    trainer.setup(self.base_config)
+  File "c:\Users\anton\Dev\ABM\training.py", line 200, in setup
+    self.env.set_kg_completeness(kg_completeness)
+                                 ^^^^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'kg_completeness' where it is not associated with a value
+
+2024-08-03 17:53:01,910 - INFO - Starting Ablation Study
+2024-08-03 17:53:01,911 - INFO - Running experiment: kg_completeness_0.25
+2024-08-03 17:53:01,974 - INFO - Using device: cuda
+2024-08-03 17:53:01,974 - INFO - Using device: cuda
+2024-08-03 17:53:01,976 - INFO - Creating environment
+2024-08-03 17:53:01,976 - INFO - Creating environment
+2024-08-03 17:53:02,351 - INFO - Environment created successfully
+2024-08-03 17:53:02,351 - INFO - Environment created successfully
+2024-08-03 17:53:02,351 - INFO - Creating evaluation environment
+2024-08-03 17:53:02,351 - INFO - Creating evaluation environment
+2024-08-03 17:53:02,400 - INFO - Evaluation environment created successfully
+2024-08-03 17:53:02,400 - INFO - Evaluation environment created successfully
+2024-08-03 17:53:02,400 - INFO - Creating PPO model
+2024-08-03 17:53:02,400 - INFO - Creating PPO model
+2024-08-03 17:53:04,231 - INFO - PPO model created successfully
+2024-08-03 17:53:04,231 - INFO - PPO model created successfully
+2024-08-03 17:53:04,232 - INFO - Starting model training
+2024-08-03 17:53:04,232 - INFO - Starting model training
+2024-08-03 17:53:04,232 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 17:53:04,232 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 17:53:32,804 - INFO - Recent mean reward: 0.93
+2024-08-03 17:53:32,804 - INFO - Recent mean reward: 0.93
+2024-08-03 17:53:32,805 - INFO - Recent mean episode length: 20.00
+2024-08-03 17:53:32,805 - INFO - Recent mean episode length: 20.00
+2024-08-03 17:53:32,805 - INFO - Episode info buffer size: 100
+2024-08-03 17:53:32,805 - INFO - Episode info buffer size: 100
+2024-08-03 17:53:32,806 - INFO - Sample episode info: {'r': 0.6, 'l': 20, 't': 16.935058}
+2024-08-03 17:53:32,806 - INFO - Sample episode info: {'r': 0.6, 'l': 20, 't': 16.935058}
+2024-08-03 17:53:32,806 - INFO - Recent policy loss: 0.00000
+2024-08-03 17:53:32,806 - INFO - Recent policy loss: 0.00000
+2024-08-03 17:53:32,807 - INFO - Recent value loss: 0.24264
+2024-08-03 17:53:32,807 - INFO - Recent value loss: 0.24264
+2024-08-03 17:53:32,807 - INFO - Model training completed or stopped
+2024-08-03 17:53:32,807 - INFO - Model training completed or stopped
+2024-08-03 17:53:32,840 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 17:53:32,840 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 17:53:33,801 - INFO - Model saved successfully
+2024-08-03 17:53:33,801 - INFO - Model saved successfully
+2024-08-03 17:53:33,802 - INFO - Starting final model evaluation
+2024-08-03 17:53:33,802 - INFO - Starting final model evaluation
+2024-08-03 17:53:34,882 - INFO - Final evaluation: Mean reward: 0.41 +/- 0.19
+2024-08-03 17:53:34,882 - INFO - Final evaluation: Mean reward: 0.41 +/- 0.19
+2024-08-03 17:53:34,883 - INFO - Closing environments
+2024-08-03 17:53:34,883 - INFO - Closing environments
+2024-08-03 17:53:34,946 - ERROR - An error occurred during the ablation study: 'CustomEnv' object has no attribute 'kg_completeness'
+2024-08-03 17:53:34,946 - ERROR - An error occurred during the ablation study: 'CustomEnv' object has no attribute 'kg_completeness'
+2024-08-03 17:53:34,954 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 161, in run
+    result = trainer.run(experiment_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 226, in run
+    self.env.close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 117, in close
+    super().close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\gymnasium\core.py", line 475, in close
+    return self.env.close()
+           ^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 228, in close
+    self.simulation_manager.save_data(self.kg_completeness)
+                                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomEnv' object has no attribute 'kg_completeness'
+
+2024-08-03 17:53:34,954 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 161, in run
+    result = trainer.run(experiment_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 226, in run
+    self.env.close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 117, in close
+    super().close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\gymnasium\core.py", line 475, in close
+    return self.env.close()
+           ^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 228, in close
+    self.simulation_manager.save_data(self.kg_completeness)
+                                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomEnv' object has no attribute 'kg_completeness'
+
+2024-08-03 17:54:16,376 - INFO - Starting Ablation Study
+2024-08-03 17:54:16,376 - INFO - Running experiment: kg_completeness_0.25
+2024-08-03 17:54:16,406 - INFO - Using device: cuda
+2024-08-03 17:54:16,406 - INFO - Using device: cuda
+2024-08-03 17:54:16,406 - INFO - Creating environment
+2024-08-03 17:54:16,406 - INFO - Creating environment
+2024-08-03 17:54:16,791 - INFO - Environment created successfully
+2024-08-03 17:54:16,791 - INFO - Environment created successfully
+2024-08-03 17:54:16,791 - INFO - Creating evaluation environment
+2024-08-03 17:54:16,791 - INFO - Creating evaluation environment
+2024-08-03 17:54:16,845 - INFO - Evaluation environment created successfully
+2024-08-03 17:54:16,845 - INFO - Evaluation environment created successfully
+2024-08-03 17:54:16,845 - INFO - Creating PPO model
+2024-08-03 17:54:16,845 - INFO - Creating PPO model
+2024-08-03 17:54:18,680 - INFO - PPO model created successfully
+2024-08-03 17:54:18,680 - INFO - PPO model created successfully
+2024-08-03 17:54:18,681 - INFO - Starting model training
+2024-08-03 17:54:18,681 - INFO - Starting model training
+2024-08-03 17:54:18,682 - INFO - Training iteration 1, timesteps 0-1
+2024-08-03 17:54:18,682 - INFO - Training iteration 1, timesteps 0-1
+2024-08-03 17:55:21,145 - INFO - Recent mean reward: 0.54
+2024-08-03 17:55:21,145 - INFO - Recent mean reward: 0.54
+2024-08-03 17:55:21,145 - INFO - Recent mean episode length: 2.00
+2024-08-03 17:55:21,145 - INFO - Recent mean episode length: 2.00
+2024-08-03 17:55:21,146 - INFO - Episode info buffer size: 100
+2024-08-03 17:55:21,146 - INFO - Episode info buffer size: 100
+2024-08-03 17:55:21,146 - INFO - Sample episode info: {'r': 0.5, 'l': 2, 't': 50.529941}
+2024-08-03 17:55:21,146 - INFO - Sample episode info: {'r': 0.5, 'l': 2, 't': 50.529941}
+2024-08-03 17:55:21,146 - INFO - Recent policy loss: 0.00000
+2024-08-03 17:55:21,146 - INFO - Recent policy loss: 0.00000
+2024-08-03 17:55:21,148 - INFO - Recent value loss: 0.17271
+2024-08-03 17:55:21,148 - INFO - Recent value loss: 0.17271
+2024-08-03 17:55:21,148 - INFO - Model training completed or stopped
+2024-08-03 17:55:21,148 - INFO - Model training completed or stopped
+2024-08-03 17:55:21,170 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 17:55:21,170 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 17:55:22,135 - INFO - Model saved successfully
+2024-08-03 17:55:22,135 - INFO - Model saved successfully
+2024-08-03 17:55:22,136 - INFO - Starting final model evaluation
+2024-08-03 17:55:22,136 - INFO - Starting final model evaluation
+2024-08-03 17:55:22,540 - INFO - Final evaluation: Mean reward: 0.44 +/- 0.12
+2024-08-03 17:55:22,540 - INFO - Final evaluation: Mean reward: 0.44 +/- 0.12
+2024-08-03 17:55:22,540 - INFO - Closing environments
+2024-08-03 17:55:22,540 - INFO - Closing environments
+2024-08-03 17:55:22,579 - ERROR - An error occurred during the ablation study: 'CustomEnv' object has no attribute 'kg_completeness'
+2024-08-03 17:55:22,579 - ERROR - An error occurred during the ablation study: 'CustomEnv' object has no attribute 'kg_completeness'
+2024-08-03 17:55:22,582 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 161, in run
+    result = trainer.run(experiment_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 226, in run
+    self.env.close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 117, in close
+    super().close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\gymnasium\core.py", line 475, in close
+    return self.env.close()
+           ^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 229, in close
+    self.simulation_manager.save_data(self.kg_completeness)
+                                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomEnv' object has no attribute 'kg_completeness'
+
+2024-08-03 17:55:22,582 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 161, in run
+    result = trainer.run(experiment_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 226, in run
+    self.env.close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 117, in close
+    super().close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\gymnasium\core.py", line 475, in close
+    return self.env.close()
+           ^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 229, in close
+    self.simulation_manager.save_data(self.kg_completeness)
+                                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomEnv' object has no attribute 'kg_completeness'
+
+2024-08-03 17:57:13,676 - INFO - Starting Ablation Study
+2024-08-03 17:57:13,676 - INFO - Running experiment: kg_completeness_0.25
+2024-08-03 17:57:13,700 - INFO - Using device: cuda
+2024-08-03 17:57:13,700 - INFO - Using device: cuda
+2024-08-03 17:57:13,700 - INFO - Creating environment
+2024-08-03 17:57:13,700 - INFO - Creating environment
+2024-08-03 17:57:14,059 - INFO - Environment created successfully
+2024-08-03 17:57:14,059 - INFO - Environment created successfully
+2024-08-03 17:57:14,060 - INFO - Creating evaluation environment
+2024-08-03 17:57:14,060 - INFO - Creating evaluation environment
+2024-08-03 17:57:14,111 - INFO - Evaluation environment created successfully
+2024-08-03 17:57:14,111 - INFO - Evaluation environment created successfully
+2024-08-03 17:57:14,111 - INFO - Creating PPO model
+2024-08-03 17:57:14,111 - INFO - Creating PPO model
+2024-08-03 17:57:15,951 - INFO - PPO model created successfully
+2024-08-03 17:57:15,951 - INFO - PPO model created successfully
+2024-08-03 17:57:15,951 - INFO - Starting model training
+2024-08-03 17:57:15,951 - INFO - Starting model training
+2024-08-03 17:57:15,952 - INFO - Training iteration 1, timesteps 0-1
+2024-08-03 17:57:15,952 - INFO - Training iteration 1, timesteps 0-1
+2024-08-03 17:57:45,333 - INFO - Recent mean reward: 0.99
+2024-08-03 17:57:45,333 - INFO - Recent mean reward: 0.99
+2024-08-03 17:57:45,333 - INFO - Recent mean episode length: 20.00
+2024-08-03 17:57:45,333 - INFO - Recent mean episode length: 20.00
+2024-08-03 17:57:45,335 - INFO - Episode info buffer size: 100
+2024-08-03 17:57:45,335 - INFO - Episode info buffer size: 100
+2024-08-03 17:57:45,335 - INFO - Sample episode info: {'r': 2.4, 'l': 20, 't': 17.366104}
+2024-08-03 17:57:45,335 - INFO - Sample episode info: {'r': 2.4, 'l': 20, 't': 17.366104}
+2024-08-03 17:57:45,335 - INFO - Recent policy loss: 0.00000
+2024-08-03 17:57:45,335 - INFO - Recent policy loss: 0.00000
+2024-08-03 17:57:45,336 - INFO - Recent value loss: 0.27555
+2024-08-03 17:57:45,336 - INFO - Recent value loss: 0.27555
+2024-08-03 17:57:45,336 - INFO - Model training completed or stopped
+2024-08-03 17:57:45,336 - INFO - Model training completed or stopped
+2024-08-03 17:57:45,360 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 17:57:45,360 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 17:57:46,338 - INFO - Model saved successfully
+2024-08-03 17:57:46,338 - INFO - Model saved successfully
+2024-08-03 17:57:46,339 - INFO - Starting final model evaluation
+2024-08-03 17:57:46,339 - INFO - Starting final model evaluation
+2024-08-03 17:57:47,376 - INFO - Final evaluation: Mean reward: 0.50 +/- 0.00
+2024-08-03 17:57:47,376 - INFO - Final evaluation: Mean reward: 0.50 +/- 0.00
+2024-08-03 17:57:47,376 - INFO - Closing environments
+2024-08-03 17:57:47,376 - INFO - Closing environments
+2024-08-03 17:57:47,484 - ERROR - An error occurred during the ablation study: 'CustomEnv' object has no attribute 'kg_completeness'
+2024-08-03 17:57:47,484 - ERROR - An error occurred during the ablation study: 'CustomEnv' object has no attribute 'kg_completeness'
+2024-08-03 17:57:47,488 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 161, in run
+    result = trainer.run(experiment_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 226, in run
+    self.env.close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 117, in close
+    super().close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\gymnasium\core.py", line 475, in close
+    return self.env.close()
+           ^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 229, in close
+    self.simulation_manager.save_data(self.kg_completeness)
+                                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomEnv' object has no attribute 'kg_completeness'
+
+2024-08-03 17:57:47,488 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 161, in run
+    result = trainer.run(experiment_name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 226, in run
+    self.env.close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 117, in close
+    super().close()
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\gymnasium\core.py", line 475, in close
+    return self.env.close()
+           ^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 229, in close
+    self.simulation_manager.save_data(self.kg_completeness)
+                                      ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'CustomEnv' object has no attribute 'kg_completeness'
+

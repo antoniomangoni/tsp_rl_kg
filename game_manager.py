@@ -11,19 +11,15 @@ from target import Target_Manager
 from knowledge_graph import KnowledgeGraph
 
 class GameManager:
-    def __init__(self, num_tiles=32, screen_size=800, kg_completeness=1, vision_range=2, plot=False):
+    def __init__(self, num_tiles=32, screen_size=800, vision_range=2, plot=False):
         self.num_tiles = num_tiles
         self.tile_size: int = screen_size // num_tiles
         self.environment = None
-        self.kg_completeness = kg_completeness
         self.agent_controler = None
         self.agent = None
         self.target_manager = None
-
         self.route_energy_list = []
-
         self.vision_range = vision_range
-
         self.renderer = None
         self.running = True
         self.plot = plot
@@ -51,8 +47,8 @@ class GameManager:
         
         self.target_manager = Target_Manager(self.environment)
 
-    def init_knowledge_graph(self):
-        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, self.kg_completeness, self.plot)
+    def init_knowledge_graph(self, kg_completeness):
+        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, kg_completeness, self.plot)
         self.agent_controler.get_kg(self.kg_class)
 
     def initialise_rendering(self):
@@ -65,9 +61,9 @@ class GameManager:
         # self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
         pygame.display.flip()
 
-    def start_game(self):
+    def start_game(self, kg_completeness=0.5):
         self.init_pygame()
-        self.init_knowledge_graph()
+        self.init_knowledge_graph(kg_completeness)
         self.initialise_rendering()
 
     def end_game(self):
