@@ -1171,3 +1171,7 @@ TypeError: Monitor.close() takes 1 positional argument but 2 were given
 2024-08-03 20:09:45,203 - INFO - Ablation Study completed
 2024-08-03 20:09:45,203 - INFO - Ablation Study completed
 2024-08-03 20:09:45,203 - INFO - Ablation Study completed
+2024-08-03 20:13:33,719 - INFO - Starting Ablation Study
+2024-08-03 20:13:33,719 - INFO - Running experiment: kg_completeness_0.25
+2024-08-03 20:13:33,744 - INFO - Using device: cuda
+2024-08-03 20:13:33,744 - INFO - Using device: cuda

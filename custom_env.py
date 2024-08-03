@@ -3,6 +3,7 @@ from gymnasium import spaces
 import numpy as np
 import pygame
 from torch_geometric.data import Data
+from collections import deque
 import logging
 logger = logging.getLogger(__name__)
 from agent_model import AgentModel
@@ -19,13 +20,15 @@ class CustomEnv(gym.Env):
         self.completion_reward = 100
         self.route_improvement_reward = 200
         self.current_reward = 0
-        self.penalty = -0.1
+        self.penalty_per_step = -0.1
         self.max_not_improvement_routes = 5
         self.num_not_improvement_routes = 0
         self.best_route_energy = np.inf
         self.outposts_visited = set()
         self.closer_to_outpost_reward = 0.5  # Adjust this value as needed
         self.farther_from_outpost_penalty = -0.3  # Adjust this value as needed
+        self.recent_path = None  # Will be initialized in reset()
+        self.circular_behavior_penalty = -0.5  # Adjust as needed
 
         self.num_actions = model_args['num_actions']
         self.num_tiles = game_manager_args['num_tiles']
@@ -69,7 +72,7 @@ class CustomEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
-        self.max_episode_steps = 20#000  # Maximum number of steps per episode
+        self.max_episode_steps = 20000  # Maximum number of steps per episode
         self.episode_step = 0
         self.total_reward = 0
         logger.info("CustomEnv initialized successfully")
@@ -89,40 +92,46 @@ class CustomEnv(gym.Env):
         self.best_route_energy = 0
         logger.info("Current game manager set successfully")
 
-    def _calculate_reward(self):
-        logger.debug("Calculating reward")
+    def calculate_reward(self):
+        logger.info("Calculating reward...")
         agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        reward = 0
+        reward = self.penalty_per_step  # Start with the step penalty
 
+        # Check if agent reached a new outpost
         if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:
             reward += self.new_outpost_reward
             self.outposts_visited.add(agent_pos)
-            logger.debug(f"Agent reached new outpost. Reward: {self.new_outpost_reward}")
-
+            logger.info(f"Agent reached new outpost. Reward: {self.new_outpost_reward}")
+            self.recent_path.clear()  # Clear the path memory when reaching a new outpost
             if len(self.outposts_visited) == len(self.outpost_coords):
                 reward += self.completion_reward
-                logger.debug(f"All outposts visited. Additional reward: {self.completion_reward}")
+                logger.info(f"All outposts visited. Additional reward: {self.completion_reward}")
                 self.early_stop = True
-
+                return reward  # Early return if all outposts are visited
+        
+        unvisited_outposts = set(self.outpost_coords) - self.outposts_visited
+        if unvisited_outposts:
+            current_min_distance = min(manhattan_distance(agent_pos, outpost) for outpost in unvisited_outposts)
+            
+            if current_min_distance < self.previous_min_distance:
+                reward += self.closer_to_outpost_reward
+                logger.info(f"Agent moved closer to an outpost. Reward: {self.closer_to_outpost_reward}")
+            elif current_min_distance > self.previous_min_distance:
+                reward += self.farther_from_outpost_penalty
+                logger.info(f"Agent moved away from outposts. Penalty: {self.farther_from_outpost_penalty}")
+            
+            self.previous_min_distance = current_min_distance
         else:
-            unvisited_outposts = [outpost for outpost in self.outpost_coords if outpost not in self.outposts_visited]
-            if unvisited_outposts:
-                prev_min_distance = self.previous_min_distance if hasattr(self, 'previous_min_distance') else float('inf')
-                current_min_distance = min(manhattan_distance(agent_pos, outpost) for outpost in unvisited_outposts)
-                
-                if current_min_distance < prev_min_distance:
-                    reward += self.closer_to_outpost_reward
-                    logger.debug(f"Agent moved closer to an outpost. Reward: {self.closer_to_outpost_reward}")
-                elif current_min_distance > prev_min_distance:
-                    reward += self.farther_from_outpost_penalty
-                    logger.debug(f"Agent moved away from outposts. Penalty: {self.farther_from_outpost_penalty}")
-                
-                self.previous_min_distance = current_min_distance
-            else:
-                reward += self.penalty
-                logger.debug(f"No unvisited outposts. Penalty: {self.penalty}")
+            logger.warning("No unvisited outposts left. The agent should have stopped already.")
+        
+        # Check for circular behavior
+        if agent_pos in self.recent_path:
+            reward += self.circular_behavior_penalty
+            logger.info(f"Agent repeated a path. Penalty: {self.circular_behavior_penalty}")
+        
+        # Update recent path memory
+        self.recent_path.append(agent_pos)
 
-        logger.debug(f"Calculated reward: {reward}, Outposts visited: {len(self.outposts_visited)}/{len(self.outpost_coords)}")
         return reward
 
     def reset(self, seed=None, options=None):
@@ -132,6 +141,7 @@ class CustomEnv(gym.Env):
         self.outposts_visited.clear()
         self.early_stop = False
         self.step_count = 0
+        self.recent_path = deque(maxlen=len(self.outpost_coords))
         super().reset(seed=seed)
         if seed is not None:
             np.random.seed(seed)

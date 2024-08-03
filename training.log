@@ -474,3 +474,355 @@
 2024-08-03 20:09:45,197 - INFO - Environments closed successfully
 2024-08-03 20:09:45,197 - INFO - Environments closed successfully
 2024-08-03 20:09:45,197 - INFO - Environments closed successfully
+2024-08-03 20:13:33,744 - INFO - Creating environment
+2024-08-03 20:13:33,744 - INFO - Creating environment
+2024-08-03 20:13:34,130 - INFO - Environment created successfully
+2024-08-03 20:13:34,130 - INFO - Environment created successfully
+2024-08-03 20:13:34,187 - INFO - Creating PPO model
+2024-08-03 20:13:34,187 - INFO - Creating PPO model
+2024-08-03 20:13:36,244 - INFO - PPO model created successfully
+2024-08-03 20:13:36,244 - INFO - PPO model created successfully
+2024-08-03 20:13:36,245 - INFO - Starting model training
+2024-08-03 20:13:36,245 - INFO - Starting model training
+2024-08-03 20:13:36,246 - INFO - Training iteration 1, timesteps 0-2048
+2024-08-03 20:13:36,246 - INFO - Training iteration 1, timesteps 0-2048
+2024-08-03 20:14:04,768 - INFO - Recent mean reward: 0.00
+2024-08-03 20:14:04,768 - INFO - Recent mean reward: 0.00
+2024-08-03 20:14:04,768 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:14:04,768 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:14:04,769 - INFO - Episode info buffer size: 0
+2024-08-03 20:14:04,769 - INFO - Episode info buffer size: 0
+2024-08-03 20:14:04,769 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:14:04,769 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:14:04,770 - INFO - Recent value loss: 0.26758
+2024-08-03 20:14:04,770 - INFO - Recent value loss: 0.26758
+2024-08-03 20:14:04,770 - INFO - Training iteration 2, timesteps 2048-4096
+2024-08-03 20:14:04,770 - INFO - Training iteration 2, timesteps 2048-4096
+2024-08-03 20:14:32,384 - INFO - Recent mean reward: 0.00
+2024-08-03 20:14:32,384 - INFO - Recent mean reward: 0.00
+2024-08-03 20:14:32,384 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:14:32,384 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:14:32,385 - INFO - Episode info buffer size: 0
+2024-08-03 20:14:32,385 - INFO - Episode info buffer size: 0
+2024-08-03 20:14:32,386 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:14:32,386 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:14:32,386 - INFO - Recent value loss: 0.25380
+2024-08-03 20:14:32,386 - INFO - Recent value loss: 0.25380
+2024-08-03 20:14:32,386 - INFO - Training iteration 3, timesteps 4096-6144
+2024-08-03 20:14:32,386 - INFO - Training iteration 3, timesteps 4096-6144
+2024-08-03 20:15:00,252 - INFO - Recent mean reward: 0.00
+2024-08-03 20:15:00,252 - INFO - Recent mean reward: 0.00
+2024-08-03 20:15:00,252 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:15:00,252 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:15:00,253 - INFO - Episode info buffer size: 0
+2024-08-03 20:15:00,253 - INFO - Episode info buffer size: 0
+2024-08-03 20:15:00,254 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:15:00,254 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:15:00,255 - INFO - Recent value loss: 0.20365
+2024-08-03 20:15:00,255 - INFO - Recent value loss: 0.20365
+2024-08-03 20:15:00,255 - INFO - Training iteration 4, timesteps 6144-8192
+2024-08-03 20:15:00,255 - INFO - Training iteration 4, timesteps 6144-8192
+2024-08-03 20:15:28,895 - INFO - Recent mean reward: 0.00
+2024-08-03 20:15:28,895 - INFO - Recent mean reward: 0.00
+2024-08-03 20:15:28,897 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:15:28,897 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:15:28,897 - INFO - Episode info buffer size: 0
+2024-08-03 20:15:28,897 - INFO - Episode info buffer size: 0
+2024-08-03 20:15:28,897 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:15:28,897 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:15:28,898 - INFO - Recent value loss: 0.16426
+2024-08-03 20:15:28,898 - INFO - Recent value loss: 0.16426
+2024-08-03 20:15:28,898 - INFO - Training iteration 5, timesteps 8192-10240
+2024-08-03 20:15:28,898 - INFO - Training iteration 5, timesteps 8192-10240
+2024-08-03 20:25:39,634 - INFO - Recent mean reward: 0.00
+2024-08-03 20:25:39,634 - INFO - Recent mean reward: 0.00
+2024-08-03 20:25:39,635 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:25:39,635 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:25:39,635 - INFO - Episode info buffer size: 0
+2024-08-03 20:25:39,635 - INFO - Episode info buffer size: 0
+2024-08-03 20:25:39,636 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:25:39,636 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:25:39,637 - INFO - Recent value loss: 0.15224
+2024-08-03 20:25:39,637 - INFO - Recent value loss: 0.15224
+2024-08-03 20:25:39,637 - INFO - Training iteration 6, timesteps 10240-12288
+2024-08-03 20:25:39,637 - INFO - Training iteration 6, timesteps 10240-12288
+2024-08-03 20:26:12,441 - INFO - Recent mean reward: 0.00
+2024-08-03 20:26:12,441 - INFO - Recent mean reward: 0.00
+2024-08-03 20:26:12,443 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:26:12,443 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:26:12,443 - INFO - Episode info buffer size: 0
+2024-08-03 20:26:12,443 - INFO - Episode info buffer size: 0
+2024-08-03 20:26:12,443 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:26:12,443 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:26:12,444 - INFO - Recent value loss: 0.10854
+2024-08-03 20:26:12,444 - INFO - Recent value loss: 0.10854
+2024-08-03 20:26:12,444 - INFO - Training iteration 7, timesteps 12288-14336
+2024-08-03 20:26:12,444 - INFO - Training iteration 7, timesteps 12288-14336
+2024-08-03 20:26:45,525 - INFO - Recent mean reward: 0.00
+2024-08-03 20:26:45,525 - INFO - Recent mean reward: 0.00
+2024-08-03 20:26:45,526 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:26:45,526 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:26:45,526 - INFO - Episode info buffer size: 0
+2024-08-03 20:26:45,526 - INFO - Episode info buffer size: 0
+2024-08-03 20:26:45,527 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:26:45,527 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:26:45,527 - INFO - Recent value loss: 0.11548
+2024-08-03 20:26:45,527 - INFO - Recent value loss: 0.11548
+2024-08-03 20:26:45,527 - INFO - Training iteration 8, timesteps 14336-16384
+2024-08-03 20:26:45,527 - INFO - Training iteration 8, timesteps 14336-16384
+2024-08-03 20:27:18,935 - INFO - Recent mean reward: 0.00
+2024-08-03 20:27:18,935 - INFO - Recent mean reward: 0.00
+2024-08-03 20:27:18,936 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:27:18,936 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:27:18,936 - INFO - Episode info buffer size: 0
+2024-08-03 20:27:18,936 - INFO - Episode info buffer size: 0
+2024-08-03 20:27:18,937 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:27:18,937 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:27:18,937 - INFO - Recent value loss: 0.08951
+2024-08-03 20:27:18,937 - INFO - Recent value loss: 0.08951
+2024-08-03 20:27:18,939 - INFO - Training iteration 9, timesteps 16384-18432
+2024-08-03 20:27:18,939 - INFO - Training iteration 9, timesteps 16384-18432
+2024-08-03 20:27:52,005 - INFO - Recent mean reward: 0.00
+2024-08-03 20:27:52,005 - INFO - Recent mean reward: 0.00
+2024-08-03 20:27:52,005 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:27:52,005 - INFO - Recent mean episode length: 0.00
+2024-08-03 20:27:52,006 - INFO - Episode info buffer size: 0
+2024-08-03 20:27:52,006 - INFO - Episode info buffer size: 0
+2024-08-03 20:27:52,006 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:27:52,006 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:27:52,006 - INFO - Recent value loss: 0.07997
+2024-08-03 20:27:52,006 - INFO - Recent value loss: 0.07997
+2024-08-03 20:27:52,008 - INFO - Training iteration 10, timesteps 18432-20480
+2024-08-03 20:27:52,008 - INFO - Training iteration 10, timesteps 18432-20480
+2024-08-03 20:38:25,444 - INFO - Recent mean reward: 980.30
+2024-08-03 20:38:25,444 - INFO - Recent mean reward: 980.30
+2024-08-03 20:38:25,444 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:38:25,444 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:38:25,444 - INFO - Episode info buffer size: 1
+2024-08-03 20:38:25,444 - INFO - Episode info buffer size: 1
+2024-08-03 20:38:25,445 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:38:25,445 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:38:25,445 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:38:25,445 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:38:25,446 - INFO - Recent value loss: 0.25647
+2024-08-03 20:38:25,446 - INFO - Recent value loss: 0.25647
+2024-08-03 20:38:25,446 - INFO - Training iteration 11, timesteps 20480-22528
+2024-08-03 20:38:25,446 - INFO - Training iteration 11, timesteps 20480-22528
+2024-08-03 20:38:59,122 - INFO - Recent mean reward: 980.30
+2024-08-03 20:38:59,122 - INFO - Recent mean reward: 980.30
+2024-08-03 20:38:59,123 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:38:59,123 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:38:59,123 - INFO - Episode info buffer size: 1
+2024-08-03 20:38:59,123 - INFO - Episode info buffer size: 1
+2024-08-03 20:38:59,124 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:38:59,124 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:38:59,124 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:38:59,124 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:38:59,124 - INFO - Recent value loss: 0.15525
+2024-08-03 20:38:59,124 - INFO - Recent value loss: 0.15525
+2024-08-03 20:38:59,125 - INFO - Training iteration 12, timesteps 22528-24576
+2024-08-03 20:38:59,125 - INFO - Training iteration 12, timesteps 22528-24576
+2024-08-03 20:39:33,313 - INFO - Recent mean reward: 980.30
+2024-08-03 20:39:33,313 - INFO - Recent mean reward: 980.30
+2024-08-03 20:39:33,313 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:39:33,313 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:39:33,314 - INFO - Episode info buffer size: 1
+2024-08-03 20:39:33,314 - INFO - Episode info buffer size: 1
+2024-08-03 20:39:33,314 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:39:33,314 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:39:33,315 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:39:33,315 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:39:33,316 - INFO - Recent value loss: 0.15423
+2024-08-03 20:39:33,316 - INFO - Recent value loss: 0.15423
+2024-08-03 20:39:33,316 - INFO - Training iteration 13, timesteps 24576-26624
+2024-08-03 20:39:33,316 - INFO - Training iteration 13, timesteps 24576-26624
+2024-08-03 20:40:08,363 - INFO - Recent mean reward: 980.30
+2024-08-03 20:40:08,363 - INFO - Recent mean reward: 980.30
+2024-08-03 20:40:08,364 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:40:08,364 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:40:08,365 - INFO - Episode info buffer size: 1
+2024-08-03 20:40:08,365 - INFO - Episode info buffer size: 1
+2024-08-03 20:40:08,366 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:40:08,366 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:40:08,366 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:40:08,366 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:40:08,367 - INFO - Recent value loss: 0.12728
+2024-08-03 20:40:08,367 - INFO - Recent value loss: 0.12728
+2024-08-03 20:40:08,367 - INFO - Training iteration 14, timesteps 26624-28672
+2024-08-03 20:40:08,367 - INFO - Training iteration 14, timesteps 26624-28672
+2024-08-03 20:40:42,902 - INFO - Recent mean reward: 980.30
+2024-08-03 20:40:42,902 - INFO - Recent mean reward: 980.30
+2024-08-03 20:40:42,902 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:40:42,902 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:40:42,903 - INFO - Episode info buffer size: 1
+2024-08-03 20:40:42,903 - INFO - Episode info buffer size: 1
+2024-08-03 20:40:42,903 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:40:42,903 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:40:42,904 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:40:42,904 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:40:42,904 - INFO - Recent value loss: 0.10459
+2024-08-03 20:40:42,904 - INFO - Recent value loss: 0.10459
+2024-08-03 20:40:42,905 - INFO - Training iteration 15, timesteps 28672-30720
+2024-08-03 20:40:42,905 - INFO - Training iteration 15, timesteps 28672-30720
+2024-08-03 20:50:59,011 - INFO - Recent mean reward: 980.30
+2024-08-03 20:50:59,011 - INFO - Recent mean reward: 980.30
+2024-08-03 20:50:59,012 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:50:59,012 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:50:59,012 - INFO - Episode info buffer size: 1
+2024-08-03 20:50:59,012 - INFO - Episode info buffer size: 1
+2024-08-03 20:50:59,013 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:50:59,013 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:50:59,013 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:50:59,013 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:50:59,014 - INFO - Recent value loss: 0.12121
+2024-08-03 20:50:59,014 - INFO - Recent value loss: 0.12121
+2024-08-03 20:50:59,014 - INFO - Training iteration 16, timesteps 30720-32768
+2024-08-03 20:50:59,014 - INFO - Training iteration 16, timesteps 30720-32768
+2024-08-03 20:51:32,594 - INFO - Recent mean reward: 980.30
+2024-08-03 20:51:32,594 - INFO - Recent mean reward: 980.30
+2024-08-03 20:51:32,595 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:51:32,595 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:51:32,595 - INFO - Episode info buffer size: 1
+2024-08-03 20:51:32,595 - INFO - Episode info buffer size: 1
+2024-08-03 20:51:32,596 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:51:32,596 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:51:32,596 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:51:32,596 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:51:32,596 - INFO - Recent value loss: 0.09000
+2024-08-03 20:51:32,596 - INFO - Recent value loss: 0.09000
+2024-08-03 20:51:32,597 - INFO - Training iteration 17, timesteps 32768-34816
+2024-08-03 20:51:32,597 - INFO - Training iteration 17, timesteps 32768-34816
+2024-08-03 20:52:06,667 - INFO - Recent mean reward: 980.30
+2024-08-03 20:52:06,667 - INFO - Recent mean reward: 980.30
+2024-08-03 20:52:06,667 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:52:06,667 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:52:06,668 - INFO - Episode info buffer size: 1
+2024-08-03 20:52:06,668 - INFO - Episode info buffer size: 1
+2024-08-03 20:52:06,669 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:52:06,669 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:52:06,669 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:52:06,669 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:52:06,670 - INFO - Recent value loss: 0.05772
+2024-08-03 20:52:06,670 - INFO - Recent value loss: 0.05772
+2024-08-03 20:52:06,670 - INFO - Training iteration 18, timesteps 34816-36864
+2024-08-03 20:52:06,670 - INFO - Training iteration 18, timesteps 34816-36864
+2024-08-03 20:52:40,323 - INFO - Recent mean reward: 980.30
+2024-08-03 20:52:40,323 - INFO - Recent mean reward: 980.30
+2024-08-03 20:52:40,323 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:52:40,323 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:52:40,324 - INFO - Episode info buffer size: 1
+2024-08-03 20:52:40,324 - INFO - Episode info buffer size: 1
+2024-08-03 20:52:40,324 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:52:40,324 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:52:40,325 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:52:40,325 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:52:40,325 - INFO - Recent value loss: 0.15708
+2024-08-03 20:52:40,325 - INFO - Recent value loss: 0.15708
+2024-08-03 20:52:40,325 - INFO - Training iteration 19, timesteps 36864-38912
+2024-08-03 20:52:40,325 - INFO - Training iteration 19, timesteps 36864-38912
+2024-08-03 20:53:13,741 - INFO - Recent mean reward: 980.30
+2024-08-03 20:53:13,741 - INFO - Recent mean reward: 980.30
+2024-08-03 20:53:13,741 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:53:13,741 - INFO - Recent mean episode length: 20000.00
+2024-08-03 20:53:13,742 - INFO - Episode info buffer size: 1
+2024-08-03 20:53:13,742 - INFO - Episode info buffer size: 1
+2024-08-03 20:53:13,743 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:53:13,743 - INFO - Sample episode info: {'r': 980.3, 'l': 20000, 't': 868.965192}
+2024-08-03 20:53:13,743 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:53:13,743 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:53:13,744 - INFO - Recent value loss: 0.08833
+2024-08-03 20:53:13,744 - INFO - Recent value loss: 0.08833
+2024-08-03 20:53:13,744 - INFO - Training iteration 20, timesteps 38912-40960
+2024-08-03 20:53:13,744 - INFO - Training iteration 20, timesteps 38912-40960
+2024-08-03 21:03:37,069 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:03:37,069 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:03:37,070 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:03:37,070 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:03:37,070 - INFO - Episode info buffer size: 2
+2024-08-03 21:03:37,070 - INFO - Episode info buffer size: 2
+2024-08-03 21:03:37,071 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:03:37,071 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:03:37,071 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:03:37,071 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:03:37,071 - INFO - Recent value loss: 0.41234
+2024-08-03 21:03:37,071 - INFO - Recent value loss: 0.41234
+2024-08-03 21:03:37,073 - INFO - Training iteration 21, timesteps 40960-43008
+2024-08-03 21:03:37,073 - INFO - Training iteration 21, timesteps 40960-43008
+2024-08-03 21:04:11,318 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:04:11,318 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:04:11,319 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:04:11,319 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:04:11,319 - INFO - Episode info buffer size: 2
+2024-08-03 21:04:11,319 - INFO - Episode info buffer size: 2
+2024-08-03 21:04:11,320 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:04:11,320 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:04:11,320 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:04:11,320 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:04:11,321 - INFO - Recent value loss: 0.14180
+2024-08-03 21:04:11,321 - INFO - Recent value loss: 0.14180
+2024-08-03 21:04:11,321 - INFO - Training iteration 22, timesteps 43008-45056
+2024-08-03 21:04:11,321 - INFO - Training iteration 22, timesteps 43008-45056
+2024-08-03 21:04:45,358 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:04:45,358 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:04:45,358 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:04:45,358 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:04:45,359 - INFO - Episode info buffer size: 2
+2024-08-03 21:04:45,359 - INFO - Episode info buffer size: 2
+2024-08-03 21:04:45,359 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:04:45,359 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:04:45,360 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:04:45,360 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:04:45,361 - INFO - Recent value loss: 0.09263
+2024-08-03 21:04:45,361 - INFO - Recent value loss: 0.09263
+2024-08-03 21:04:45,361 - INFO - Training iteration 23, timesteps 45056-47104
+2024-08-03 21:04:45,361 - INFO - Training iteration 23, timesteps 45056-47104
+2024-08-03 21:05:19,925 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:05:19,925 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:05:19,925 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:05:19,925 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:05:19,926 - INFO - Episode info buffer size: 2
+2024-08-03 21:05:19,926 - INFO - Episode info buffer size: 2
+2024-08-03 21:05:19,926 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:05:19,926 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:05:19,927 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:05:19,927 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:05:19,928 - INFO - Recent value loss: 0.11812
+2024-08-03 21:05:19,928 - INFO - Recent value loss: 0.11812
+2024-08-03 21:05:19,928 - INFO - Training iteration 24, timesteps 47104-49152
+2024-08-03 21:05:19,928 - INFO - Training iteration 24, timesteps 47104-49152
+2024-08-03 21:05:54,270 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:05:54,270 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:05:54,270 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:05:54,270 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:05:54,271 - INFO - Episode info buffer size: 2
+2024-08-03 21:05:54,271 - INFO - Episode info buffer size: 2
+2024-08-03 21:05:54,271 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:05:54,271 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:05:54,272 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:05:54,272 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:05:54,272 - INFO - Recent value loss: 0.12897
+2024-08-03 21:05:54,272 - INFO - Recent value loss: 0.12897
+2024-08-03 21:05:54,272 - INFO - Training iteration 25, timesteps 49152-51200
+2024-08-03 21:05:54,272 - INFO - Training iteration 25, timesteps 49152-51200
+2024-08-03 21:15:50,530 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:15:50,530 - INFO - Recent mean reward: 1243.20
+2024-08-03 21:15:50,530 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:15:50,530 - INFO - Recent mean episode length: 20000.00
+2024-08-03 21:15:50,531 - INFO - Episode info buffer size: 2
+2024-08-03 21:15:50,531 - INFO - Episode info buffer size: 2
+2024-08-03 21:15:50,531 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:15:50,531 - INFO - Sample episode info: {'r': 1506.1, 'l': 20000, 't': 2387.55847}
+2024-08-03 21:15:50,532 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:15:50,532 - INFO - Recent policy loss: 0.00000
+2024-08-03 21:15:50,532 - INFO - Recent value loss: 0.12412
+2024-08-03 21:15:50,532 - INFO - Recent value loss: 0.12412
+2024-08-03 21:15:50,532 - INFO - Training iteration 26, timesteps 51200-53248
+2024-08-03 21:15:50,532 - INFO - Training iteration 26, timesteps 51200-53248
+2024-08-03 21:15:50,532 - WARNING - Training timed out after 1 hour
+2024-08-03 21:15:50,532 - WARNING - Training timed out after 1 hour
+2024-08-03 21:15:50,533 - INFO - Model training completed or stopped
+2024-08-03 21:15:50,533 - INFO - Model training completed or stopped
+2024-08-03 21:15:50,565 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 21:15:50,565 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 21:15:51,522 - INFO - Model saved successfully
+2024-08-03 21:15:51,522 - INFO - Model saved successfully

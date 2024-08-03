@@ -110,3 +110,9 @@
 2024-08-03 20:09:45,159 - INFO - Final evaluation: Mean reward: 0.55 +/- 0.32
 2024-08-03 20:09:45,159 - INFO - Final evaluation: Mean reward: 0.55 +/- 0.32
 2024-08-03 20:09:45,159 - INFO - Final evaluation: Mean reward: 0.55 +/- 0.32
+2024-08-03 20:13:34,132 - INFO - Creating evaluation environment
+2024-08-03 20:13:34,132 - INFO - Creating evaluation environment
+2024-08-03 20:13:34,186 - INFO - Evaluation environment created successfully
+2024-08-03 20:13:34,186 - INFO - Evaluation environment created successfully
+2024-08-03 21:15:51,524 - INFO - Starting final model evaluation
+2024-08-03 21:15:51,524 - INFO - Starting final model evaluation
