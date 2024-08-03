@@ -18,9 +18,18 @@ from custom_env import CustomEnv
 from agent_model import AgentModel
 
 class Logger:
-    def __init__(self, log_file='training.log'):
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.INFO)
+    def __init__(self, base_log_file='training.log'):
+        self.loggers = {}
+        self.base_log_file = base_log_file
+        self._setup_logger('main', base_log_file)
+        self._setup_logger('training', 'training.log')
+        self._setup_logger('eval', 'eval.log')
+        
+        warnings.filterwarnings("always")
+
+    def _setup_logger(self, name, log_file):
+        logger = logging.getLogger(name)
+        logger.setLevel(logging.INFO)
         
         # File handler
         file_handler = logging.FileHandler(log_file)
@@ -36,19 +45,25 @@ class Logger:
         console_handler.setFormatter(formatter)
         
         # Add handlers to logger
-        self.logger.addHandler(file_handler)
-        self.logger.addHandler(console_handler)
-        
-        warnings.filterwarnings("always")
+        logger.addHandler(file_handler)
+        logger.addHandler(console_handler)
 
-    def info(self, message):
-        self.logger.info(message)
+        self.loggers[name] = logger
 
-    def warning(self, message):
-        self.logger.warning(message)
+    def get_logger(self, name):
+        if name not in self.loggers:
+            log_file = f"{name}_{self.base_log_file}"
+            self._setup_logger(name, log_file)
+        return self.loggers[name]
 
-    def error(self, message):
-        self.logger.error(message)
+    def info(self, message, logger_name='main'):
+        self.get_logger(logger_name).info(message)
+
+    def warning(self, message, logger_name='main'):
+        self.get_logger(logger_name).warning(message)
+
+    def error(self, message, logger_name='main'):
+        self.get_logger(logger_name).error(message)
 
 class EnvironmentManager:
     def __init__(self, game_manager_args, simulation_manager_args, model_args):
@@ -61,7 +76,8 @@ class EnvironmentManager:
         return Monitor(env)
 
     def set_kg_completeness(self, env, completeness):
-        env.kg_completeness = completeness
+        # Access the unwrapped environment to set KG completeness
+        env.unwrapped.set_kg_completeness(completeness)
 
 class ModelTrainer:
     def __init__(self, env, logger, device):
@@ -71,7 +87,7 @@ class ModelTrainer:
         self.rl_model = None
 
     def create_model(self, model_config):
-        self.logger.info("Creating PPO model")
+        self.logger.info("Creating PPO model", logger_name='training')
         self.rl_model = PPO("MultiInputPolicy", 
                     self.env, 
                     policy_kwargs={
@@ -82,42 +98,42 @@ class ModelTrainer:
                     device=self.device,
                     verbose=1
         )
-        self.logger.info("PPO model created successfully")
+        self.logger.info("PPO model created successfully", logger_name='training')
 
     def train(self, total_timesteps, eval_callback, timeout=3600):
-        self.logger.info("Starting model training")
+        self.logger.info("Starting model training", logger_name='training')
         start_time = time.time()
         try:
             for i in range(0, total_timesteps, 2048):
-                self.logger.info(f"Training iteration {i//2048 + 1}, timesteps {i}-{min(i+2048, total_timesteps)}")
+                self.logger.info(f"Training iteration {i//2048 + 1}, timesteps {i}-{min(i+2048, total_timesteps)}", logger_name='training')
                 
                 if time.time() - start_time > timeout:
-                    self.logger.warning("Training timed out after 1 hour")
+                    self.logger.warning("Training timed out after 1 hour", logger_name='training')
                     break
 
                 with warnings.catch_warnings(record=True) as w:
                     self.rl_model.learn(total_timesteps=2048, callback=eval_callback, reset_num_timesteps=False)
                     if len(w) > 0:
-                        self.logger.warning(f"Warnings during training: {[str(warn.message) for warn in w]}")
+                        self.logger.warning(f"Warnings during training: {[str(warn.message) for warn in w]}", logger_name='training')
 
                 self.log_training_stats()
 
         except Exception as e:
-            self.logger.error(f"Error during training: {str(e)}")
-            self.logger.error(traceback.format_exc())
+            self.logger.error(f"Error during training: {str(e)}", logger_name='training')
+            self.logger.error(traceback.format_exc(), logger_name='training')
         
-        self.logger.info("Model training completed or stopped")
+        self.logger.info("Model training completed or stopped", logger_name='training')
 
     def log_training_stats(self):
         mean_reward = self.calculate_mean_reward()
         mean_episode_length = self.calculate_mean_episode_length()
-        self.logger.info(f"Recent mean reward: {mean_reward:.2f}")
-        self.logger.info(f"Recent mean episode length: {mean_episode_length:.2f}")
-        self.logger.info(f"Episode info buffer size: {len(self.rl_model.ep_info_buffer)}")
+        self.logger.info(f"Recent mean reward: {mean_reward:.2f}", logger_name='training')
+        self.logger.info(f"Recent mean episode length: {mean_episode_length:.2f}", logger_name='training')
+        self.logger.info(f"Episode info buffer size: {len(self.rl_model.ep_info_buffer)}", logger_name='training')
         if len(self.rl_model.ep_info_buffer) > 0:
-            self.logger.info(f"Sample episode info: {self.rl_model.ep_info_buffer[-1]}")
-        self.logger.info(f"Recent policy loss: {self.rl_model.logger.name_to_value['train/policy_loss']:.5f}")
-        self.logger.info(f"Recent value loss: {self.rl_model.logger.name_to_value['train/value_loss']:.5f}")
+            self.logger.info(f"Sample episode info: {self.rl_model.ep_info_buffer[-1]}", logger_name='training')
+        self.logger.info(f"Recent policy loss: {self.rl_model.logger.name_to_value['train/policy_loss']:.5f}", logger_name='training')
+        self.logger.info(f"Recent value loss: {self.rl_model.logger.name_to_value['train/value_loss']:.5f}", logger_name='training')
 
     def calculate_mean_reward(self):
         if len(self.rl_model.ep_info_buffer) > 0:
@@ -130,14 +146,14 @@ class ModelTrainer:
         return 0.0
 
     def save_model(self, path):
-        self.logger.info(f"Saving model to {path}")
+        self.logger.info(f"Saving model to {path}", logger_name='training')
         self.rl_model.save(path)
-        self.logger.info("Model saved successfully")
+        self.logger.info("Model saved successfully", logger_name='training')
 
     def evaluate_model(self, eval_env, n_eval_episodes=10):
-        self.logger.info("Starting final model evaluation")
+        self.logger.info("Starting final model evaluation", logger_name='eval')
         mean_reward, std_reward = evaluate_policy(self.rl_model, eval_env, n_eval_episodes=n_eval_episodes)
-        self.logger.info(f"Final evaluation: Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
+        self.logger.info(f"Final evaluation: Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}", logger_name='eval')
         return mean_reward, std_reward
 
 class AblationStudy:
@@ -185,22 +201,13 @@ class Trainer:
                                               config['simulation_manager_args'], 
                                               config['model_args'])
         
-        self.logger.info("Creating environment")
+        self.logger.info("Creating environment", logger_name='training')
         self.env: CustomEnv = self.env_manager.make_env()
-        self.logger.info("Environment created successfully")
+        self.logger.info("Environment created successfully", logger_name='training')
 
-        self.logger.info("Creating evaluation environment")
+        self.logger.info("Creating evaluation environment", logger_name='eval')
         self.eval_env: CustomEnv = self.env_manager.make_env()
-        self.logger.info("Evaluation environment created successfully")
-
-        # # Explicitly set KG completeness for both training and evaluation environments
-        # try:
-        #     kg_completeness = config['kg_completeness']
-        # except KeyError:
-        #     logger.error("KG completeness not specified in config")
-        # self.env.set_kg_completeness(kg_completeness)
-        # self.eval_env.set_kg_completeness(kg_completeness)
-        # self.logger.info(f"KG completeness set to {kg_completeness} for both environments")
+        self.logger.info("Evaluation environment created successfully", logger_name='eval')
 
         self.model_trainer = ModelTrainer(self.env, self.logger, self.device)
         self.model_trainer.create_model(config['model_config'])
@@ -223,12 +230,12 @@ class Trainer:
         self.model_trainer.save_model(f"ppo_custom_env_{experiment_name}")
         mean_reward, std_reward = self.model_trainer.evaluate_model(self.eval_env)
 
-        self.logger.info("Closing environments")
-        self.env.set_kg_completeness(self.current_kg_completeness)
+        self.logger.info("Closing environments", logger_name='training')
+        self.env_manager.set_kg_completeness(self.env, self.current_kg_completeness)
         self.env.close()
-        self.eval_env.set_kg_completeness(self.current_kg_completeness)
+        self.env_manager.set_kg_completeness(self.eval_env, self.current_kg_completeness)
         self.eval_env.close()
-        self.logger.info("Environments closed successfully")
+        self.logger.info("Environments closed successfully", logger_name='training')
 
         self.logger.info("Training and evaluation completed.")
 
@@ -251,7 +258,7 @@ if __name__ == '__main__':
             'learning_rate': 3e-4,
             'gamma': 0.99
         },
-        'total_timesteps': 1#0
+        'total_timesteps': 10
     }
 
     kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
@@ -264,4 +271,3 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(f"An error occurred during the ablation study: {str(e)}")
         logger.error(traceback.format_exc())
-        

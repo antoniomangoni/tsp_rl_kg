@@ -1,0 +1,476 @@
+2024-08-03 19:51:58,807 - INFO - Creating environment
+2024-08-03 19:51:58,807 - INFO - Creating environment
+2024-08-03 19:51:59,174 - INFO - Environment created successfully
+2024-08-03 19:51:59,174 - INFO - Environment created successfully
+2024-08-03 19:51:59,223 - INFO - Creating PPO model
+2024-08-03 19:51:59,223 - INFO - Creating PPO model
+2024-08-03 19:52:01,201 - INFO - PPO model created successfully
+2024-08-03 19:52:01,201 - INFO - PPO model created successfully
+2024-08-03 19:52:01,202 - INFO - Starting model training
+2024-08-03 19:52:01,202 - INFO - Starting model training
+2024-08-03 19:52:01,202 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:52:01,202 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:52:30,677 - INFO - Recent mean reward: 1.00
+2024-08-03 19:52:30,677 - INFO - Recent mean reward: 1.00
+2024-08-03 19:52:30,678 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:52:30,678 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:52:30,678 - INFO - Episode info buffer size: 100
+2024-08-03 19:52:30,678 - INFO - Episode info buffer size: 100
+2024-08-03 19:52:30,678 - INFO - Sample episode info: {'r': 0.5, 'l': 20, 't': 18.120932}
+2024-08-03 19:52:30,678 - INFO - Sample episode info: {'r': 0.5, 'l': 20, 't': 18.120932}
+2024-08-03 19:52:30,679 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:52:30,679 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:52:30,679 - INFO - Recent value loss: 0.26489
+2024-08-03 19:52:30,679 - INFO - Recent value loss: 0.26489
+2024-08-03 19:52:30,679 - INFO - Model training completed or stopped
+2024-08-03 19:52:30,679 - INFO - Model training completed or stopped
+2024-08-03 19:52:30,691 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 19:52:30,691 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 19:52:31,675 - INFO - Model saved successfully
+2024-08-03 19:52:31,675 - INFO - Model saved successfully
+2024-08-03 19:52:32,843 - INFO - Closing environments
+2024-08-03 19:52:32,843 - INFO - Closing environments
+2024-08-03 19:52:32,898 - INFO - Environments closed successfully
+2024-08-03 19:52:32,898 - INFO - Environments closed successfully
+2024-08-03 19:52:32,902 - INFO - Creating environment
+2024-08-03 19:52:32,902 - INFO - Creating environment
+2024-08-03 19:52:32,902 - INFO - Creating environment
+2024-08-03 19:52:33,184 - INFO - Environment created successfully
+2024-08-03 19:52:33,184 - INFO - Environment created successfully
+2024-08-03 19:52:33,184 - INFO - Environment created successfully
+2024-08-03 19:52:33,239 - INFO - Creating PPO model
+2024-08-03 19:52:33,239 - INFO - Creating PPO model
+2024-08-03 19:52:33,239 - INFO - Creating PPO model
+2024-08-03 19:52:34,792 - INFO - PPO model created successfully
+2024-08-03 19:52:34,792 - INFO - PPO model created successfully
+2024-08-03 19:52:34,792 - INFO - PPO model created successfully
+2024-08-03 19:52:34,793 - INFO - Starting model training
+2024-08-03 19:52:34,793 - INFO - Starting model training
+2024-08-03 19:52:34,793 - INFO - Starting model training
+2024-08-03 19:52:34,793 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:52:34,793 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:52:34,793 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:04,168 - INFO - Recent mean reward: 0.99
+2024-08-03 19:53:04,168 - INFO - Recent mean reward: 0.99
+2024-08-03 19:53:04,168 - INFO - Recent mean reward: 0.99
+2024-08-03 19:53:04,168 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:53:04,168 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:53:04,168 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:53:04,169 - INFO - Episode info buffer size: 100
+2024-08-03 19:53:04,169 - INFO - Episode info buffer size: 100
+2024-08-03 19:53:04,169 - INFO - Episode info buffer size: 100
+2024-08-03 19:53:04,170 - INFO - Sample episode info: {'r': 0.8, 'l': 20, 't': 17.262106}
+2024-08-03 19:53:04,170 - INFO - Sample episode info: {'r': 0.8, 'l': 20, 't': 17.262106}
+2024-08-03 19:53:04,170 - INFO - Sample episode info: {'r': 0.8, 'l': 20, 't': 17.262106}
+2024-08-03 19:53:04,170 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:53:04,170 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:53:04,170 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:53:04,171 - INFO - Recent value loss: 0.29669
+2024-08-03 19:53:04,171 - INFO - Recent value loss: 0.29669
+2024-08-03 19:53:04,171 - INFO - Recent value loss: 0.29669
+2024-08-03 19:53:04,172 - INFO - Model training completed or stopped
+2024-08-03 19:53:04,172 - INFO - Model training completed or stopped
+2024-08-03 19:53:04,172 - INFO - Model training completed or stopped
+2024-08-03 19:53:04,183 - INFO - Saving model to ppo_custom_env_kg_completeness_0.5
+2024-08-03 19:53:04,183 - INFO - Saving model to ppo_custom_env_kg_completeness_0.5
+2024-08-03 19:53:04,183 - INFO - Saving model to ppo_custom_env_kg_completeness_0.5
+2024-08-03 19:53:05,114 - INFO - Model saved successfully
+2024-08-03 19:53:05,114 - INFO - Model saved successfully
+2024-08-03 19:53:05,114 - INFO - Model saved successfully
+2024-08-03 19:53:06,300 - INFO - Closing environments
+2024-08-03 19:53:06,300 - INFO - Closing environments
+2024-08-03 19:53:06,300 - INFO - Closing environments
+2024-08-03 19:53:06,335 - INFO - Environments closed successfully
+2024-08-03 19:53:06,335 - INFO - Environments closed successfully
+2024-08-03 19:53:06,335 - INFO - Environments closed successfully
+2024-08-03 19:53:06,340 - INFO - Creating environment
+2024-08-03 19:53:06,340 - INFO - Creating environment
+2024-08-03 19:53:06,340 - INFO - Creating environment
+2024-08-03 19:53:06,340 - INFO - Creating environment
+2024-08-03 19:53:06,609 - INFO - Environment created successfully
+2024-08-03 19:53:06,609 - INFO - Environment created successfully
+2024-08-03 19:53:06,609 - INFO - Environment created successfully
+2024-08-03 19:53:06,609 - INFO - Environment created successfully
+2024-08-03 19:53:06,682 - INFO - Creating PPO model
+2024-08-03 19:53:06,682 - INFO - Creating PPO model
+2024-08-03 19:53:06,682 - INFO - Creating PPO model
+2024-08-03 19:53:06,682 - INFO - Creating PPO model
+2024-08-03 19:53:08,266 - INFO - PPO model created successfully
+2024-08-03 19:53:08,266 - INFO - PPO model created successfully
+2024-08-03 19:53:08,266 - INFO - PPO model created successfully
+2024-08-03 19:53:08,266 - INFO - PPO model created successfully
+2024-08-03 19:53:08,266 - INFO - Starting model training
+2024-08-03 19:53:08,266 - INFO - Starting model training
+2024-08-03 19:53:08,266 - INFO - Starting model training
+2024-08-03 19:53:08,266 - INFO - Starting model training
+2024-08-03 19:53:08,267 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:08,267 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:08,267 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:08,267 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:40,460 - INFO - Recent mean reward: 0.90
+2024-08-03 19:53:40,460 - INFO - Recent mean reward: 0.90
+2024-08-03 19:53:40,460 - INFO - Recent mean reward: 0.90
+2024-08-03 19:53:40,460 - INFO - Recent mean reward: 0.90
+2024-08-03 19:53:40,461 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:53:40,461 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:53:40,461 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:53:40,461 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:53:40,462 - INFO - Episode info buffer size: 100
+2024-08-03 19:53:40,462 - INFO - Episode info buffer size: 100
+2024-08-03 19:53:40,462 - INFO - Episode info buffer size: 100
+2024-08-03 19:53:40,462 - INFO - Episode info buffer size: 100
+2024-08-03 19:53:40,462 - INFO - Sample episode info: {'r': 0.6, 'l': 20, 't': 18.34074}
+2024-08-03 19:53:40,462 - INFO - Sample episode info: {'r': 0.6, 'l': 20, 't': 18.34074}
+2024-08-03 19:53:40,462 - INFO - Sample episode info: {'r': 0.6, 'l': 20, 't': 18.34074}
+2024-08-03 19:53:40,462 - INFO - Sample episode info: {'r': 0.6, 'l': 20, 't': 18.34074}
+2024-08-03 19:53:40,463 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:53:40,463 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:53:40,463 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:53:40,463 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:53:40,464 - INFO - Recent value loss: 0.24374
+2024-08-03 19:53:40,464 - INFO - Recent value loss: 0.24374
+2024-08-03 19:53:40,464 - INFO - Recent value loss: 0.24374
+2024-08-03 19:53:40,464 - INFO - Recent value loss: 0.24374
+2024-08-03 19:53:40,465 - INFO - Model training completed or stopped
+2024-08-03 19:53:40,465 - INFO - Model training completed or stopped
+2024-08-03 19:53:40,465 - INFO - Model training completed or stopped
+2024-08-03 19:53:40,465 - INFO - Model training completed or stopped
+2024-08-03 19:53:40,476 - INFO - Saving model to ppo_custom_env_kg_completeness_0.75
+2024-08-03 19:53:40,476 - INFO - Saving model to ppo_custom_env_kg_completeness_0.75
+2024-08-03 19:53:40,476 - INFO - Saving model to ppo_custom_env_kg_completeness_0.75
+2024-08-03 19:53:40,476 - INFO - Saving model to ppo_custom_env_kg_completeness_0.75
+2024-08-03 19:53:41,463 - INFO - Model saved successfully
+2024-08-03 19:53:41,463 - INFO - Model saved successfully
+2024-08-03 19:53:41,463 - INFO - Model saved successfully
+2024-08-03 19:53:41,463 - INFO - Model saved successfully
+2024-08-03 19:53:42,803 - INFO - Closing environments
+2024-08-03 19:53:42,803 - INFO - Closing environments
+2024-08-03 19:53:42,803 - INFO - Closing environments
+2024-08-03 19:53:42,803 - INFO - Closing environments
+2024-08-03 19:53:42,845 - INFO - Environments closed successfully
+2024-08-03 19:53:42,845 - INFO - Environments closed successfully
+2024-08-03 19:53:42,845 - INFO - Environments closed successfully
+2024-08-03 19:53:42,845 - INFO - Environments closed successfully
+2024-08-03 19:53:42,849 - INFO - Creating environment
+2024-08-03 19:53:42,849 - INFO - Creating environment
+2024-08-03 19:53:42,849 - INFO - Creating environment
+2024-08-03 19:53:42,849 - INFO - Creating environment
+2024-08-03 19:53:42,849 - INFO - Creating environment
+2024-08-03 19:53:43,117 - INFO - Environment created successfully
+2024-08-03 19:53:43,117 - INFO - Environment created successfully
+2024-08-03 19:53:43,117 - INFO - Environment created successfully
+2024-08-03 19:53:43,117 - INFO - Environment created successfully
+2024-08-03 19:53:43,117 - INFO - Environment created successfully
+2024-08-03 19:53:43,169 - INFO - Creating PPO model
+2024-08-03 19:53:43,169 - INFO - Creating PPO model
+2024-08-03 19:53:43,169 - INFO - Creating PPO model
+2024-08-03 19:53:43,169 - INFO - Creating PPO model
+2024-08-03 19:53:43,169 - INFO - Creating PPO model
+2024-08-03 19:53:44,994 - INFO - PPO model created successfully
+2024-08-03 19:53:44,994 - INFO - PPO model created successfully
+2024-08-03 19:53:44,994 - INFO - PPO model created successfully
+2024-08-03 19:53:44,994 - INFO - PPO model created successfully
+2024-08-03 19:53:44,994 - INFO - PPO model created successfully
+2024-08-03 19:53:44,995 - INFO - Starting model training
+2024-08-03 19:53:44,995 - INFO - Starting model training
+2024-08-03 19:53:44,995 - INFO - Starting model training
+2024-08-03 19:53:44,995 - INFO - Starting model training
+2024-08-03 19:53:44,995 - INFO - Starting model training
+2024-08-03 19:53:44,997 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:44,997 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:44,997 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:44,997 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:53:44,997 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 19:54:16,849 - INFO - Recent mean reward: 0.95
+2024-08-03 19:54:16,849 - INFO - Recent mean reward: 0.95
+2024-08-03 19:54:16,849 - INFO - Recent mean reward: 0.95
+2024-08-03 19:54:16,849 - INFO - Recent mean reward: 0.95
+2024-08-03 19:54:16,849 - INFO - Recent mean reward: 0.95
+2024-08-03 19:54:16,851 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:54:16,851 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:54:16,851 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:54:16,851 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:54:16,851 - INFO - Recent mean episode length: 20.00
+2024-08-03 19:54:16,853 - INFO - Episode info buffer size: 100
+2024-08-03 19:54:16,853 - INFO - Episode info buffer size: 100
+2024-08-03 19:54:16,853 - INFO - Episode info buffer size: 100
+2024-08-03 19:54:16,853 - INFO - Episode info buffer size: 100
+2024-08-03 19:54:16,853 - INFO - Episode info buffer size: 100
+2024-08-03 19:54:16,853 - INFO - Sample episode info: {'r': 0.1, 'l': 20, 't': 18.487468}
+2024-08-03 19:54:16,853 - INFO - Sample episode info: {'r': 0.1, 'l': 20, 't': 18.487468}
+2024-08-03 19:54:16,853 - INFO - Sample episode info: {'r': 0.1, 'l': 20, 't': 18.487468}
+2024-08-03 19:54:16,853 - INFO - Sample episode info: {'r': 0.1, 'l': 20, 't': 18.487468}
+2024-08-03 19:54:16,853 - INFO - Sample episode info: {'r': 0.1, 'l': 20, 't': 18.487468}
+2024-08-03 19:54:16,854 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:54:16,854 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:54:16,854 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:54:16,854 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:54:16,854 - INFO - Recent policy loss: 0.00000
+2024-08-03 19:54:16,855 - INFO - Recent value loss: 0.28980
+2024-08-03 19:54:16,855 - INFO - Recent value loss: 0.28980
+2024-08-03 19:54:16,855 - INFO - Recent value loss: 0.28980
+2024-08-03 19:54:16,855 - INFO - Recent value loss: 0.28980
+2024-08-03 19:54:16,855 - INFO - Recent value loss: 0.28980
+2024-08-03 19:54:16,856 - INFO - Model training completed or stopped
+2024-08-03 19:54:16,856 - INFO - Model training completed or stopped
+2024-08-03 19:54:16,856 - INFO - Model training completed or stopped
+2024-08-03 19:54:16,856 - INFO - Model training completed or stopped
+2024-08-03 19:54:16,856 - INFO - Model training completed or stopped
+2024-08-03 19:54:16,869 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 19:54:16,869 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 19:54:16,869 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 19:54:16,869 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 19:54:16,869 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 19:54:17,812 - INFO - Model saved successfully
+2024-08-03 19:54:17,812 - INFO - Model saved successfully
+2024-08-03 19:54:17,812 - INFO - Model saved successfully
+2024-08-03 19:54:17,812 - INFO - Model saved successfully
+2024-08-03 19:54:17,812 - INFO - Model saved successfully
+2024-08-03 19:54:19,186 - INFO - Closing environments
+2024-08-03 19:54:19,186 - INFO - Closing environments
+2024-08-03 19:54:19,186 - INFO - Closing environments
+2024-08-03 19:54:19,186 - INFO - Closing environments
+2024-08-03 19:54:19,186 - INFO - Closing environments
+2024-08-03 19:54:19,224 - INFO - Environments closed successfully
+2024-08-03 19:54:19,224 - INFO - Environments closed successfully
+2024-08-03 19:54:19,224 - INFO - Environments closed successfully
+2024-08-03 19:54:19,224 - INFO - Environments closed successfully
+2024-08-03 19:54:19,224 - INFO - Environments closed successfully
+2024-08-03 20:07:07,403 - INFO - Creating environment
+2024-08-03 20:07:07,403 - INFO - Creating environment
+2024-08-03 20:07:07,781 - INFO - Environment created successfully
+2024-08-03 20:07:07,781 - INFO - Environment created successfully
+2024-08-03 20:07:07,836 - INFO - Creating PPO model
+2024-08-03 20:07:07,836 - INFO - Creating PPO model
+2024-08-03 20:07:09,947 - INFO - PPO model created successfully
+2024-08-03 20:07:09,947 - INFO - PPO model created successfully
+2024-08-03 20:07:09,948 - INFO - Starting model training
+2024-08-03 20:07:09,948 - INFO - Starting model training
+2024-08-03 20:07:09,948 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:07:09,948 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:07:47,029 - INFO - Recent mean reward: 1.02
+2024-08-03 20:07:47,029 - INFO - Recent mean reward: 1.02
+2024-08-03 20:07:47,030 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:07:47,030 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:07:47,030 - INFO - Episode info buffer size: 100
+2024-08-03 20:07:47,030 - INFO - Episode info buffer size: 100
+2024-08-03 20:07:47,031 - INFO - Sample episode info: {'r': 1.3, 'l': 20, 't': 20.163974}
+2024-08-03 20:07:47,031 - INFO - Sample episode info: {'r': 1.3, 'l': 20, 't': 20.163974}
+2024-08-03 20:07:47,031 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:07:47,031 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:07:47,031 - INFO - Recent value loss: 0.27705
+2024-08-03 20:07:47,031 - INFO - Recent value loss: 0.27705
+2024-08-03 20:07:47,032 - INFO - Model training completed or stopped
+2024-08-03 20:07:47,032 - INFO - Model training completed or stopped
+2024-08-03 20:07:47,046 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 20:07:47,046 - INFO - Saving model to ppo_custom_env_kg_completeness_0.25
+2024-08-03 20:07:48,073 - INFO - Model saved successfully
+2024-08-03 20:07:48,073 - INFO - Model saved successfully
+2024-08-03 20:07:49,368 - INFO - Closing environments
+2024-08-03 20:07:49,368 - INFO - Closing environments
+2024-08-03 20:07:49,418 - INFO - Environments closed successfully
+2024-08-03 20:07:49,418 - INFO - Environments closed successfully
+2024-08-03 20:07:49,422 - INFO - Creating environment
+2024-08-03 20:07:49,422 - INFO - Creating environment
+2024-08-03 20:07:49,422 - INFO - Creating environment
+2024-08-03 20:07:49,689 - INFO - Environment created successfully
+2024-08-03 20:07:49,689 - INFO - Environment created successfully
+2024-08-03 20:07:49,689 - INFO - Environment created successfully
+2024-08-03 20:07:49,740 - INFO - Creating PPO model
+2024-08-03 20:07:49,740 - INFO - Creating PPO model
+2024-08-03 20:07:49,740 - INFO - Creating PPO model
+2024-08-03 20:07:51,416 - INFO - PPO model created successfully
+2024-08-03 20:07:51,416 - INFO - PPO model created successfully
+2024-08-03 20:07:51,416 - INFO - PPO model created successfully
+2024-08-03 20:07:51,417 - INFO - Starting model training
+2024-08-03 20:07:51,417 - INFO - Starting model training
+2024-08-03 20:07:51,417 - INFO - Starting model training
+2024-08-03 20:07:51,418 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:07:51,418 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:07:51,418 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:08:27,231 - INFO - Recent mean reward: 0.93
+2024-08-03 20:08:27,231 - INFO - Recent mean reward: 0.93
+2024-08-03 20:08:27,231 - INFO - Recent mean reward: 0.93
+2024-08-03 20:08:27,232 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:08:27,232 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:08:27,232 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:08:27,233 - INFO - Episode info buffer size: 100
+2024-08-03 20:08:27,233 - INFO - Episode info buffer size: 100
+2024-08-03 20:08:27,233 - INFO - Episode info buffer size: 100
+2024-08-03 20:08:27,233 - INFO - Sample episode info: {'r': 0.1, 'l': 20, 't': 18.760488}
+2024-08-03 20:08:27,233 - INFO - Sample episode info: {'r': 0.1, 'l': 20, 't': 18.760488}
+2024-08-03 20:08:27,233 - INFO - Sample episode info: {'r': 0.1, 'l': 20, 't': 18.760488}
+2024-08-03 20:08:27,234 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:08:27,234 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:08:27,234 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:08:27,234 - INFO - Recent value loss: 0.28427
+2024-08-03 20:08:27,234 - INFO - Recent value loss: 0.28427
+2024-08-03 20:08:27,234 - INFO - Recent value loss: 0.28427
+2024-08-03 20:08:27,235 - INFO - Model training completed or stopped
+2024-08-03 20:08:27,235 - INFO - Model training completed or stopped
+2024-08-03 20:08:27,235 - INFO - Model training completed or stopped
+2024-08-03 20:08:27,249 - INFO - Saving model to ppo_custom_env_kg_completeness_0.5
+2024-08-03 20:08:27,249 - INFO - Saving model to ppo_custom_env_kg_completeness_0.5
+2024-08-03 20:08:27,249 - INFO - Saving model to ppo_custom_env_kg_completeness_0.5
+2024-08-03 20:08:28,257 - INFO - Model saved successfully
+2024-08-03 20:08:28,257 - INFO - Model saved successfully
+2024-08-03 20:08:28,257 - INFO - Model saved successfully
+2024-08-03 20:08:29,612 - INFO - Closing environments
+2024-08-03 20:08:29,612 - INFO - Closing environments
+2024-08-03 20:08:29,612 - INFO - Closing environments
+2024-08-03 20:08:29,647 - INFO - Environments closed successfully
+2024-08-03 20:08:29,647 - INFO - Environments closed successfully
+2024-08-03 20:08:29,647 - INFO - Environments closed successfully
+2024-08-03 20:08:29,652 - INFO - Creating environment
+2024-08-03 20:08:29,652 - INFO - Creating environment
+2024-08-03 20:08:29,652 - INFO - Creating environment
+2024-08-03 20:08:29,652 - INFO - Creating environment
+2024-08-03 20:08:29,914 - INFO - Environment created successfully
+2024-08-03 20:08:29,914 - INFO - Environment created successfully
+2024-08-03 20:08:29,914 - INFO - Environment created successfully
+2024-08-03 20:08:29,914 - INFO - Environment created successfully
+2024-08-03 20:08:29,966 - INFO - Creating PPO model
+2024-08-03 20:08:29,966 - INFO - Creating PPO model
+2024-08-03 20:08:29,966 - INFO - Creating PPO model
+2024-08-03 20:08:29,966 - INFO - Creating PPO model
+2024-08-03 20:08:31,661 - INFO - PPO model created successfully
+2024-08-03 20:08:31,661 - INFO - PPO model created successfully
+2024-08-03 20:08:31,661 - INFO - PPO model created successfully
+2024-08-03 20:08:31,661 - INFO - PPO model created successfully
+2024-08-03 20:08:31,661 - INFO - Starting model training
+2024-08-03 20:08:31,661 - INFO - Starting model training
+2024-08-03 20:08:31,661 - INFO - Starting model training
+2024-08-03 20:08:31,661 - INFO - Starting model training
+2024-08-03 20:08:31,662 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:08:31,662 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:08:31,662 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:08:31,662 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:09:06,044 - INFO - Recent mean reward: 0.92
+2024-08-03 20:09:06,044 - INFO - Recent mean reward: 0.92
+2024-08-03 20:09:06,044 - INFO - Recent mean reward: 0.92
+2024-08-03 20:09:06,044 - INFO - Recent mean reward: 0.92
+2024-08-03 20:09:06,045 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:06,045 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:06,045 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:06,045 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:06,046 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:06,046 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:06,046 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:06,046 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:06,046 - INFO - Sample episode info: {'r': -0.4, 'l': 20, 't': 20.15699}
+2024-08-03 20:09:06,046 - INFO - Sample episode info: {'r': -0.4, 'l': 20, 't': 20.15699}
+2024-08-03 20:09:06,046 - INFO - Sample episode info: {'r': -0.4, 'l': 20, 't': 20.15699}
+2024-08-03 20:09:06,046 - INFO - Sample episode info: {'r': -0.4, 'l': 20, 't': 20.15699}
+2024-08-03 20:09:06,047 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:06,047 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:06,047 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:06,047 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:06,048 - INFO - Recent value loss: 0.26641
+2024-08-03 20:09:06,048 - INFO - Recent value loss: 0.26641
+2024-08-03 20:09:06,048 - INFO - Recent value loss: 0.26641
+2024-08-03 20:09:06,048 - INFO - Recent value loss: 0.26641
+2024-08-03 20:09:06,049 - INFO - Model training completed or stopped
+2024-08-03 20:09:06,049 - INFO - Model training completed or stopped
+2024-08-03 20:09:06,049 - INFO - Model training completed or stopped
+2024-08-03 20:09:06,049 - INFO - Model training completed or stopped
+2024-08-03 20:09:06,061 - INFO - Saving model to ppo_custom_env_kg_completeness_0.75
+2024-08-03 20:09:06,061 - INFO - Saving model to ppo_custom_env_kg_completeness_0.75
+2024-08-03 20:09:06,061 - INFO - Saving model to ppo_custom_env_kg_completeness_0.75
+2024-08-03 20:09:06,061 - INFO - Saving model to ppo_custom_env_kg_completeness_0.75
+2024-08-03 20:09:07,146 - INFO - Model saved successfully
+2024-08-03 20:09:07,146 - INFO - Model saved successfully
+2024-08-03 20:09:07,146 - INFO - Model saved successfully
+2024-08-03 20:09:07,146 - INFO - Model saved successfully
+2024-08-03 20:09:08,421 - INFO - Closing environments
+2024-08-03 20:09:08,421 - INFO - Closing environments
+2024-08-03 20:09:08,421 - INFO - Closing environments
+2024-08-03 20:09:08,421 - INFO - Closing environments
+2024-08-03 20:09:08,457 - INFO - Environments closed successfully
+2024-08-03 20:09:08,457 - INFO - Environments closed successfully
+2024-08-03 20:09:08,457 - INFO - Environments closed successfully
+2024-08-03 20:09:08,457 - INFO - Environments closed successfully
+2024-08-03 20:09:08,464 - INFO - Creating environment
+2024-08-03 20:09:08,464 - INFO - Creating environment
+2024-08-03 20:09:08,464 - INFO - Creating environment
+2024-08-03 20:09:08,464 - INFO - Creating environment
+2024-08-03 20:09:08,464 - INFO - Creating environment
+2024-08-03 20:09:08,734 - INFO - Environment created successfully
+2024-08-03 20:09:08,734 - INFO - Environment created successfully
+2024-08-03 20:09:08,734 - INFO - Environment created successfully
+2024-08-03 20:09:08,734 - INFO - Environment created successfully
+2024-08-03 20:09:08,734 - INFO - Environment created successfully
+2024-08-03 20:09:08,795 - INFO - Creating PPO model
+2024-08-03 20:09:08,795 - INFO - Creating PPO model
+2024-08-03 20:09:08,795 - INFO - Creating PPO model
+2024-08-03 20:09:08,795 - INFO - Creating PPO model
+2024-08-03 20:09:08,795 - INFO - Creating PPO model
+2024-08-03 20:09:10,503 - INFO - PPO model created successfully
+2024-08-03 20:09:10,503 - INFO - PPO model created successfully
+2024-08-03 20:09:10,503 - INFO - PPO model created successfully
+2024-08-03 20:09:10,503 - INFO - PPO model created successfully
+2024-08-03 20:09:10,503 - INFO - PPO model created successfully
+2024-08-03 20:09:10,504 - INFO - Starting model training
+2024-08-03 20:09:10,504 - INFO - Starting model training
+2024-08-03 20:09:10,504 - INFO - Starting model training
+2024-08-03 20:09:10,504 - INFO - Starting model training
+2024-08-03 20:09:10,504 - INFO - Starting model training
+2024-08-03 20:09:10,506 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:09:10,506 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:09:10,506 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:09:10,506 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:09:10,506 - INFO - Training iteration 1, timesteps 0-10
+2024-08-03 20:09:42,797 - INFO - Recent mean reward: 0.98
+2024-08-03 20:09:42,797 - INFO - Recent mean reward: 0.98
+2024-08-03 20:09:42,797 - INFO - Recent mean reward: 0.98
+2024-08-03 20:09:42,797 - INFO - Recent mean reward: 0.98
+2024-08-03 20:09:42,797 - INFO - Recent mean reward: 0.98
+2024-08-03 20:09:42,798 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:42,798 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:42,798 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:42,798 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:42,798 - INFO - Recent mean episode length: 20.00
+2024-08-03 20:09:42,799 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:42,799 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:42,799 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:42,799 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:42,799 - INFO - Episode info buffer size: 100
+2024-08-03 20:09:42,800 - INFO - Sample episode info: {'r': 1.0, 'l': 20, 't': 18.708925}
+2024-08-03 20:09:42,800 - INFO - Sample episode info: {'r': 1.0, 'l': 20, 't': 18.708925}
+2024-08-03 20:09:42,800 - INFO - Sample episode info: {'r': 1.0, 'l': 20, 't': 18.708925}
+2024-08-03 20:09:42,800 - INFO - Sample episode info: {'r': 1.0, 'l': 20, 't': 18.708925}
+2024-08-03 20:09:42,800 - INFO - Sample episode info: {'r': 1.0, 'l': 20, 't': 18.708925}
+2024-08-03 20:09:42,801 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:42,801 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:42,801 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:42,801 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:42,801 - INFO - Recent policy loss: 0.00000
+2024-08-03 20:09:42,802 - INFO - Recent value loss: 0.26073
+2024-08-03 20:09:42,802 - INFO - Recent value loss: 0.26073
+2024-08-03 20:09:42,802 - INFO - Recent value loss: 0.26073
+2024-08-03 20:09:42,802 - INFO - Recent value loss: 0.26073
+2024-08-03 20:09:42,802 - INFO - Recent value loss: 0.26073
+2024-08-03 20:09:42,803 - INFO - Model training completed or stopped
+2024-08-03 20:09:42,803 - INFO - Model training completed or stopped
+2024-08-03 20:09:42,803 - INFO - Model training completed or stopped
+2024-08-03 20:09:42,803 - INFO - Model training completed or stopped
+2024-08-03 20:09:42,803 - INFO - Model training completed or stopped
+2024-08-03 20:09:42,819 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 20:09:42,819 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 20:09:42,819 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 20:09:42,819 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 20:09:42,819 - INFO - Saving model to ppo_custom_env_kg_completeness_1.0
+2024-08-03 20:09:43,793 - INFO - Model saved successfully
+2024-08-03 20:09:43,793 - INFO - Model saved successfully
+2024-08-03 20:09:43,793 - INFO - Model saved successfully
+2024-08-03 20:09:43,793 - INFO - Model saved successfully
+2024-08-03 20:09:43,793 - INFO - Model saved successfully
+2024-08-03 20:09:45,161 - INFO - Closing environments
+2024-08-03 20:09:45,161 - INFO - Closing environments
+2024-08-03 20:09:45,161 - INFO - Closing environments
+2024-08-03 20:09:45,161 - INFO - Closing environments
+2024-08-03 20:09:45,161 - INFO - Closing environments
+2024-08-03 20:09:45,197 - INFO - Environments closed successfully
+2024-08-03 20:09:45,197 - INFO - Environments closed successfully
+2024-08-03 20:09:45,197 - INFO - Environments closed successfully
+2024-08-03 20:09:45,197 - INFO - Environments closed successfully
+2024-08-03 20:09:45,197 - INFO - Environments closed successfully

@@ -1,0 +1,102 @@
+{
+    "kg_completeness_0.25": {
+        "mean_reward": 0.36,
+        "std_reward": 0.4103656905736639,
+        "config": {
+            "model_args": {
+                "num_actions": 11
+            },
+            "simulation_manager_args": {
+                "number_of_environments": 10,
+                "number_of_curricula": 1
+            },
+            "game_manager_args": {
+                "num_tiles": 8,
+                "screen_size": 200,
+                "vision_range": 1
+            },
+            "model_config": {
+                "n_steps": 2048,
+                "batch_size": 64,
+                "learning_rate": 0.0003,
+                "gamma": 0.99
+            },
+            "total_timesteps": 10
+        }
+    },
+    "kg_completeness_0.5": {
+        "mean_reward": 0.29,
+        "std_reward": 0.4805205510693585,
+        "config": {
+            "model_args": {
+                "num_actions": 11
+            },
+            "simulation_manager_args": {
+                "number_of_environments": 10,
+                "number_of_curricula": 1
+            },
+            "game_manager_args": {
+                "num_tiles": 8,
+                "screen_size": 200,
+                "vision_range": 1
+            },
+            "model_config": {
+                "n_steps": 2048,
+                "batch_size": 64,
+                "learning_rate": 0.0003,
+                "gamma": 0.99
+            },
+            "total_timesteps": 10
+        }
+    },
+    "kg_completeness_0.75": {
+        "mean_reward": 0.49000000000000005,
+        "std_reward": 0.4784349485562275,
+        "config": {
+            "model_args": {
+                "num_actions": 11
+            },
+            "simulation_manager_args": {
+                "number_of_environments": 10,
+                "number_of_curricula": 1
+            },
+            "game_manager_args": {
+                "num_tiles": 8,
+                "screen_size": 200,
+                "vision_range": 1
+            },
+            "model_config": {
+                "n_steps": 2048,
+                "batch_size": 64,
+                "learning_rate": 0.0003,
+                "gamma": 0.99
+            },
+            "total_timesteps": 10
+        }
+    },
+    "kg_completeness_1.0": {
+        "mean_reward": 0.55,
+        "std_reward": 0.31701734968294715,
+        "config": {
+            "model_args": {
+                "num_actions": 11
+            },
+            "simulation_manager_args": {
+                "number_of_environments": 10,
+                "number_of_curricula": 1
+            },
+            "game_manager_args": {
+                "num_tiles": 8,
+                "screen_size": 200,
+                "vision_range": 1
+            },
+            "model_config": {
+                "n_steps": 2048,
+                "batch_size": 64,
+                "learning_rate": 0.0003,
+                "gamma": 0.99
+            },
+            "total_timesteps": 10
+        }
+    }
+}

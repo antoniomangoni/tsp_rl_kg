@@ -1,2 +1,5 @@
 # Ignore all zip files
 *.zip
+
+# ignore saved models
+ppo_custom*
