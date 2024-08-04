@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
-
+from collections import deque
 from game_manager import GameManager
 
 class SimulationManager:
@@ -13,6 +13,14 @@ class SimulationManager:
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
         self.step_size = round(step_size, 2)
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
+
+        self.current_curriculum_index = 0
+        self.min_episodes_per_curriculum = 100
+        self.current_curriculum_episodes = 0
+        self.performance_window = deque(maxlen=100)
+        self.performance_threshold = 0.7  # 70% of max possible reward for current level
+        self.max_performance = max(gm.target_manager.target_route_energy for gm in self.game_managers)
+
         # print(f"Curriculum step size: ~{self.step_size} energy units")
         if plot:
             self.create_plots(energy_values, self.curriculum_indices)
@@ -44,6 +52,29 @@ class SimulationManager:
             if closest_index not in simulation_indices:
                 simulation_indices.append(closest_index)
         return simulation_indices, step_size
+    
+    def should_advance_curriculum(self):
+        if self.current_curriculum_episodes < self.min_episodes_per_curriculum:
+            return False
+        if not self.performance_window:
+            return False
+        avg_performance = sum(self.performance_window) / len(self.performance_window)
+        current_max = self.game_managers[self.curriculum_indices[self.current_curriculum_index]].target_manager.target_route_energy
+        return avg_performance > self.performance_threshold * current_max
+
+    def add_episode_performance(self, performance):
+        self.current_curriculum_episodes += 1
+        self.performance_window.append(performance)
+
+    def advance_curriculum(self):
+        if self.current_curriculum_index < len(self.curriculum_indices) - 1:
+            self.current_curriculum_index += 1
+            self.current_curriculum_episodes = 0
+            self.performance_window.clear()
+            self.performance_threshold *= 0.995  # Decrease threshold for harder levels
+
+    def get_current_game_manager(self):
+        return self.game_managers[self.curriculum_indices[self.current_curriculum_index]]
 
     def plot_curriculum(self, x_values, y_values, indices, simulation_points, xlabel, ylabel, title = "Not named"):
         """

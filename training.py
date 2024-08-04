@@ -55,26 +55,38 @@ class ModelTrainer:
     def train(self, total_timesteps, eval_callback, timeout=3600):
         self.logger.info("Starting model training", logger_name='training')
         start_time = time.time()
-        try:
-            for i in range(0, total_timesteps, 2048):
-                self.logger.info(f"Training iteration {i//2048 + 1}, timesteps {i}-{min(i+2048, total_timesteps)}", logger_name='training')
-                
-                if time.time() - start_time > timeout:
-                    self.logger.warning("Training timed out after 1 hour", logger_name='training')
-                    break
+        steps_taken = 0
 
-                with warnings.catch_warnings(record=True) as w:
-                    self.rl_model.learn(total_timesteps=2048, callback=eval_callback, reset_num_timesteps=False)
-                    if len(w) > 0:
-                        self.logger.warning(f"Warnings during training: {[str(warn.message) for warn in w]}", logger_name='training')
+        while steps_taken < total_timesteps:
+            if time.time() - start_time > timeout:
+                self.logger.warning("Training timed out after 1 hour", logger_name='training')
+                break
 
-                self.log_training_stats()
+            obs, _ = self.env.reset()  # Reset at the start of each episode
+            done = False
+            episode_reward = 0
+            
+            while not done and steps_taken < total_timesteps:
+                action, _ = self.rl_model.predict(obs, deterministic=False)
+                action = action.item() if isinstance(action, np.ndarray) else action
+                obs, reward, terminated, truncated, info = self.env.step(action)
+                done = terminated or truncated
+                episode_reward += reward
+                steps_taken += 1
 
-        except Exception as e:
-            self.logger.error(f"Error during training: {str(e)}", logger_name='training')
-            self.logger.error(traceback.format_exc(), logger_name='training')
-        
-        self.logger.info("Model training completed or stopped", logger_name='training')
+                # Update the model
+                self.rl_model.learn(total_timesteps=1, callback=eval_callback, reset_num_timesteps=False)
+
+            # Episode ended, update curriculum if needed
+            self.env.unwrapped.simulation_manager.add_episode_performance(episode_reward)
+            if self.env.unwrapped.simulation_manager.should_advance_curriculum():
+                self.env.unwrapped.simulation_manager.advance_curriculum()
+                self.logger.info(f"Advancing to curriculum level {self.env.unwrapped.simulation_manager.current_curriculum_index}", logger_name='training')
+                self.env.unwrapped.update_current_game_manager(self.env.unwrapped.simulation_manager.current_curriculum_index)
+
+            self.log_training_stats()
+
+        self.logger.info("Model training completed", logger_name='training')
 
     def log_training_stats(self):
         mean_reward = self.calculate_mean_reward()
@@ -184,10 +196,14 @@ class Trainer:
         
         self.logger.info("Creating environment", logger_name='training')
         self.env: CustomEnv = self.env_manager.make_env()
+        self.env.unwrapped.simulation_manager.min_episodes_per_curriculum = config['curriculum_config']['min_episodes_per_curriculum']
+        self.env.unwrapped.simulation_manager.performance_threshold = config['curriculum_config']['performance_threshold']
         self.logger.info("Environment created successfully", logger_name='training')
 
         self.logger.info("Creating evaluation environment", logger_name='eval')
         self.eval_env: CustomEnv = self.env_manager.make_env()
+        self.eval_env.unwrapped.simulation_manager.min_episodes_per_curriculum = config['curriculum_config']['min_episodes_per_curriculum']
+        self.eval_env.unwrapped.simulation_manager.performance_threshold = config['curriculum_config']['performance_threshold']
         self.logger.info("Evaluation environment created successfully", logger_name='eval')
 
         self.model_trainer = ModelTrainer(self.env, self.logger, self.device)
@@ -240,13 +256,17 @@ if __name__ == '__main__':
 
     base_config = {
         'model_args': {'num_actions': 11},
-        'simulation_manager_args': {'number_of_environments': 10, 'number_of_curricula': 1},
+        'simulation_manager_args': {'number_of_environments': 1000, 'number_of_curricula': 30},
         'game_manager_args': {'num_tiles': 12, 'screen_size': 200, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
             'batch_size': 64,
             'learning_rate': 3e-4,
             'gamma': 0.99
+        },
+        'curriculum_config': {
+        'min_episodes_per_curriculum': 100,
+        'performance_threshold': 0.85,
         },
         'total_timesteps': 100000
     }

@@ -329,3 +329,255 @@ IndexError: Cannot choose from an empty sequence
 2024-08-04 11:29:10,920 - INFO - Ablation Study completed
 2024-08-04 11:29:10,920 - INFO - Ablation Study completed
 2024-08-04 11:29:10,920 - INFO - Ablation Study completed
+2024-08-04 14:34:39,034 - INFO - Created results directory: results\20240804_143439
+2024-08-04 14:34:39,035 - INFO - Starting Ablation Study
+2024-08-04 14:34:39,035 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 14:34:39,111 - INFO - Using device: cuda
+2024-08-04 14:34:39,111 - INFO - Using device: cuda
+2024-08-04 14:34:40,411 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.25\profile_stats.txt
+2024-08-04 14:34:40,411 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.25\profile_stats.txt
+2024-08-04 14:34:42,802 - INFO - Training and evaluation completed.
+2024-08-04 14:34:42,802 - INFO - Training and evaluation completed.
+2024-08-04 14:34:42,803 - INFO - Experiment kg_completeness_0.25 completed
+2024-08-04 14:34:42,803 - INFO - Experiment kg_completeness_0.25 completed
+2024-08-04 14:34:42,803 - INFO - Running experiment: kg_completeness_0.5
+2024-08-04 14:34:42,803 - INFO - Running experiment: kg_completeness_0.5
+2024-08-04 14:34:42,804 - INFO - Using device: cuda
+2024-08-04 14:34:42,804 - INFO - Using device: cuda
+2024-08-04 14:34:42,804 - INFO - Using device: cuda
+2024-08-04 14:34:43,679 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.5\profile_stats.txt
+2024-08-04 14:34:43,679 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.5\profile_stats.txt
+2024-08-04 14:34:43,679 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.5\profile_stats.txt
+2024-08-04 14:34:45,097 - INFO - Training and evaluation completed.
+2024-08-04 14:34:45,097 - INFO - Training and evaluation completed.
+2024-08-04 14:34:45,097 - INFO - Training and evaluation completed.
+2024-08-04 14:34:45,098 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 14:34:45,098 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 14:34:45,098 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 14:34:45,098 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 14:34:45,098 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 14:34:45,098 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 14:34:45,099 - INFO - Using device: cuda
+2024-08-04 14:34:45,099 - INFO - Using device: cuda
+2024-08-04 14:34:45,099 - INFO - Using device: cuda
+2024-08-04 14:34:45,099 - INFO - Using device: cuda
+2024-08-04 14:34:45,986 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.75\profile_stats.txt
+2024-08-04 14:34:45,986 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.75\profile_stats.txt
+2024-08-04 14:34:45,986 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.75\profile_stats.txt
+2024-08-04 14:34:45,986 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_0.75\profile_stats.txt
+2024-08-04 14:34:47,535 - INFO - Training and evaluation completed.
+2024-08-04 14:34:47,535 - INFO - Training and evaluation completed.
+2024-08-04 14:34:47,535 - INFO - Training and evaluation completed.
+2024-08-04 14:34:47,535 - INFO - Training and evaluation completed.
+2024-08-04 14:34:47,536 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 14:34:47,536 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 14:34:47,536 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 14:34:47,536 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 14:34:47,536 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 14:34:47,536 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 14:34:47,536 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 14:34:47,536 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 14:34:47,538 - INFO - Using device: cuda
+2024-08-04 14:34:47,538 - INFO - Using device: cuda
+2024-08-04 14:34:47,538 - INFO - Using device: cuda
+2024-08-04 14:34:47,538 - INFO - Using device: cuda
+2024-08-04 14:34:47,538 - INFO - Using device: cuda
+2024-08-04 14:34:48,516 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_1.0\profile_stats.txt
+2024-08-04 14:34:48,516 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_1.0\profile_stats.txt
+2024-08-04 14:34:48,516 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_1.0\profile_stats.txt
+2024-08-04 14:34:48,516 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_1.0\profile_stats.txt
+2024-08-04 14:34:48,516 - INFO - Profiling stats saved to results\20240804_143439\kg_completeness_1.0\profile_stats.txt
+2024-08-04 14:34:49,986 - INFO - Training and evaluation completed.
+2024-08-04 14:34:49,986 - INFO - Training and evaluation completed.
+2024-08-04 14:34:49,986 - INFO - Training and evaluation completed.
+2024-08-04 14:34:49,986 - INFO - Training and evaluation completed.
+2024-08-04 14:34:49,986 - INFO - Training and evaluation completed.
+2024-08-04 14:34:49,987 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 14:34:49,987 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 14:34:49,987 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 14:34:49,987 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 14:34:49,987 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 14:34:49,988 - INFO - Ablation study results saved to results\20240804_143439\ablation_study_results.json
+2024-08-04 14:34:49,988 - INFO - Ablation study results saved to results\20240804_143439\ablation_study_results.json
+2024-08-04 14:34:49,988 - INFO - Ablation study results saved to results\20240804_143439\ablation_study_results.json
+2024-08-04 14:34:49,988 - INFO - Ablation study results saved to results\20240804_143439\ablation_study_results.json
+2024-08-04 14:34:49,988 - INFO - Ablation study results saved to results\20240804_143439\ablation_study_results.json
+2024-08-04 14:34:49,990 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.25_results.json
+2024-08-04 14:34:49,990 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.25_results.json
+2024-08-04 14:34:49,990 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.25_results.json
+2024-08-04 14:34:49,990 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.25_results.json
+2024-08-04 14:34:49,990 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.25_results.json
+2024-08-04 14:34:49,993 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.5_results.json
+2024-08-04 14:34:49,993 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.5_results.json
+2024-08-04 14:34:49,993 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.5_results.json
+2024-08-04 14:34:49,993 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.5_results.json
+2024-08-04 14:34:49,993 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.5_results.json
+2024-08-04 14:34:49,995 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.75_results.json
+2024-08-04 14:34:49,995 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.75_results.json
+2024-08-04 14:34:49,995 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.75_results.json
+2024-08-04 14:34:49,995 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.75_results.json
+2024-08-04 14:34:49,995 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_0.75_results.json
+2024-08-04 14:34:49,997 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_1.0_results.json
+2024-08-04 14:34:49,997 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_1.0_results.json
+2024-08-04 14:34:49,997 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_1.0_results.json
+2024-08-04 14:34:49,997 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_1.0_results.json
+2024-08-04 14:34:49,997 - INFO - Individual experiment results saved to results\20240804_143439\kg_completeness_1.0_results.json
+2024-08-04 14:34:49,998 - INFO - Base configuration saved to results\20240804_143439\base_config.json
+2024-08-04 14:34:49,998 - INFO - Base configuration saved to results\20240804_143439\base_config.json
+2024-08-04 14:34:49,998 - INFO - Base configuration saved to results\20240804_143439\base_config.json
+2024-08-04 14:34:49,998 - INFO - Base configuration saved to results\20240804_143439\base_config.json
+2024-08-04 14:34:49,998 - INFO - Base configuration saved to results\20240804_143439\base_config.json
+2024-08-04 14:34:49,999 - INFO - Ablation Study completed
+2024-08-04 14:34:49,999 - INFO - Ablation Study completed
+2024-08-04 14:34:49,999 - INFO - Ablation Study completed
+2024-08-04 14:34:49,999 - INFO - Ablation Study completed
+2024-08-04 14:34:49,999 - INFO - Ablation Study completed
+2024-08-04 14:36:13,252 - INFO - Created results directory: results\20240804_143613
+2024-08-04 14:36:13,253 - INFO - Starting Ablation Study
+2024-08-04 14:36:13,253 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 14:36:13,278 - INFO - Using device: cuda
+2024-08-04 14:36:13,278 - INFO - Using device: cuda
+2024-08-04 14:36:15,540 - INFO - Profiling stats saved to results\20240804_143613\kg_completeness_0.25\profile_stats.txt
+2024-08-04 14:36:15,540 - INFO - Profiling stats saved to results\20240804_143613\kg_completeness_0.25\profile_stats.txt
+2024-08-04 14:42:20,841 - INFO - Created results directory: results\20240804_144220
+2024-08-04 14:42:20,841 - INFO - Starting Ablation Study
+2024-08-04 14:42:20,841 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 14:42:20,887 - INFO - Using device: cuda
+2024-08-04 14:42:20,887 - INFO - Using device: cuda
+2024-08-04 14:45:23,038 - INFO - Created results directory: results\20240804_144523
+2024-08-04 14:45:23,038 - INFO - Starting Ablation Study
+2024-08-04 14:45:23,038 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 14:45:23,060 - INFO - Using device: cuda
+2024-08-04 14:45:23,060 - INFO - Using device: cuda
+2024-08-04 14:47:15,086 - INFO - Created results directory: results\20240804_144715
+2024-08-04 14:47:15,086 - INFO - Starting Ablation Study
+2024-08-04 14:47:15,086 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 14:47:15,112 - INFO - Using device: cuda
+2024-08-04 14:47:15,112 - INFO - Using device: cuda
+2024-08-04 14:47:56,604 - INFO - Created results directory: results\20240804_144756
+2024-08-04 14:47:56,606 - INFO - Starting Ablation Study
+2024-08-04 14:47:56,606 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 14:47:56,630 - INFO - Using device: cuda
+2024-08-04 14:47:56,630 - INFO - Using device: cuda
+2024-08-04 14:52:15,829 - INFO - Profiling stats saved to results\20240804_144756\kg_completeness_0.25\profile_stats.txt
+2024-08-04 14:52:15,829 - INFO - Profiling stats saved to results\20240804_144756\kg_completeness_0.25\profile_stats.txt
+2024-08-04 15:20:19,655 - INFO - Created results directory: results\20240804_152019
+2024-08-04 15:20:19,656 - INFO - Starting Ablation Study
+2024-08-04 15:20:19,656 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 15:20:19,699 - INFO - Using device: cuda
+2024-08-04 15:20:19,699 - INFO - Using device: cuda
+2024-08-04 15:21:43,633 - INFO - Created results directory: results\20240804_152143
+2024-08-04 15:21:43,633 - INFO - Starting Ablation Study
+2024-08-04 15:21:43,633 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 15:21:43,656 - INFO - Using device: cuda
+2024-08-04 15:21:43,656 - INFO - Using device: cuda
+2024-08-04 15:21:44,955 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.25\profile_stats.txt
+2024-08-04 15:21:44,955 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.25\profile_stats.txt
+2024-08-04 15:21:47,044 - INFO - Training and evaluation completed.
+2024-08-04 15:21:47,044 - INFO - Training and evaluation completed.
+2024-08-04 15:21:47,046 - INFO - Experiment kg_completeness_0.25 completed
+2024-08-04 15:21:47,046 - INFO - Experiment kg_completeness_0.25 completed
+2024-08-04 15:21:47,046 - INFO - Running experiment: kg_completeness_0.5
+2024-08-04 15:21:47,046 - INFO - Running experiment: kg_completeness_0.5
+2024-08-04 15:21:47,048 - INFO - Using device: cuda
+2024-08-04 15:21:47,048 - INFO - Using device: cuda
+2024-08-04 15:21:47,048 - INFO - Using device: cuda
+2024-08-04 15:21:48,120 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.5\profile_stats.txt
+2024-08-04 15:21:48,120 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.5\profile_stats.txt
+2024-08-04 15:21:48,120 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.5\profile_stats.txt
+2024-08-04 15:21:49,672 - INFO - Training and evaluation completed.
+2024-08-04 15:21:49,672 - INFO - Training and evaluation completed.
+2024-08-04 15:21:49,672 - INFO - Training and evaluation completed.
+2024-08-04 15:21:49,673 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 15:21:49,673 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 15:21:49,673 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 15:21:49,673 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 15:21:49,673 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 15:21:49,673 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 15:21:49,676 - INFO - Using device: cuda
+2024-08-04 15:21:49,676 - INFO - Using device: cuda
+2024-08-04 15:21:49,676 - INFO - Using device: cuda
+2024-08-04 15:21:49,676 - INFO - Using device: cuda
+2024-08-04 15:21:50,616 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.75\profile_stats.txt
+2024-08-04 15:21:50,616 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.75\profile_stats.txt
+2024-08-04 15:21:50,616 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.75\profile_stats.txt
+2024-08-04 15:21:50,616 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_0.75\profile_stats.txt
+2024-08-04 15:21:52,322 - INFO - Training and evaluation completed.
+2024-08-04 15:21:52,322 - INFO - Training and evaluation completed.
+2024-08-04 15:21:52,322 - INFO - Training and evaluation completed.
+2024-08-04 15:21:52,322 - INFO - Training and evaluation completed.
+2024-08-04 15:21:52,323 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 15:21:52,323 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 15:21:52,323 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 15:21:52,323 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 15:21:52,323 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 15:21:52,323 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 15:21:52,323 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 15:21:52,323 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 15:21:52,325 - INFO - Using device: cuda
+2024-08-04 15:21:52,325 - INFO - Using device: cuda
+2024-08-04 15:21:52,325 - INFO - Using device: cuda
+2024-08-04 15:21:52,325 - INFO - Using device: cuda
+2024-08-04 15:21:52,325 - INFO - Using device: cuda
+2024-08-04 15:21:53,355 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_1.0\profile_stats.txt
+2024-08-04 15:21:53,355 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_1.0\profile_stats.txt
+2024-08-04 15:21:53,355 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_1.0\profile_stats.txt
+2024-08-04 15:21:53,355 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_1.0\profile_stats.txt
+2024-08-04 15:21:53,355 - INFO - Profiling stats saved to results\20240804_152143\kg_completeness_1.0\profile_stats.txt
+2024-08-04 15:21:54,953 - INFO - Training and evaluation completed.
+2024-08-04 15:21:54,953 - INFO - Training and evaluation completed.
+2024-08-04 15:21:54,953 - INFO - Training and evaluation completed.
+2024-08-04 15:21:54,953 - INFO - Training and evaluation completed.
+2024-08-04 15:21:54,953 - INFO - Training and evaluation completed.
+2024-08-04 15:21:54,954 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 15:21:54,954 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 15:21:54,954 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 15:21:54,954 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 15:21:54,954 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 15:21:54,955 - INFO - Ablation study results saved to results\20240804_152143\ablation_study_results.json
+2024-08-04 15:21:54,955 - INFO - Ablation study results saved to results\20240804_152143\ablation_study_results.json
+2024-08-04 15:21:54,955 - INFO - Ablation study results saved to results\20240804_152143\ablation_study_results.json
+2024-08-04 15:21:54,955 - INFO - Ablation study results saved to results\20240804_152143\ablation_study_results.json
+2024-08-04 15:21:54,955 - INFO - Ablation study results saved to results\20240804_152143\ablation_study_results.json
+2024-08-04 15:21:54,958 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.25_results.json
+2024-08-04 15:21:54,958 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.25_results.json
+2024-08-04 15:21:54,958 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.25_results.json
+2024-08-04 15:21:54,958 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.25_results.json
+2024-08-04 15:21:54,958 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.25_results.json
+2024-08-04 15:21:54,960 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.5_results.json
+2024-08-04 15:21:54,960 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.5_results.json
+2024-08-04 15:21:54,960 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.5_results.json
+2024-08-04 15:21:54,960 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.5_results.json
+2024-08-04 15:21:54,960 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.5_results.json
+2024-08-04 15:21:54,963 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.75_results.json
+2024-08-04 15:21:54,963 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.75_results.json
+2024-08-04 15:21:54,963 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.75_results.json
+2024-08-04 15:21:54,963 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.75_results.json
+2024-08-04 15:21:54,963 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_0.75_results.json
+2024-08-04 15:21:54,965 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_1.0_results.json
+2024-08-04 15:21:54,965 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_1.0_results.json
+2024-08-04 15:21:54,965 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_1.0_results.json
+2024-08-04 15:21:54,965 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_1.0_results.json
+2024-08-04 15:21:54,965 - INFO - Individual experiment results saved to results\20240804_152143\kg_completeness_1.0_results.json
+2024-08-04 15:21:54,967 - INFO - Base configuration saved to results\20240804_152143\base_config.json
+2024-08-04 15:21:54,967 - INFO - Base configuration saved to results\20240804_152143\base_config.json
+2024-08-04 15:21:54,967 - INFO - Base configuration saved to results\20240804_152143\base_config.json
+2024-08-04 15:21:54,967 - INFO - Base configuration saved to results\20240804_152143\base_config.json
+2024-08-04 15:21:54,967 - INFO - Base configuration saved to results\20240804_152143\base_config.json
+2024-08-04 15:21:54,968 - INFO - Ablation Study completed
+2024-08-04 15:21:54,968 - INFO - Ablation Study completed
+2024-08-04 15:21:54,968 - INFO - Ablation Study completed
+2024-08-04 15:21:54,968 - INFO - Ablation Study completed
+2024-08-04 15:21:54,968 - INFO - Ablation Study completed
+2024-08-04 15:25:45,130 - INFO - Created results directory: results\20240804_152545
+2024-08-04 15:25:45,130 - INFO - Starting Ablation Study
+2024-08-04 15:25:45,130 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 15:25:45,155 - INFO - Using device: cuda
+2024-08-04 15:25:45,155 - INFO - Using device: cuda
+2024-08-04 15:29:38,245 - INFO - Profiling stats saved to results\20240804_152545\kg_completeness_0.25\profile_stats.txt
+2024-08-04 15:29:38,245 - INFO - Profiling stats saved to results\20240804_152545\kg_completeness_0.25\profile_stats.txt
+2024-08-04 15:35:50,675 - INFO - Created results directory: results\20240804_153550
+2024-08-04 15:35:50,675 - INFO - Starting Ablation Study
+2024-08-04 15:35:50,675 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 15:35:50,698 - INFO - Using device: cuda
+2024-08-04 15:35:50,698 - INFO - Using device: cuda

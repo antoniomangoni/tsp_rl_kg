@@ -67,7 +67,7 @@ class CustomEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
-        self.max_episode_steps = 20# 000  # Maximum number of steps per episode
+        self.max_episode_steps = 20000  # Maximum number of steps per episode
         self.episode_step = 0
         self.total_reward = 0
         logger.info("CustomEnv initialized successfully")
@@ -86,6 +86,10 @@ class CustomEnv(gym.Env):
         self.outpost_coords = self.environment.outpost_locations
         self.best_route_energy = 0
         logger.info("Current game manager set successfully")
+
+    def update_current_game_manager(self, curriculum_index):
+        self.current_game_index = self.simulation_manager.curriculum_indices[curriculum_index]
+        self.set_current_game_manager()
 
     def _calculate_reward(self):
         logger.info("Calculating reward...")
@@ -130,6 +134,9 @@ class CustomEnv(gym.Env):
 
         return reward
 
+    def get_episode_performance(self):
+        return self.total_reward
+
     def reset(self, seed=None, options=None):
         logger.info("Resetting environment")
         self.episode_step = 0
@@ -141,29 +148,25 @@ class CustomEnv(gym.Env):
         super().reset(seed=seed)
         if seed is not None:
             np.random.seed(seed)
-            
-        if options is not None:
-            index = options.get('index', None)
-        else:
-            index = None
-
-        if index is None:
-            self.current_game_index = (self.current_game_index + 1) % len(self.simulation_manager.game_managers)
-        else:
-            self.current_game_index = index
-        self.set_current_game_manager()
+        
+        # Use the current curriculum index from SimulationManager
+        self.update_current_game_manager(self.simulation_manager.current_curriculum_index)
+        
         self.best_route_energy = np.inf
         self.early_stop = False
         self.num_not_improvement_routes = 0
         self.previous_min_distance = float('inf')  # Initialize in the reset method
         observation = self._get_observation()
         assert self.observation_space['vision'].contains(observation['vision']), f"Vision data out of bounds: min={observation['vision'].min()}, max={observation['vision'].max()}"
-        # logger.info(f"Environment reset complete. Initial observation: {observation}")
         return observation, {}
 
     def step(self, action):
         logger.debug(f"Taking step {self.episode_step} with action {action}")
         self.episode_step += 1
+
+        # Convert action to integer if it's a numpy array
+        if isinstance(action, np.ndarray):
+            action = action.item()
         
         prev_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
         self.agent_controler.agent_action(action)

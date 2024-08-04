@@ -4826,3 +4826,523 @@ AttributeError: 'CustomEnv' object has no attribute '_calculate_reward'
 2024-08-04 11:29:10,906 - INFO - Environments closed successfully
 2024-08-04 11:29:10,906 - INFO - Environments closed successfully
 2024-08-04 11:29:10,906 - INFO - Environments closed successfully
+2024-08-04 14:34:39,111 - INFO - Creating environment
+2024-08-04 14:34:39,111 - INFO - Creating environment
+2024-08-04 14:34:39,537 - INFO - Environment created successfully
+2024-08-04 14:34:39,537 - INFO - Environment created successfully
+2024-08-04 14:34:39,619 - INFO - Creating PPO model
+2024-08-04 14:34:39,619 - INFO - Creating PPO model
+2024-08-04 14:34:40,406 - INFO - PPO model created successfully
+2024-08-04 14:34:40,406 - INFO - PPO model created successfully
+2024-08-04 14:34:40,408 - INFO - Starting model training
+2024-08-04 14:34:40,408 - INFO - Starting model training
+2024-08-04 14:34:40,409 - INFO - Model training completed or stopped
+2024-08-04 14:34:40,409 - INFO - Model training completed or stopped
+2024-08-04 14:34:40,411 - INFO - Saving model to results\20240804_143439\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 14:34:40,411 - INFO - Saving model to results\20240804_143439\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 14:34:40,593 - INFO - Model saved successfully
+2024-08-04 14:34:40,593 - INFO - Model saved successfully
+2024-08-04 14:34:42,750 - INFO - Closing environments
+2024-08-04 14:34:42,750 - INFO - Closing environments
+2024-08-04 14:34:42,802 - INFO - Environments closed successfully
+2024-08-04 14:34:42,802 - INFO - Environments closed successfully
+2024-08-04 14:34:42,804 - INFO - Creating environment
+2024-08-04 14:34:42,804 - INFO - Creating environment
+2024-08-04 14:34:42,804 - INFO - Creating environment
+2024-08-04 14:34:43,025 - INFO - Environment created successfully
+2024-08-04 14:34:43,025 - INFO - Environment created successfully
+2024-08-04 14:34:43,025 - INFO - Environment created successfully
+2024-08-04 14:34:43,102 - INFO - Creating PPO model
+2024-08-04 14:34:43,102 - INFO - Creating PPO model
+2024-08-04 14:34:43,102 - INFO - Creating PPO model
+2024-08-04 14:34:43,675 - INFO - PPO model created successfully
+2024-08-04 14:34:43,675 - INFO - PPO model created successfully
+2024-08-04 14:34:43,675 - INFO - PPO model created successfully
+2024-08-04 14:34:43,676 - INFO - Starting model training
+2024-08-04 14:34:43,676 - INFO - Starting model training
+2024-08-04 14:34:43,676 - INFO - Starting model training
+2024-08-04 14:34:43,677 - INFO - Model training completed or stopped
+2024-08-04 14:34:43,677 - INFO - Model training completed or stopped
+2024-08-04 14:34:43,677 - INFO - Model training completed or stopped
+2024-08-04 14:34:43,681 - INFO - Saving model to results\20240804_143439\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-08-04 14:34:43,681 - INFO - Saving model to results\20240804_143439\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-08-04 14:34:43,681 - INFO - Saving model to results\20240804_143439\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-08-04 14:34:43,818 - INFO - Model saved successfully
+2024-08-04 14:34:43,818 - INFO - Model saved successfully
+2024-08-04 14:34:43,818 - INFO - Model saved successfully
+2024-08-04 14:34:45,060 - INFO - Closing environments
+2024-08-04 14:34:45,060 - INFO - Closing environments
+2024-08-04 14:34:45,060 - INFO - Closing environments
+2024-08-04 14:34:45,096 - INFO - Environments closed successfully
+2024-08-04 14:34:45,096 - INFO - Environments closed successfully
+2024-08-04 14:34:45,096 - INFO - Environments closed successfully
+2024-08-04 14:34:45,099 - INFO - Creating environment
+2024-08-04 14:34:45,099 - INFO - Creating environment
+2024-08-04 14:34:45,099 - INFO - Creating environment
+2024-08-04 14:34:45,099 - INFO - Creating environment
+2024-08-04 14:34:45,318 - INFO - Environment created successfully
+2024-08-04 14:34:45,318 - INFO - Environment created successfully
+2024-08-04 14:34:45,318 - INFO - Environment created successfully
+2024-08-04 14:34:45,318 - INFO - Environment created successfully
+2024-08-04 14:34:45,398 - INFO - Creating PPO model
+2024-08-04 14:34:45,398 - INFO - Creating PPO model
+2024-08-04 14:34:45,398 - INFO - Creating PPO model
+2024-08-04 14:34:45,398 - INFO - Creating PPO model
+2024-08-04 14:34:45,982 - INFO - PPO model created successfully
+2024-08-04 14:34:45,982 - INFO - PPO model created successfully
+2024-08-04 14:34:45,982 - INFO - PPO model created successfully
+2024-08-04 14:34:45,982 - INFO - PPO model created successfully
+2024-08-04 14:34:45,983 - INFO - Starting model training
+2024-08-04 14:34:45,983 - INFO - Starting model training
+2024-08-04 14:34:45,983 - INFO - Starting model training
+2024-08-04 14:34:45,983 - INFO - Starting model training
+2024-08-04 14:34:45,984 - INFO - Model training completed or stopped
+2024-08-04 14:34:45,984 - INFO - Model training completed or stopped
+2024-08-04 14:34:45,984 - INFO - Model training completed or stopped
+2024-08-04 14:34:45,984 - INFO - Model training completed or stopped
+2024-08-04 14:34:45,986 - INFO - Saving model to results\20240804_143439\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-08-04 14:34:45,986 - INFO - Saving model to results\20240804_143439\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-08-04 14:34:45,986 - INFO - Saving model to results\20240804_143439\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-08-04 14:34:45,986 - INFO - Saving model to results\20240804_143439\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-08-04 14:34:46,123 - INFO - Model saved successfully
+2024-08-04 14:34:46,123 - INFO - Model saved successfully
+2024-08-04 14:34:46,123 - INFO - Model saved successfully
+2024-08-04 14:34:46,123 - INFO - Model saved successfully
+2024-08-04 14:34:47,494 - INFO - Closing environments
+2024-08-04 14:34:47,494 - INFO - Closing environments
+2024-08-04 14:34:47,494 - INFO - Closing environments
+2024-08-04 14:34:47,494 - INFO - Closing environments
+2024-08-04 14:34:47,535 - INFO - Environments closed successfully
+2024-08-04 14:34:47,535 - INFO - Environments closed successfully
+2024-08-04 14:34:47,535 - INFO - Environments closed successfully
+2024-08-04 14:34:47,535 - INFO - Environments closed successfully
+2024-08-04 14:34:47,539 - INFO - Creating environment
+2024-08-04 14:34:47,539 - INFO - Creating environment
+2024-08-04 14:34:47,539 - INFO - Creating environment
+2024-08-04 14:34:47,539 - INFO - Creating environment
+2024-08-04 14:34:47,539 - INFO - Creating environment
+2024-08-04 14:34:47,759 - INFO - Environment created successfully
+2024-08-04 14:34:47,759 - INFO - Environment created successfully
+2024-08-04 14:34:47,759 - INFO - Environment created successfully
+2024-08-04 14:34:47,759 - INFO - Environment created successfully
+2024-08-04 14:34:47,759 - INFO - Environment created successfully
+2024-08-04 14:34:47,953 - INFO - Creating PPO model
+2024-08-04 14:34:47,953 - INFO - Creating PPO model
+2024-08-04 14:34:47,953 - INFO - Creating PPO model
+2024-08-04 14:34:47,953 - INFO - Creating PPO model
+2024-08-04 14:34:47,953 - INFO - Creating PPO model
+2024-08-04 14:34:48,513 - INFO - PPO model created successfully
+2024-08-04 14:34:48,513 - INFO - PPO model created successfully
+2024-08-04 14:34:48,513 - INFO - PPO model created successfully
+2024-08-04 14:34:48,513 - INFO - PPO model created successfully
+2024-08-04 14:34:48,513 - INFO - PPO model created successfully
+2024-08-04 14:34:48,514 - INFO - Starting model training
+2024-08-04 14:34:48,514 - INFO - Starting model training
+2024-08-04 14:34:48,514 - INFO - Starting model training
+2024-08-04 14:34:48,514 - INFO - Starting model training
+2024-08-04 14:34:48,514 - INFO - Starting model training
+2024-08-04 14:34:48,515 - INFO - Model training completed or stopped
+2024-08-04 14:34:48,515 - INFO - Model training completed or stopped
+2024-08-04 14:34:48,515 - INFO - Model training completed or stopped
+2024-08-04 14:34:48,515 - INFO - Model training completed or stopped
+2024-08-04 14:34:48,515 - INFO - Model training completed or stopped
+2024-08-04 14:34:48,518 - INFO - Saving model to results\20240804_143439\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 14:34:48,518 - INFO - Saving model to results\20240804_143439\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 14:34:48,518 - INFO - Saving model to results\20240804_143439\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 14:34:48,518 - INFO - Saving model to results\20240804_143439\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 14:34:48,518 - INFO - Saving model to results\20240804_143439\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 14:34:48,661 - INFO - Model saved successfully
+2024-08-04 14:34:48,661 - INFO - Model saved successfully
+2024-08-04 14:34:48,661 - INFO - Model saved successfully
+2024-08-04 14:34:48,661 - INFO - Model saved successfully
+2024-08-04 14:34:48,661 - INFO - Model saved successfully
+2024-08-04 14:34:49,948 - INFO - Closing environments
+2024-08-04 14:34:49,948 - INFO - Closing environments
+2024-08-04 14:34:49,948 - INFO - Closing environments
+2024-08-04 14:34:49,948 - INFO - Closing environments
+2024-08-04 14:34:49,948 - INFO - Closing environments
+2024-08-04 14:34:49,985 - INFO - Environments closed successfully
+2024-08-04 14:34:49,985 - INFO - Environments closed successfully
+2024-08-04 14:34:49,985 - INFO - Environments closed successfully
+2024-08-04 14:34:49,985 - INFO - Environments closed successfully
+2024-08-04 14:34:49,985 - INFO - Environments closed successfully
+2024-08-04 14:36:13,279 - INFO - Creating environment
+2024-08-04 14:36:13,279 - INFO - Creating environment
+2024-08-04 14:36:13,670 - INFO - Environment created successfully
+2024-08-04 14:36:13,670 - INFO - Environment created successfully
+2024-08-04 14:36:13,753 - INFO - Creating PPO model
+2024-08-04 14:36:13,753 - INFO - Creating PPO model
+2024-08-04 14:36:14,574 - INFO - PPO model created successfully
+2024-08-04 14:36:14,574 - INFO - PPO model created successfully
+2024-08-04 14:36:14,576 - INFO - Starting model training
+2024-08-04 14:36:14,576 - INFO - Starting model training
+2024-08-04 14:36:15,529 - ERROR - Error during training: unhashable type: 'numpy.ndarray'
+2024-08-04 14:36:15,529 - ERROR - Error during training: unhashable type: 'numpy.ndarray'
+2024-08-04 14:36:15,532 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 72, in train
+    obs, reward, done, _, info = self.env.step(action)
+                                 ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 94, in step
+    observation, reward, terminated, truncated, info = self.env.step(action)
+                                                       ^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 168, in step
+    self.agent_controler.agent_action(action)
+  File "c:\Users\anton\Dev\ABM\agent.py", line 42, in agent_action
+    if action in self.movement_actions:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unhashable type: 'numpy.ndarray'
+
+2024-08-04 14:36:15,532 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 72, in train
+    obs, reward, done, _, info = self.env.step(action)
+                                 ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 94, in step
+    observation, reward, terminated, truncated, info = self.env.step(action)
+                                                       ^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 168, in step
+    self.agent_controler.agent_action(action)
+  File "c:\Users\anton\Dev\ABM\agent.py", line 42, in agent_action
+    if action in self.movement_actions:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: unhashable type: 'numpy.ndarray'
+
+2024-08-04 14:36:15,535 - INFO - Model training completed or stopped
+2024-08-04 14:36:15,535 - INFO - Model training completed or stopped
+2024-08-04 14:36:15,541 - INFO - Saving model to results\20240804_143613\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 14:36:15,541 - INFO - Saving model to results\20240804_143613\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 14:36:15,716 - INFO - Model saved successfully
+2024-08-04 14:36:15,716 - INFO - Model saved successfully
+2024-08-04 14:42:20,888 - INFO - Creating environment
+2024-08-04 14:42:20,888 - INFO - Creating environment
+2024-08-04 14:42:21,296 - INFO - Environment created successfully
+2024-08-04 14:42:21,296 - INFO - Environment created successfully
+2024-08-04 14:42:21,379 - INFO - Creating PPO model
+2024-08-04 14:42:21,379 - INFO - Creating PPO model
+2024-08-04 14:42:22,195 - INFO - PPO model created successfully
+2024-08-04 14:42:22,195 - INFO - PPO model created successfully
+2024-08-04 14:42:22,198 - INFO - Starting model training
+2024-08-04 14:42:22,198 - INFO - Starting model training
+2024-08-04 14:45:23,060 - INFO - Creating environment
+2024-08-04 14:45:23,060 - INFO - Creating environment
+2024-08-04 14:45:23,456 - INFO - Environment created successfully
+2024-08-04 14:45:23,456 - INFO - Environment created successfully
+2024-08-04 14:45:23,536 - INFO - Creating PPO model
+2024-08-04 14:45:23,536 - INFO - Creating PPO model
+2024-08-04 14:45:24,366 - INFO - PPO model created successfully
+2024-08-04 14:45:24,366 - INFO - PPO model created successfully
+2024-08-04 14:45:24,368 - INFO - Starting model training
+2024-08-04 14:45:24,368 - INFO - Starting model training
+2024-08-04 14:47:15,113 - INFO - Creating environment
+2024-08-04 14:47:15,113 - INFO - Creating environment
+2024-08-04 14:47:15,545 - INFO - Environment created successfully
+2024-08-04 14:47:15,545 - INFO - Environment created successfully
+2024-08-04 14:47:15,633 - INFO - Creating PPO model
+2024-08-04 14:47:15,633 - INFO - Creating PPO model
+2024-08-04 14:47:16,509 - INFO - PPO model created successfully
+2024-08-04 14:47:16,509 - INFO - PPO model created successfully
+2024-08-04 14:47:16,511 - INFO - Starting model training
+2024-08-04 14:47:16,511 - INFO - Starting model training
+2024-08-04 14:47:56,632 - INFO - Creating environment
+2024-08-04 14:47:56,632 - INFO - Creating environment
+2024-08-04 14:47:57,064 - INFO - Environment created successfully
+2024-08-04 14:47:57,064 - INFO - Environment created successfully
+2024-08-04 14:47:57,147 - INFO - Creating PPO model
+2024-08-04 14:47:57,147 - INFO - Creating PPO model
+2024-08-04 14:47:58,087 - INFO - PPO model created successfully
+2024-08-04 14:47:58,087 - INFO - PPO model created successfully
+2024-08-04 14:47:58,088 - INFO - Starting model training
+2024-08-04 14:47:58,088 - INFO - Starting model training
+2024-08-04 14:50:18,072 - INFO - Recent mean reward: 0.00
+2024-08-04 14:50:18,072 - INFO - Recent mean reward: 0.00
+2024-08-04 14:50:18,072 - INFO - Recent mean episode length: 0.00
+2024-08-04 14:50:18,072 - INFO - Recent mean episode length: 0.00
+2024-08-04 14:50:18,073 - INFO - Episode info buffer size: 0
+2024-08-04 14:50:18,073 - INFO - Episode info buffer size: 0
+2024-08-04 14:50:18,073 - INFO - Recent policy loss: 0.00000
+2024-08-04 14:50:18,073 - INFO - Recent policy loss: 0.00000
+2024-08-04 14:50:18,074 - INFO - Recent value loss: 6818.98588
+2024-08-04 14:50:18,074 - INFO - Recent value loss: 6818.98588
+2024-08-04 14:52:15,800 - ERROR - Error during training: Tried to step environment that needs reset
+2024-08-04 14:52:15,800 - ERROR - Error during training: Tried to step environment that needs reset
+2024-08-04 14:52:15,814 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 85, in train
+    self.rl_model.learn(total_timesteps=1, callback=eval_callback, reset_num_timesteps=False)
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\ppo\ppo.py", line 315, in learn
+    return super().learn(
+           ^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\on_policy_algorithm.py", line 300, in learn
+    continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer, n_rollout_steps=self.n_steps)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\on_policy_algorithm.py", line 195, in collect_rollouts
+    new_obs, rewards, dones, infos = env.step(clipped_actions)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\vec_env\base_vec_env.py", line 206, in step
+    return self.step_wait()
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\vec_env\dummy_vec_env.py", line 58, in step_wait
+    obs, self.buf_rews[env_idx], terminated, truncated, self.buf_infos[env_idx] = self.envs[env_idx].step(
+                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 93, in step
+    raise RuntimeError("Tried to step environment that needs reset")
+RuntimeError: Tried to step environment that needs reset
+
+2024-08-04 14:52:15,814 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 85, in train
+    self.rl_model.learn(total_timesteps=1, callback=eval_callback, reset_num_timesteps=False)
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\ppo\ppo.py", line 315, in learn
+    return super().learn(
+           ^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\on_policy_algorithm.py", line 300, in learn
+    continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer, n_rollout_steps=self.n_steps)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\on_policy_algorithm.py", line 195, in collect_rollouts
+    new_obs, rewards, dones, infos = env.step(clipped_actions)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\vec_env\base_vec_env.py", line 206, in step
+    return self.step_wait()
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\vec_env\dummy_vec_env.py", line 58, in step_wait
+    obs, self.buf_rews[env_idx], terminated, truncated, self.buf_infos[env_idx] = self.envs[env_idx].step(
+                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 93, in step
+    raise RuntimeError("Tried to step environment that needs reset")
+RuntimeError: Tried to step environment that needs reset
+
+2024-08-04 14:52:15,819 - INFO - Model training completed or stopped
+2024-08-04 14:52:15,819 - INFO - Model training completed or stopped
+2024-08-04 14:52:15,829 - INFO - Saving model to results\20240804_144756\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 14:52:15,829 - INFO - Saving model to results\20240804_144756\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 14:52:16,263 - INFO - Model saved successfully
+2024-08-04 14:52:16,263 - INFO - Model saved successfully
+2024-08-04 15:20:19,700 - INFO - Creating environment
+2024-08-04 15:20:19,700 - INFO - Creating environment
+2024-08-04 15:20:20,108 - INFO - Environment created successfully
+2024-08-04 15:20:20,108 - INFO - Environment created successfully
+2024-08-04 15:20:20,198 - INFO - Creating PPO model
+2024-08-04 15:20:20,198 - INFO - Creating PPO model
+2024-08-04 15:20:21,006 - INFO - PPO model created successfully
+2024-08-04 15:20:21,006 - INFO - PPO model created successfully
+2024-08-04 15:20:21,007 - INFO - Starting model training
+2024-08-04 15:20:21,007 - INFO - Starting model training
+2024-08-04 15:21:43,658 - INFO - Creating environment
+2024-08-04 15:21:43,658 - INFO - Creating environment
+2024-08-04 15:21:44,053 - INFO - Environment created successfully
+2024-08-04 15:21:44,053 - INFO - Environment created successfully
+2024-08-04 15:21:44,134 - INFO - Creating PPO model
+2024-08-04 15:21:44,134 - INFO - Creating PPO model
+2024-08-04 15:21:44,950 - INFO - PPO model created successfully
+2024-08-04 15:21:44,950 - INFO - PPO model created successfully
+2024-08-04 15:21:44,952 - INFO - Starting model training
+2024-08-04 15:21:44,952 - INFO - Starting model training
+2024-08-04 15:21:44,952 - INFO - Model training completed or stopped
+2024-08-04 15:21:44,952 - INFO - Model training completed or stopped
+2024-08-04 15:21:44,955 - INFO - Saving model to results\20240804_152143\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 15:21:44,955 - INFO - Saving model to results\20240804_152143\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 15:21:45,161 - INFO - Model saved successfully
+2024-08-04 15:21:45,161 - INFO - Model saved successfully
+2024-08-04 15:21:46,981 - INFO - Closing environments
+2024-08-04 15:21:46,981 - INFO - Closing environments
+2024-08-04 15:21:47,044 - INFO - Environments closed successfully
+2024-08-04 15:21:47,044 - INFO - Environments closed successfully
+2024-08-04 15:21:47,049 - INFO - Creating environment
+2024-08-04 15:21:47,049 - INFO - Creating environment
+2024-08-04 15:21:47,049 - INFO - Creating environment
+2024-08-04 15:21:47,307 - INFO - Environment created successfully
+2024-08-04 15:21:47,307 - INFO - Environment created successfully
+2024-08-04 15:21:47,307 - INFO - Environment created successfully
+2024-08-04 15:21:47,396 - INFO - Creating PPO model
+2024-08-04 15:21:47,396 - INFO - Creating PPO model
+2024-08-04 15:21:47,396 - INFO - Creating PPO model
+2024-08-04 15:21:48,116 - INFO - PPO model created successfully
+2024-08-04 15:21:48,116 - INFO - PPO model created successfully
+2024-08-04 15:21:48,116 - INFO - PPO model created successfully
+2024-08-04 15:21:48,118 - INFO - Starting model training
+2024-08-04 15:21:48,118 - INFO - Starting model training
+2024-08-04 15:21:48,118 - INFO - Starting model training
+2024-08-04 15:21:48,119 - INFO - Model training completed or stopped
+2024-08-04 15:21:48,119 - INFO - Model training completed or stopped
+2024-08-04 15:21:48,119 - INFO - Model training completed or stopped
+2024-08-04 15:21:48,121 - INFO - Saving model to results\20240804_152143\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-08-04 15:21:48,121 - INFO - Saving model to results\20240804_152143\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-08-04 15:21:48,121 - INFO - Saving model to results\20240804_152143\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-08-04 15:21:48,266 - INFO - Model saved successfully
+2024-08-04 15:21:48,266 - INFO - Model saved successfully
+2024-08-04 15:21:48,266 - INFO - Model saved successfully
+2024-08-04 15:21:49,620 - INFO - Closing environments
+2024-08-04 15:21:49,620 - INFO - Closing environments
+2024-08-04 15:21:49,620 - INFO - Closing environments
+2024-08-04 15:21:49,672 - INFO - Environments closed successfully
+2024-08-04 15:21:49,672 - INFO - Environments closed successfully
+2024-08-04 15:21:49,672 - INFO - Environments closed successfully
+2024-08-04 15:21:49,677 - INFO - Creating environment
+2024-08-04 15:21:49,677 - INFO - Creating environment
+2024-08-04 15:21:49,677 - INFO - Creating environment
+2024-08-04 15:21:49,677 - INFO - Creating environment
+2024-08-04 15:21:49,927 - INFO - Environment created successfully
+2024-08-04 15:21:49,927 - INFO - Environment created successfully
+2024-08-04 15:21:49,927 - INFO - Environment created successfully
+2024-08-04 15:21:49,927 - INFO - Environment created successfully
+2024-08-04 15:21:50,009 - INFO - Creating PPO model
+2024-08-04 15:21:50,009 - INFO - Creating PPO model
+2024-08-04 15:21:50,009 - INFO - Creating PPO model
+2024-08-04 15:21:50,009 - INFO - Creating PPO model
+2024-08-04 15:21:50,613 - INFO - PPO model created successfully
+2024-08-04 15:21:50,613 - INFO - PPO model created successfully
+2024-08-04 15:21:50,613 - INFO - PPO model created successfully
+2024-08-04 15:21:50,613 - INFO - PPO model created successfully
+2024-08-04 15:21:50,614 - INFO - Starting model training
+2024-08-04 15:21:50,614 - INFO - Starting model training
+2024-08-04 15:21:50,614 - INFO - Starting model training
+2024-08-04 15:21:50,614 - INFO - Starting model training
+2024-08-04 15:21:50,615 - INFO - Model training completed or stopped
+2024-08-04 15:21:50,615 - INFO - Model training completed or stopped
+2024-08-04 15:21:50,615 - INFO - Model training completed or stopped
+2024-08-04 15:21:50,615 - INFO - Model training completed or stopped
+2024-08-04 15:21:50,618 - INFO - Saving model to results\20240804_152143\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-08-04 15:21:50,618 - INFO - Saving model to results\20240804_152143\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-08-04 15:21:50,618 - INFO - Saving model to results\20240804_152143\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-08-04 15:21:50,618 - INFO - Saving model to results\20240804_152143\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-08-04 15:21:50,756 - INFO - Model saved successfully
+2024-08-04 15:21:50,756 - INFO - Model saved successfully
+2024-08-04 15:21:50,756 - INFO - Model saved successfully
+2024-08-04 15:21:50,756 - INFO - Model saved successfully
+2024-08-04 15:21:52,264 - INFO - Closing environments
+2024-08-04 15:21:52,264 - INFO - Closing environments
+2024-08-04 15:21:52,264 - INFO - Closing environments
+2024-08-04 15:21:52,264 - INFO - Closing environments
+2024-08-04 15:21:52,321 - INFO - Environments closed successfully
+2024-08-04 15:21:52,321 - INFO - Environments closed successfully
+2024-08-04 15:21:52,321 - INFO - Environments closed successfully
+2024-08-04 15:21:52,321 - INFO - Environments closed successfully
+2024-08-04 15:21:52,326 - INFO - Creating environment
+2024-08-04 15:21:52,326 - INFO - Creating environment
+2024-08-04 15:21:52,326 - INFO - Creating environment
+2024-08-04 15:21:52,326 - INFO - Creating environment
+2024-08-04 15:21:52,326 - INFO - Creating environment
+2024-08-04 15:21:52,578 - INFO - Environment created successfully
+2024-08-04 15:21:52,578 - INFO - Environment created successfully
+2024-08-04 15:21:52,578 - INFO - Environment created successfully
+2024-08-04 15:21:52,578 - INFO - Environment created successfully
+2024-08-04 15:21:52,578 - INFO - Environment created successfully
+2024-08-04 15:21:52,761 - INFO - Creating PPO model
+2024-08-04 15:21:52,761 - INFO - Creating PPO model
+2024-08-04 15:21:52,761 - INFO - Creating PPO model
+2024-08-04 15:21:52,761 - INFO - Creating PPO model
+2024-08-04 15:21:52,761 - INFO - Creating PPO model
+2024-08-04 15:21:53,350 - INFO - PPO model created successfully
+2024-08-04 15:21:53,350 - INFO - PPO model created successfully
+2024-08-04 15:21:53,350 - INFO - PPO model created successfully
+2024-08-04 15:21:53,350 - INFO - PPO model created successfully
+2024-08-04 15:21:53,350 - INFO - PPO model created successfully
+2024-08-04 15:21:53,352 - INFO - Starting model training
+2024-08-04 15:21:53,352 - INFO - Starting model training
+2024-08-04 15:21:53,352 - INFO - Starting model training
+2024-08-04 15:21:53,352 - INFO - Starting model training
+2024-08-04 15:21:53,352 - INFO - Starting model training
+2024-08-04 15:21:53,353 - INFO - Model training completed or stopped
+2024-08-04 15:21:53,353 - INFO - Model training completed or stopped
+2024-08-04 15:21:53,353 - INFO - Model training completed or stopped
+2024-08-04 15:21:53,353 - INFO - Model training completed or stopped
+2024-08-04 15:21:53,353 - INFO - Model training completed or stopped
+2024-08-04 15:21:53,356 - INFO - Saving model to results\20240804_152143\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 15:21:53,356 - INFO - Saving model to results\20240804_152143\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 15:21:53,356 - INFO - Saving model to results\20240804_152143\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 15:21:53,356 - INFO - Saving model to results\20240804_152143\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 15:21:53,356 - INFO - Saving model to results\20240804_152143\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-08-04 15:21:53,500 - INFO - Model saved successfully
+2024-08-04 15:21:53,500 - INFO - Model saved successfully
+2024-08-04 15:21:53,500 - INFO - Model saved successfully
+2024-08-04 15:21:53,500 - INFO - Model saved successfully
+2024-08-04 15:21:53,500 - INFO - Model saved successfully
+2024-08-04 15:21:54,894 - INFO - Closing environments
+2024-08-04 15:21:54,894 - INFO - Closing environments
+2024-08-04 15:21:54,894 - INFO - Closing environments
+2024-08-04 15:21:54,894 - INFO - Closing environments
+2024-08-04 15:21:54,894 - INFO - Closing environments
+2024-08-04 15:21:54,951 - INFO - Environments closed successfully
+2024-08-04 15:21:54,951 - INFO - Environments closed successfully
+2024-08-04 15:21:54,951 - INFO - Environments closed successfully
+2024-08-04 15:21:54,951 - INFO - Environments closed successfully
+2024-08-04 15:21:54,951 - INFO - Environments closed successfully
+2024-08-04 15:25:45,156 - INFO - Creating environment
+2024-08-04 15:25:45,156 - INFO - Creating environment
+2024-08-04 15:25:48,956 - INFO - Environment created successfully
+2024-08-04 15:25:48,956 - INFO - Environment created successfully
+2024-08-04 15:25:52,164 - INFO - Creating PPO model
+2024-08-04 15:25:52,164 - INFO - Creating PPO model
+2024-08-04 15:25:52,919 - INFO - PPO model created successfully
+2024-08-04 15:25:52,919 - INFO - PPO model created successfully
+2024-08-04 15:25:52,920 - INFO - Starting model training
+2024-08-04 15:25:52,920 - INFO - Starting model training
+2024-08-04 15:27:55,130 - INFO - Recent mean reward: 0.00
+2024-08-04 15:27:55,130 - INFO - Recent mean reward: 0.00
+2024-08-04 15:27:55,131 - INFO - Recent mean episode length: 0.00
+2024-08-04 15:27:55,131 - INFO - Recent mean episode length: 0.00
+2024-08-04 15:27:55,131 - INFO - Episode info buffer size: 0
+2024-08-04 15:27:55,131 - INFO - Episode info buffer size: 0
+2024-08-04 15:27:55,131 - INFO - Recent policy loss: 0.00000
+2024-08-04 15:27:55,131 - INFO - Recent policy loss: 0.00000
+2024-08-04 15:27:55,131 - INFO - Recent value loss: 2211.86837
+2024-08-04 15:27:55,131 - INFO - Recent value loss: 2211.86837
+2024-08-04 15:29:38,227 - ERROR - Error during training: Tried to step environment that needs reset
+2024-08-04 15:29:38,227 - ERROR - Error during training: Tried to step environment that needs reset
+2024-08-04 15:29:38,231 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 85, in train
+    self.rl_model.learn(total_timesteps=1, callback=eval_callback, reset_num_timesteps=False)
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\ppo\ppo.py", line 315, in learn
+    return super().learn(
+           ^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\on_policy_algorithm.py", line 300, in learn
+    continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer, n_rollout_steps=self.n_steps)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\on_policy_algorithm.py", line 195, in collect_rollouts
+    new_obs, rewards, dones, infos = env.step(clipped_actions)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\vec_env\base_vec_env.py", line 206, in step
+    return self.step_wait()
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\vec_env\dummy_vec_env.py", line 58, in step_wait
+    obs, self.buf_rews[env_idx], terminated, truncated, self.buf_infos[env_idx] = self.envs[env_idx].step(
+                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 93, in step
+    raise RuntimeError("Tried to step environment that needs reset")
+RuntimeError: Tried to step environment that needs reset
+
+2024-08-04 15:29:38,231 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 85, in train
+    self.rl_model.learn(total_timesteps=1, callback=eval_callback, reset_num_timesteps=False)
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\ppo\ppo.py", line 315, in learn
+    return super().learn(
+           ^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\on_policy_algorithm.py", line 300, in learn
+    continue_training = self.collect_rollouts(self.env, callback, self.rollout_buffer, n_rollout_steps=self.n_steps)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\on_policy_algorithm.py", line 195, in collect_rollouts
+    new_obs, rewards, dones, infos = env.step(clipped_actions)
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\vec_env\base_vec_env.py", line 206, in step
+    return self.step_wait()
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\vec_env\dummy_vec_env.py", line 58, in step_wait
+    obs, self.buf_rews[env_idx], terminated, truncated, self.buf_infos[env_idx] = self.envs[env_idx].step(
+                                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\site-packages\stable_baselines3\common\monitor.py", line 93, in step
+    raise RuntimeError("Tried to step environment that needs reset")
+RuntimeError: Tried to step environment that needs reset
+
+2024-08-04 15:29:38,234 - INFO - Model training completed or stopped
+2024-08-04 15:29:38,234 - INFO - Model training completed or stopped
+2024-08-04 15:29:38,245 - INFO - Saving model to results\20240804_152545\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 15:29:38,245 - INFO - Saving model to results\20240804_152545\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-08-04 15:29:38,632 - INFO - Model saved successfully
+2024-08-04 15:29:38,632 - INFO - Model saved successfully
+2024-08-04 15:35:50,698 - INFO - Creating environment
+2024-08-04 15:35:50,698 - INFO - Creating environment
+2024-08-04 15:35:54,867 - INFO - Environment created successfully
+2024-08-04 15:35:54,867 - INFO - Environment created successfully
+2024-08-04 15:35:58,056 - INFO - Creating PPO model
+2024-08-04 15:35:58,056 - INFO - Creating PPO model
+2024-08-04 15:35:58,724 - INFO - PPO model created successfully
+2024-08-04 15:35:58,724 - INFO - PPO model created successfully
+2024-08-04 15:35:58,725 - INFO - Starting model training
+2024-08-04 15:35:58,725 - INFO - Starting model training
