@@ -6,6 +6,8 @@ class Logger:
         self.loggers = {}
         self.base_log_file = base_log_file
         self._setup_logger('main', base_log_file)
+        self._setup_logger('training', 'training.log')
+        self._setup_logger('eval', 'eval.log')
         
         warnings.filterwarnings("always")
 

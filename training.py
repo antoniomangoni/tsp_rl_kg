@@ -1,69 +1,21 @@
 import os
 import torch
+import cProfile
+import pstats
+import traceback
+import time
+import warnings
+import os
+import json
 import numpy as np
+from datetime import datetime
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.evaluation import evaluate_policy
-
-import cProfile
-import pstats
-import logging
-import traceback
-import time
-import warnings
-import json
-
 from custom_env import CustomEnv
 from agent_model import AgentModel
-
-class Logger:
-    def __init__(self, base_log_file='training.log'):
-        self.loggers = {}
-        self.base_log_file = base_log_file
-        self._setup_logger('main', base_log_file)
-        self._setup_logger('training', 'training.log')
-        self._setup_logger('eval', 'eval.log')
-        
-        warnings.filterwarnings("always")
-
-    def _setup_logger(self, name, log_file):
-        logger = logging.getLogger(name)
-        logger.setLevel(logging.INFO)
-        
-        # File handler
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)
-        
-        # Console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        
-        # Formatter
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
-        
-        # Add handlers to logger
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
-
-        self.loggers[name] = logger
-
-    def get_logger(self, name):
-        if name not in self.loggers:
-            log_file = f"{name}_{self.base_log_file}"
-            self._setup_logger(name, log_file)
-        return self.loggers[name]
-
-    def info(self, message, logger_name='main'):
-        self.get_logger(logger_name).info(message)
-
-    def warning(self, message, logger_name='main'):
-        self.get_logger(logger_name).warning(message)
-
-    def error(self, message, logger_name='main'):
-        self.get_logger(logger_name).error(message)
+from logger import Logger
 
 class EnvironmentManager:
     def __init__(self, game_manager_args, simulation_manager_args, model_args):
@@ -162,6 +114,20 @@ class AblationStudy:
         self.kg_completeness_values = kg_completeness_values
         self.logger = logger
         self.results = {}
+        self.results_dir = self._create_results_directory()
+
+    def _create_results_directory(self):
+        # Create a 'results' folder if it doesn't exist
+        if not os.path.exists('results'):
+            os.makedirs('results')
+        
+        # Create a subfolder with the current datetime
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        result_dir = os.path.join('results', current_time)
+        os.makedirs(result_dir)
+        
+        self.logger.info(f"Created results directory: {result_dir}")
+        return result_dir
 
     def run(self):
         self.logger.info("Starting Ablation Study")
@@ -169,7 +135,7 @@ class AblationStudy:
             experiment_name = f"kg_completeness_{kg_completeness}"
             self.logger.info(f"Running experiment: {experiment_name}")
             
-            trainer = Trainer(kg_completeness)
+            trainer = Trainer(kg_completeness, ablation_study=self)
             trainer.setup(self.base_config)
             trainer.env_manager.set_kg_completeness(trainer.env, kg_completeness)
             trainer.env_manager.set_kg_completeness(trainer.eval_env, kg_completeness)
@@ -184,16 +150,31 @@ class AblationStudy:
         self.logger.info("Ablation Study completed")
 
     def _save_results(self):
-        with open('ablation_study_results.json', 'w') as f:
+        results_file = os.path.join(self.results_dir, 'ablation_study_results.json')
+        with open(results_file, 'w') as f:
             json.dump(self.results, f, indent=4)
-        self.logger.info("Ablation study results saved to ablation_study_results.json")
+        self.logger.info(f"Ablation study results saved to {results_file}")
+
+        # Save individual experiment results
+        for experiment_name, result in self.results.items():
+            experiment_file = os.path.join(self.results_dir, f"{experiment_name}_results.json")
+            with open(experiment_file, 'w') as f:
+                json.dump(result, f, indent=4)
+            self.logger.info(f"Individual experiment results saved to {experiment_file}")
+
+        # Save the base configuration
+        config_file = os.path.join(self.results_dir, 'base_config.json')
+        with open(config_file, 'w') as f:
+            json.dump(self.base_config, f, indent=4)
+        self.logger.info(f"Base configuration saved to {config_file}")
 
 class Trainer:
-    def __init__(self, current_kg_completeness):
+    def __init__(self, current_kg_completeness, ablation_study):
         self.logger = Logger('ablation_study.log')
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.logger.info(f"Using device: {self.device}")
         self.current_kg_completeness = current_kg_completeness
+        self.ablation_study = ablation_study
 
     def setup(self, config):
         self.config = config
@@ -213,21 +194,28 @@ class Trainer:
         self.model_trainer.create_model(config['model_config'])
 
     def run(self, experiment_name):
-        eval_callback = EvalCallback(self.eval_env, best_model_save_path='./logs/',
-                                    log_path='./logs/', eval_freq=10000,
+        # Create a subdirectory for this experiment within the results directory
+        experiment_dir = os.path.join(self.ablation_study.results_dir, experiment_name)
+        os.makedirs(experiment_dir, exist_ok=True)
+
+        eval_callback = EvalCallback(self.eval_env, best_model_save_path=experiment_dir,
+                                    log_path=experiment_dir, eval_freq=10000,
                                     deterministic=True, render=False)
 
         profiler = cProfile.Profile()
         profiler.enable()
 
         self.model_trainer.train(total_timesteps=self.config['total_timesteps'], 
-                                 eval_callback=eval_callback)
+                                eval_callback=eval_callback)
 
         profiler.disable()
         stats = pstats.Stats(profiler).sort_stats('cumulative')
-        stats.print_stats(30)
+        stats_file = os.path.join(experiment_dir, 'profile_stats.txt')
+        stats.dump_stats(stats_file)
+        self.logger.info(f"Profiling stats saved to {stats_file}")
 
-        self.model_trainer.save_model(f"ppo_custom_env_{experiment_name}")
+        model_path = os.path.join(experiment_dir, f"ppo_custom_env_{experiment_name}")
+        self.model_trainer.save_model(model_path)
         mean_reward, std_reward = self.model_trainer.evaluate_model(self.eval_env)
 
         self.logger.info("Closing environments", logger_name='training')
@@ -242,7 +230,9 @@ class Trainer:
         return {
             'mean_reward': mean_reward,
             'std_reward': std_reward,
-            'config': self.config
+            'config': self.config,
+            'model_path': model_path,
+            'stats_file': stats_file
         }
 
 if __name__ == '__main__':
@@ -251,7 +241,7 @@ if __name__ == '__main__':
     base_config = {
         'model_args': {'num_actions': 11},
         'simulation_manager_args': {'number_of_environments': 10, 'number_of_curricula': 1},
-        'game_manager_args': {'num_tiles': 8, 'screen_size': 200, 'vision_range': 1},
+        'game_manager_args': {'num_tiles': 12, 'screen_size': 200, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
             'batch_size': 64,

@@ -1,0 +1,331 @@
+2024-08-04 11:24:15,662 - INFO - Created results directory: results\20240804_112415
+2024-08-04 11:24:15,663 - INFO - Starting Ablation Study
+2024-08-04 11:24:15,663 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 11:24:15,747 - INFO - Using device: cuda
+2024-08-04 11:24:15,747 - INFO - Using device: cuda
+2024-08-04 11:24:47,500 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.25\profile_stats.txt
+2024-08-04 11:24:47,500 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.25\profile_stats.txt
+2024-08-04 11:24:49,496 - INFO - Training and evaluation completed.
+2024-08-04 11:24:49,496 - INFO - Training and evaluation completed.
+2024-08-04 11:24:49,498 - INFO - Experiment kg_completeness_0.25 completed
+2024-08-04 11:24:49,498 - INFO - Experiment kg_completeness_0.25 completed
+2024-08-04 11:24:49,499 - INFO - Running experiment: kg_completeness_0.5
+2024-08-04 11:24:49,499 - INFO - Running experiment: kg_completeness_0.5
+2024-08-04 11:24:49,500 - INFO - Using device: cuda
+2024-08-04 11:24:49,500 - INFO - Using device: cuda
+2024-08-04 11:24:49,500 - INFO - Using device: cuda
+2024-08-04 11:25:20,417 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.5\profile_stats.txt
+2024-08-04 11:25:20,417 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.5\profile_stats.txt
+2024-08-04 11:25:20,417 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.5\profile_stats.txt
+2024-08-04 11:25:22,534 - INFO - Training and evaluation completed.
+2024-08-04 11:25:22,534 - INFO - Training and evaluation completed.
+2024-08-04 11:25:22,534 - INFO - Training and evaluation completed.
+2024-08-04 11:25:22,535 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 11:25:22,535 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 11:25:22,535 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 11:25:22,536 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 11:25:22,536 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 11:25:22,536 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 11:25:22,536 - INFO - Using device: cuda
+2024-08-04 11:25:22,536 - INFO - Using device: cuda
+2024-08-04 11:25:22,536 - INFO - Using device: cuda
+2024-08-04 11:25:22,536 - INFO - Using device: cuda
+2024-08-04 11:25:52,789 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.75\profile_stats.txt
+2024-08-04 11:25:52,789 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.75\profile_stats.txt
+2024-08-04 11:25:52,789 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.75\profile_stats.txt
+2024-08-04 11:25:52,789 - INFO - Profiling stats saved to results\20240804_112415\kg_completeness_0.75\profile_stats.txt
+2024-08-04 11:25:54,891 - INFO - Training and evaluation completed.
+2024-08-04 11:25:54,891 - INFO - Training and evaluation completed.
+2024-08-04 11:25:54,891 - INFO - Training and evaluation completed.
+2024-08-04 11:25:54,891 - INFO - Training and evaluation completed.
+2024-08-04 11:25:54,893 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 11:25:54,893 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 11:25:54,893 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 11:25:54,893 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 11:25:54,894 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 11:25:54,894 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 11:25:54,894 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 11:25:54,894 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 11:25:54,895 - INFO - Using device: cuda
+2024-08-04 11:25:54,895 - INFO - Using device: cuda
+2024-08-04 11:25:54,895 - INFO - Using device: cuda
+2024-08-04 11:25:54,895 - INFO - Using device: cuda
+2024-08-04 11:25:54,895 - INFO - Using device: cuda
+2024-08-04 11:25:54,911 - ERROR - An error occurred during the ablation study: Cannot choose from an empty sequence
+2024-08-04 11:25:54,911 - ERROR - An error occurred during the ablation study: Cannot choose from an empty sequence
+2024-08-04 11:25:54,911 - ERROR - An error occurred during the ablation study: Cannot choose from an empty sequence
+2024-08-04 11:25:54,911 - ERROR - An error occurred during the ablation study: Cannot choose from an empty sequence
+2024-08-04 11:25:54,911 - ERROR - An error occurred during the ablation study: Cannot choose from an empty sequence
+2024-08-04 11:25:54,919 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 139, in run
+    trainer.setup(self.base_config)
+  File "c:\Users\anton\Dev\ABM\training.py", line 186, in setup
+    self.env: CustomEnv = self.env_manager.make_env()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 27, in make_env
+    env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 39, in __init__
+    self.simulation_manager = SimulationManager(
+                              ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 11, in __init__
+    self.create_games(number_of_environments, game_manager_args, plot)
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 27, in create_games
+    game_manager = GameManager(num_tiles, screen_size, vision_range, plot)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 27, in __init__
+    self.initialize_components()
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 43, in initialize_components
+    self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 35, in __init__
+    self.player = self.init_player()
+                  ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 111, in init_player
+    location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\random.py", line 373, in choice
+    raise IndexError('Cannot choose from an empty sequence')
+IndexError: Cannot choose from an empty sequence
+
+2024-08-04 11:25:54,919 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 139, in run
+    trainer.setup(self.base_config)
+  File "c:\Users\anton\Dev\ABM\training.py", line 186, in setup
+    self.env: CustomEnv = self.env_manager.make_env()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 27, in make_env
+    env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 39, in __init__
+    self.simulation_manager = SimulationManager(
+                              ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 11, in __init__
+    self.create_games(number_of_environments, game_manager_args, plot)
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 27, in create_games
+    game_manager = GameManager(num_tiles, screen_size, vision_range, plot)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 27, in __init__
+    self.initialize_components()
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 43, in initialize_components
+    self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 35, in __init__
+    self.player = self.init_player()
+                  ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 111, in init_player
+    location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\random.py", line 373, in choice
+    raise IndexError('Cannot choose from an empty sequence')
+IndexError: Cannot choose from an empty sequence
+
+2024-08-04 11:25:54,919 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 139, in run
+    trainer.setup(self.base_config)
+  File "c:\Users\anton\Dev\ABM\training.py", line 186, in setup
+    self.env: CustomEnv = self.env_manager.make_env()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 27, in make_env
+    env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 39, in __init__
+    self.simulation_manager = SimulationManager(
+                              ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 11, in __init__
+    self.create_games(number_of_environments, game_manager_args, plot)
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 27, in create_games
+    game_manager = GameManager(num_tiles, screen_size, vision_range, plot)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 27, in __init__
+    self.initialize_components()
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 43, in initialize_components
+    self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 35, in __init__
+    self.player = self.init_player()
+                  ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 111, in init_player
+    location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\random.py", line 373, in choice
+    raise IndexError('Cannot choose from an empty sequence')
+IndexError: Cannot choose from an empty sequence
+
+2024-08-04 11:25:54,919 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 139, in run
+    trainer.setup(self.base_config)
+  File "c:\Users\anton\Dev\ABM\training.py", line 186, in setup
+    self.env: CustomEnv = self.env_manager.make_env()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 27, in make_env
+    env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 39, in __init__
+    self.simulation_manager = SimulationManager(
+                              ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 11, in __init__
+    self.create_games(number_of_environments, game_manager_args, plot)
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 27, in create_games
+    game_manager = GameManager(num_tiles, screen_size, vision_range, plot)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 27, in __init__
+    self.initialize_components()
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 43, in initialize_components
+    self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 35, in __init__
+    self.player = self.init_player()
+                  ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 111, in init_player
+    location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\random.py", line 373, in choice
+    raise IndexError('Cannot choose from an empty sequence')
+IndexError: Cannot choose from an empty sequence
+
+2024-08-04 11:25:54,919 - ERROR - Traceback (most recent call last):
+  File "c:\Users\anton\Dev\ABM\training.py", line 260, in <module>
+    ablation_study.run()
+  File "c:\Users\anton\Dev\ABM\training.py", line 139, in run
+    trainer.setup(self.base_config)
+  File "c:\Users\anton\Dev\ABM\training.py", line 186, in setup
+    self.env: CustomEnv = self.env_manager.make_env()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\training.py", line 27, in make_env
+    env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\custom_env.py", line 39, in __init__
+    self.simulation_manager = SimulationManager(
+                              ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 11, in __init__
+    self.create_games(number_of_environments, game_manager_args, plot)
+  File "c:\Users\anton\Dev\ABM\simulation_manager.py", line 27, in create_games
+    game_manager = GameManager(num_tiles, screen_size, vision_range, plot)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 27, in __init__
+    self.initialize_components()
+  File "c:\Users\anton\Dev\ABM\game_manager.py", line 43, in initialize_components
+    self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 35, in __init__
+    self.player = self.init_player()
+                  ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\anton\Dev\ABM\environment.py", line 111, in init_player
+    location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\anton\anaconda3\envs\ABM\Lib\random.py", line 373, in choice
+    raise IndexError('Cannot choose from an empty sequence')
+IndexError: Cannot choose from an empty sequence
+
+2024-08-04 11:27:08,890 - INFO - Created results directory: results\20240804_112708
+2024-08-04 11:27:08,890 - INFO - Starting Ablation Study
+2024-08-04 11:27:08,891 - INFO - Running experiment: kg_completeness_0.25
+2024-08-04 11:27:08,914 - INFO - Using device: cuda
+2024-08-04 11:27:08,914 - INFO - Using device: cuda
+2024-08-04 11:27:36,783 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.25\profile_stats.txt
+2024-08-04 11:27:36,783 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.25\profile_stats.txt
+2024-08-04 11:27:38,611 - INFO - Training and evaluation completed.
+2024-08-04 11:27:38,611 - INFO - Training and evaluation completed.
+2024-08-04 11:27:38,612 - INFO - Experiment kg_completeness_0.25 completed
+2024-08-04 11:27:38,612 - INFO - Experiment kg_completeness_0.25 completed
+2024-08-04 11:27:38,613 - INFO - Running experiment: kg_completeness_0.5
+2024-08-04 11:27:38,613 - INFO - Running experiment: kg_completeness_0.5
+2024-08-04 11:27:38,614 - INFO - Using device: cuda
+2024-08-04 11:27:38,614 - INFO - Using device: cuda
+2024-08-04 11:27:38,614 - INFO - Using device: cuda
+2024-08-04 11:28:07,275 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.5\profile_stats.txt
+2024-08-04 11:28:07,275 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.5\profile_stats.txt
+2024-08-04 11:28:07,275 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.5\profile_stats.txt
+2024-08-04 11:28:09,288 - INFO - Training and evaluation completed.
+2024-08-04 11:28:09,288 - INFO - Training and evaluation completed.
+2024-08-04 11:28:09,288 - INFO - Training and evaluation completed.
+2024-08-04 11:28:09,288 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 11:28:09,288 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 11:28:09,288 - INFO - Experiment kg_completeness_0.5 completed
+2024-08-04 11:28:09,289 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 11:28:09,289 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 11:28:09,289 - INFO - Running experiment: kg_completeness_0.75
+2024-08-04 11:28:09,290 - INFO - Using device: cuda
+2024-08-04 11:28:09,290 - INFO - Using device: cuda
+2024-08-04 11:28:09,290 - INFO - Using device: cuda
+2024-08-04 11:28:09,290 - INFO - Using device: cuda
+2024-08-04 11:28:39,380 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.75\profile_stats.txt
+2024-08-04 11:28:39,380 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.75\profile_stats.txt
+2024-08-04 11:28:39,380 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.75\profile_stats.txt
+2024-08-04 11:28:39,380 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_0.75\profile_stats.txt
+2024-08-04 11:28:41,390 - INFO - Training and evaluation completed.
+2024-08-04 11:28:41,390 - INFO - Training and evaluation completed.
+2024-08-04 11:28:41,390 - INFO - Training and evaluation completed.
+2024-08-04 11:28:41,390 - INFO - Training and evaluation completed.
+2024-08-04 11:28:41,392 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 11:28:41,392 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 11:28:41,392 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 11:28:41,392 - INFO - Experiment kg_completeness_0.75 completed
+2024-08-04 11:28:41,392 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 11:28:41,392 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 11:28:41,392 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 11:28:41,392 - INFO - Running experiment: kg_completeness_1.0
+2024-08-04 11:28:41,405 - INFO - Using device: cuda
+2024-08-04 11:28:41,405 - INFO - Using device: cuda
+2024-08-04 11:28:41,405 - INFO - Using device: cuda
+2024-08-04 11:28:41,405 - INFO - Using device: cuda
+2024-08-04 11:28:41,405 - INFO - Using device: cuda
+2024-08-04 11:29:09,257 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_1.0\profile_stats.txt
+2024-08-04 11:29:09,257 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_1.0\profile_stats.txt
+2024-08-04 11:29:09,257 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_1.0\profile_stats.txt
+2024-08-04 11:29:09,257 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_1.0\profile_stats.txt
+2024-08-04 11:29:09,257 - INFO - Profiling stats saved to results\20240804_112708\kg_completeness_1.0\profile_stats.txt
+2024-08-04 11:29:10,907 - INFO - Training and evaluation completed.
+2024-08-04 11:29:10,907 - INFO - Training and evaluation completed.
+2024-08-04 11:29:10,907 - INFO - Training and evaluation completed.
+2024-08-04 11:29:10,907 - INFO - Training and evaluation completed.
+2024-08-04 11:29:10,907 - INFO - Training and evaluation completed.
+2024-08-04 11:29:10,909 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 11:29:10,909 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 11:29:10,909 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 11:29:10,909 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 11:29:10,909 - INFO - Experiment kg_completeness_1.0 completed
+2024-08-04 11:29:10,910 - INFO - Ablation study results saved to results\20240804_112708\ablation_study_results.json
+2024-08-04 11:29:10,910 - INFO - Ablation study results saved to results\20240804_112708\ablation_study_results.json
+2024-08-04 11:29:10,910 - INFO - Ablation study results saved to results\20240804_112708\ablation_study_results.json
+2024-08-04 11:29:10,910 - INFO - Ablation study results saved to results\20240804_112708\ablation_study_results.json
+2024-08-04 11:29:10,910 - INFO - Ablation study results saved to results\20240804_112708\ablation_study_results.json
+2024-08-04 11:29:10,912 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.25_results.json
+2024-08-04 11:29:10,912 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.25_results.json
+2024-08-04 11:29:10,912 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.25_results.json
+2024-08-04 11:29:10,912 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.25_results.json
+2024-08-04 11:29:10,912 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.25_results.json
+2024-08-04 11:29:10,914 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.5_results.json
+2024-08-04 11:29:10,914 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.5_results.json
+2024-08-04 11:29:10,914 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.5_results.json
+2024-08-04 11:29:10,914 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.5_results.json
+2024-08-04 11:29:10,914 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.5_results.json
+2024-08-04 11:29:10,915 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.75_results.json
+2024-08-04 11:29:10,915 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.75_results.json
+2024-08-04 11:29:10,915 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.75_results.json
+2024-08-04 11:29:10,915 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.75_results.json
+2024-08-04 11:29:10,915 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_0.75_results.json
+2024-08-04 11:29:10,917 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_1.0_results.json
+2024-08-04 11:29:10,917 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_1.0_results.json
+2024-08-04 11:29:10,917 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_1.0_results.json
+2024-08-04 11:29:10,917 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_1.0_results.json
+2024-08-04 11:29:10,917 - INFO - Individual experiment results saved to results\20240804_112708\kg_completeness_1.0_results.json
+2024-08-04 11:29:10,919 - INFO - Base configuration saved to results\20240804_112708\base_config.json
+2024-08-04 11:29:10,919 - INFO - Base configuration saved to results\20240804_112708\base_config.json
+2024-08-04 11:29:10,919 - INFO - Base configuration saved to results\20240804_112708\base_config.json
+2024-08-04 11:29:10,919 - INFO - Base configuration saved to results\20240804_112708\base_config.json
+2024-08-04 11:29:10,919 - INFO - Base configuration saved to results\20240804_112708\base_config.json
+2024-08-04 11:29:10,920 - INFO - Ablation Study completed
+2024-08-04 11:29:10,920 - INFO - Ablation Study completed
+2024-08-04 11:29:10,920 - INFO - Ablation Study completed
+2024-08-04 11:29:10,920 - INFO - Ablation Study completed
+2024-08-04 11:29:10,920 - INFO - Ablation Study completed

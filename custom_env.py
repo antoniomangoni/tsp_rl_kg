@@ -67,7 +67,7 @@ class CustomEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
-        self.max_episode_steps = 20000  # Maximum number of steps per episode
+        self.max_episode_steps = 20# 000  # Maximum number of steps per episode
         self.episode_step = 0
         self.total_reward = 0
         logger.info("CustomEnv initialized successfully")
