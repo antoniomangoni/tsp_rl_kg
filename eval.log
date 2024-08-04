@@ -116,3 +116,69 @@
 2024-08-03 20:13:34,186 - INFO - Evaluation environment created successfully
 2024-08-03 21:15:51,524 - INFO - Starting final model evaluation
 2024-08-03 21:15:51,524 - INFO - Starting final model evaluation
+2024-08-03 22:42:52,493 - INFO - Creating evaluation environment
+2024-08-03 22:42:52,493 - INFO - Creating evaluation environment
+2024-08-03 22:42:52,542 - INFO - Evaluation environment created successfully
+2024-08-03 22:42:52,542 - INFO - Evaluation environment created successfully
+2024-08-03 22:42:55,514 - INFO - Starting final model evaluation
+2024-08-03 22:42:55,514 - INFO - Starting final model evaluation
+2024-08-03 22:44:11,284 - INFO - Creating evaluation environment
+2024-08-03 22:44:11,284 - INFO - Creating evaluation environment
+2024-08-03 22:44:11,337 - INFO - Evaluation environment created successfully
+2024-08-03 22:44:11,337 - INFO - Evaluation environment created successfully
+2024-08-03 23:00:09,756 - INFO - Creating evaluation environment
+2024-08-03 23:00:09,756 - INFO - Creating evaluation environment
+2024-08-03 23:00:09,825 - INFO - Evaluation environment created successfully
+2024-08-03 23:00:09,825 - INFO - Evaluation environment created successfully
+2024-08-04 00:01:38,622 - INFO - Starting final model evaluation
+2024-08-04 00:01:38,622 - INFO - Starting final model evaluation
+2024-08-04 00:12:47,726 - INFO - Final evaluation: Mean reward: 88001.68 +/- 42379.29
+2024-08-04 00:12:47,726 - INFO - Final evaluation: Mean reward: 88001.68 +/- 42379.29
+2024-08-04 00:12:48,183 - INFO - Creating evaluation environment
+2024-08-04 00:12:48,183 - INFO - Creating evaluation environment
+2024-08-04 00:12:48,183 - INFO - Creating evaluation environment
+2024-08-04 00:12:48,231 - INFO - Evaluation environment created successfully
+2024-08-04 00:12:48,231 - INFO - Evaluation environment created successfully
+2024-08-04 00:12:48,231 - INFO - Evaluation environment created successfully
+2024-08-04 01:16:31,676 - INFO - Starting final model evaluation
+2024-08-04 01:16:31,676 - INFO - Starting final model evaluation
+2024-08-04 01:16:31,676 - INFO - Starting final model evaluation
+2024-08-04 01:27:54,939 - INFO - Final evaluation: Mean reward: 70001.00 +/- 25298.22
+2024-08-04 01:27:54,939 - INFO - Final evaluation: Mean reward: 70001.00 +/- 25298.22
+2024-08-04 01:27:54,939 - INFO - Final evaluation: Mean reward: 70001.00 +/- 25298.22
+2024-08-04 01:27:55,383 - INFO - Creating evaluation environment
+2024-08-04 01:27:55,383 - INFO - Creating evaluation environment
+2024-08-04 01:27:55,383 - INFO - Creating evaluation environment
+2024-08-04 01:27:55,383 - INFO - Creating evaluation environment
+2024-08-04 01:27:55,430 - INFO - Evaluation environment created successfully
+2024-08-04 01:27:55,430 - INFO - Evaluation environment created successfully
+2024-08-04 01:27:55,430 - INFO - Evaluation environment created successfully
+2024-08-04 01:27:55,430 - INFO - Evaluation environment created successfully
+2024-08-04 02:33:37,886 - INFO - Starting final model evaluation
+2024-08-04 02:33:37,886 - INFO - Starting final model evaluation
+2024-08-04 02:33:37,886 - INFO - Starting final model evaluation
+2024-08-04 02:33:37,886 - INFO - Starting final model evaluation
+2024-08-04 02:45:19,547 - INFO - Final evaluation: Mean reward: 42001.00 +/- 9797.96
+2024-08-04 02:45:19,547 - INFO - Final evaluation: Mean reward: 42001.00 +/- 9797.96
+2024-08-04 02:45:19,547 - INFO - Final evaluation: Mean reward: 42001.00 +/- 9797.96
+2024-08-04 02:45:19,547 - INFO - Final evaluation: Mean reward: 42001.00 +/- 9797.96
+2024-08-04 02:45:20,011 - INFO - Creating evaluation environment
+2024-08-04 02:45:20,011 - INFO - Creating evaluation environment
+2024-08-04 02:45:20,011 - INFO - Creating evaluation environment
+2024-08-04 02:45:20,011 - INFO - Creating evaluation environment
+2024-08-04 02:45:20,011 - INFO - Creating evaluation environment
+2024-08-04 02:45:20,064 - INFO - Evaluation environment created successfully
+2024-08-04 02:45:20,064 - INFO - Evaluation environment created successfully
+2024-08-04 02:45:20,064 - INFO - Evaluation environment created successfully
+2024-08-04 02:45:20,064 - INFO - Evaluation environment created successfully
+2024-08-04 02:45:20,064 - INFO - Evaluation environment created successfully
+2024-08-04 03:49:46,797 - INFO - Starting final model evaluation
+2024-08-04 03:49:46,797 - INFO - Starting final model evaluation
+2024-08-04 03:49:46,797 - INFO - Starting final model evaluation
+2024-08-04 03:49:46,797 - INFO - Starting final model evaluation
+2024-08-04 03:49:46,797 - INFO - Starting final model evaluation
+2024-08-04 04:01:11,912 - INFO - Final evaluation: Mean reward: 110001.00 +/- 57965.51
+2024-08-04 04:01:11,912 - INFO - Final evaluation: Mean reward: 110001.00 +/- 57965.51
+2024-08-04 04:01:11,912 - INFO - Final evaluation: Mean reward: 110001.00 +/- 57965.51
+2024-08-04 04:01:11,912 - INFO - Final evaluation: Mean reward: 110001.00 +/- 57965.51
+2024-08-04 04:01:11,912 - INFO - Final evaluation: Mean reward: 110001.00 +/- 57965.51

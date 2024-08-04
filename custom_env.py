@@ -46,11 +46,6 @@ class CustomEnv(gym.Env):
         self.current_game_index = -1 # set to -1 so reset increments to 0
         self.set_current_game_manager()
 
-        num_nodes = self.kg.graph.num_nodes
-        num_edges = self.kg.graph.num_edges
-        num_node_features = self.kg.graph.num_node_features
-        num_edge_features = self.kg.graph.num_edge_features
-
         self.max_nodes = self.kg.graph_manager.max_nodes
         self.max_edges = self.kg.graph_manager.max_edges
 
@@ -59,8 +54,8 @@ class CustomEnv(gym.Env):
         vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.float32)
 
         # Flatten graph data into fixed-size arrays
-        node_feature_space = spaces.Box(low=0, high=7, shape=(self.max_nodes, num_node_features), dtype=np.uint8)
-        edge_attr_space = spaces.Box(low=0, high=1000, shape=(self.max_edges, num_edge_features), dtype=np.uint8)
+        node_feature_space = spaces.Box(low=0, high=7, shape=(self.max_nodes, self.kg.graph.num_node_features), dtype=np.uint8)
+        edge_attr_space = spaces.Box(low=0, high=1000, shape=(self.max_edges, self.kg.graph.num_edge_features), dtype=np.uint8)
         edge_index_space = spaces.Box(low=0, high=self.max_nodes-1, shape=(2, self.max_edges), dtype=np.int64)
 
         self.observation_space = spaces.Dict({
@@ -92,10 +87,11 @@ class CustomEnv(gym.Env):
         self.best_route_energy = 0
         logger.info("Current game manager set successfully")
 
-    def calculate_reward(self):
+    def _calculate_reward(self):
         logger.info("Calculating reward...")
         agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        reward = self.penalty_per_step  # Start with the step penalty
+        # Start with the step penalty based on the energy requirement of the current terrain
+        reward = self.environment.terrain_object_grid[agent_pos[0]][agent_pos[1]].energy_requirement
 
         # Check if agent reached a new outpost
         if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:

@@ -258,7 +258,7 @@ if __name__ == '__main__':
             'learning_rate': 3e-4,
             'gamma': 0.99
         },
-        'total_timesteps': 1000000
+        'total_timesteps': 100000
     }
 
     kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
