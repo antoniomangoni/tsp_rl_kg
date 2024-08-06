@@ -256,7 +256,7 @@ if __name__ == '__main__':
 
     base_config = {
         'model_args': {'num_actions': 11},
-        'simulation_manager_args': {'number_of_environments': 1000, 'number_of_curricula': 30},
+        'simulation_manager_args': {'number_of_environments': 1000, 'number_of_curricula': 10},
         'game_manager_args': {'num_tiles': 12, 'screen_size': 200, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
@@ -271,7 +271,7 @@ if __name__ == '__main__':
         'total_timesteps': 100000
     }
 
-    kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
+    kg_completeness_values = [0.3, 0.65, 1.0]
 
     logger = Logger('ablation_study.log')
     ablation_study = AblationStudy(base_config, kg_completeness_values, logger)

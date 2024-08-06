@@ -47,6 +47,9 @@ class Agent:
             self.energy_spent += self.action_energy_cost
         else:
             raise ValueError("Invalid action")
+        
+    def reset_energy_spent(self):
+        self.energy_spent = 0
 
     def move_agent(self, dx, dy):
         new_x, new_y = self.environment.move_entity(self.agent, dx, dy)

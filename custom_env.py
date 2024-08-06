@@ -6,6 +6,7 @@ from torch_geometric.data import Data
 from collections import deque
 import logging
 logger = logging.getLogger(__name__)
+from agent import Agent
 from agent_model import AgentModel
 from simulation_manager import SimulationManager
 
@@ -19,11 +20,14 @@ class CustomEnv(gym.Env):
         self.new_outpost_reward = 10
         self.completion_reward = 100
         self.route_improvement_reward = 200
-        self.current_reward = 0
-        self.penalty_per_step = -0.1
         self.max_not_improvement_routes = 5
         self.num_not_improvement_routes = 0
-        self.best_route_energy = np.inf
+        self.best_route_energy = float('inf')
+        self.agent_steps = 0
+
+        self.current_reward = 0
+        self.penalty_per_step = -0.1
+
         self.outposts_visited = set()
         self.closer_to_outpost_reward = 0.5  # Adjust this value as needed
         self.farther_from_outpost_penalty = -0.3  # Adjust this value as needed
@@ -67,7 +71,7 @@ class CustomEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
-        self.max_episode_steps = 20000  # Maximum number of steps per episode
+        self.max_episode_steps = 10000  # Maximum number of steps per episode
         self.episode_step = 0
         self.total_reward = 0
         logger.info("CustomEnv initialized successfully")
@@ -81,7 +85,7 @@ class CustomEnv(gym.Env):
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
         self.current_gm.start_game()
         self.environment = self.current_gm.environment
-        self.agent_controler = self.current_gm.agent_controler
+        self.agent_controler: Agent = self.current_gm.agent_controler
         self.kg = self.current_gm.kg_class
         self.outpost_coords = self.environment.outpost_locations
         self.best_route_energy = 0
@@ -105,6 +109,15 @@ class CustomEnv(gym.Env):
             self.recent_path.clear()  # Clear the path memory when reaching a new outpost
             if len(self.outposts_visited) == len(self.outpost_coords):
                 reward += self.completion_reward
+                self.agent_controler.reset_energy_spent()
+                if self.agent_controler.energy_spent < self.best_route_energy:
+                    self.best_route_energy = self.agent_controler.energy_spent
+                    self.num_not_improvement_routes = 0
+                else:
+                    self.num_not_improvement_routes += 1
+                    if self.num_not_improvement_routes >= self.max_not_improvement_routes:
+                        self.early_stop = True
+
                 logger.info(f"All outposts visited. Additional reward: {self.completion_reward}")
                 self.early_stop = True
                 return reward  # Early return if all outposts are visited

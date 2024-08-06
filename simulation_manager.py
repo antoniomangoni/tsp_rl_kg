@@ -15,7 +15,7 @@ class SimulationManager:
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
 
         self.current_curriculum_index = 0
-        self.min_episodes_per_curriculum = 100
+        self.min_episodes_per_curriculum = 10
         self.current_curriculum_episodes = 0
         self.performance_window = deque(maxlen=100)
         self.performance_threshold = 0.7  # 70% of max possible reward for current level
