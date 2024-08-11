@@ -56,7 +56,7 @@ class ModelTrainer:
         self.logger.info("Starting model training", logger_name='training')
         start_time = time.time()
         steps_taken = 0
-
+        episode_number = 0
         while steps_taken < total_timesteps:
             if time.time() - start_time > timeout:
                 self.logger.warning("Training timed out after 1 hour", logger_name='training')
@@ -65,6 +65,8 @@ class ModelTrainer:
             obs, _ = self.env.reset()  # Reset at the start of each episode
             done = False
             episode_reward = 0
+            episode_number += 1
+            print(f"Starting episode {episode_number}")
             
             while not done and steps_taken < total_timesteps:
                 action, _ = self.rl_model.predict(obs, deterministic=False)
@@ -265,7 +267,7 @@ if __name__ == '__main__':
             'gamma': 0.99
         },
         'curriculum_config': {
-        'min_episodes_per_curriculum': 100,
+        'min_episodes_per_curriculum': 5,
         'performance_threshold': 0.85,
         },
         'total_timesteps': 100000
