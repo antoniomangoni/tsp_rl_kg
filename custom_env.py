@@ -17,22 +17,35 @@ class CustomEnv(gym.Env):
     def __init__(self, game_manager_args, simulation_manager_args, model_args, plot=False):
         super(CustomEnv, self).__init__()
         logger.info("Initializing CustomEnv")
-        self.new_outpost_reward = 10
-        self.completion_reward = 100
-        self.route_improvement_reward = 200
+
+        # Base rewards
+        self.new_outpost_reward = 50  # Increased from 10
+        self.completion_reward = 500  # Increased from 100
+        self.route_improvement_reward = 300  # Increased from 200
+        
+        # Penalties
+        self.penalty_per_step = -0.05  # Reduced from -0.1 to be less harsh
+        self.farther_from_outpost_penalty = -1.0  # Increased from -0.3
+        self.circular_behavior_penalty = -2.0  # Increased from -0.5
+        
+        # Positive reinforcements
+        self.closer_to_outpost_reward = 2.0  # Increased from 0.5
+        
+        # Route improvement tracking
         self.max_not_improvement_routes = 5
         self.num_not_improvement_routes = 0
         self.best_route_energy = float('inf')
+        
+        # Episode tracking
         self.agent_steps = 0
-
         self.current_reward = 0
-        self.penalty_per_step = -0.1
-
         self.outposts_visited = set()
-        self.closer_to_outpost_reward = 0.5  # Adjust this value as needed
-        self.farther_from_outpost_penalty = -0.3  # Adjust this value as needed
         self.recent_path = None  # Will be initialized in reset()
-        self.circular_behavior_penalty = -0.5  # Adjust as needed
+        
+        # New parameters
+        self.time_penalty_factor = -0.01  # For the new time penalty
+        self.outpost_reward_increase_factor = 0.5  # For increasing rewards of subsequent outposts
+        self.completion_time_bonus_factor = 1.0  # For time bonus in completion reward
 
         self.num_actions = model_args['num_actions']
         self.num_tiles = game_manager_args['num_tiles']
@@ -71,7 +84,13 @@ class CustomEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
-        self.max_episode_steps = 10000  # Maximum number of steps per episode
+        self.max_episode_steps = 5000  # Maximum number of steps per episode
+
+        # New attributes for progress tracking
+        self.steps_without_progress = 0
+        self.max_steps_without_progress = 500  # Adjust as needed
+        self.best_distance_to_unvisited = float('inf')
+
         self.episode_step = 0
         self.total_reward = 0
         logger.info("CustomEnv initialized successfully")
@@ -98,40 +117,55 @@ class CustomEnv(gym.Env):
     def _calculate_reward(self):
         logger.info("Calculating reward...")
         agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
+        
         # Start with the step penalty based on the energy requirement of the current terrain
-        reward = self.environment.terrain_object_grid[agent_pos[0]][agent_pos[1]].energy_requirement
-
+        current_terrain_energy_requirement = self.environment.terrain_object_grid[agent_pos[0]][agent_pos[1]].energy_requirement
+        reward = self.penalty_per_step * current_terrain_energy_requirement
+        
+        # Implement time penalty
+        time_penalty = -0.01 * self.episode_step
+        reward += time_penalty
+        
         # Check if agent reached a new outpost
         if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:
-            reward += self.new_outpost_reward
             self.outposts_visited.add(agent_pos)
-            logger.info(f"Agent reached new outpost. Reward: {self.new_outpost_reward}")
+            outposts_visited = len(self.outposts_visited)
+            # Increase reward for reaching outposts, with higher rewards for later outposts
+            outpost_reward = self.new_outpost_reward * (1 + 0.5 * (outposts_visited - 1))
+            reward += outpost_reward
+            logger.info(f"Agent reached new outpost. Reward: {outpost_reward}")
             self.recent_path.clear()  # Clear the path memory when reaching a new outpost
-            if len(self.outposts_visited) == len(self.outpost_coords):
-                reward += self.completion_reward
+            
+            if outposts_visited == len(self.outpost_coords):
+                # Increase reward for completing the route
+                completion_reward = self.completion_reward * (1 + 1 / self.episode_step)  # Bonus for faster completion
+                reward += completion_reward
                 self.agent_controler.reset_energy_spent()
                 if self.agent_controler.energy_spent < self.best_route_energy:
+                    improvement_reward = self.route_improvement_reward * (self.best_route_energy - self.agent_controler.energy_spent) / self.best_route_energy
+                    reward += improvement_reward
                     self.best_route_energy = self.agent_controler.energy_spent
                     self.num_not_improvement_routes = 0
                 else:
                     self.num_not_improvement_routes += 1
                     if self.num_not_improvement_routes >= self.max_not_improvement_routes:
                         self.early_stop = True
-
-                logger.info(f"All outposts visited. Additional reward: {self.completion_reward}")
+                logger.info(f"All outposts visited. Completion reward: {completion_reward}")
                 self.early_stop = True
-                return reward  # Early return if all outposts are visited
+                return self._normalize_reward(reward)  # Early return if all outposts are visited
         
         unvisited_outposts = set(self.outpost_coords) - self.outposts_visited
         if unvisited_outposts:
             current_min_distance = min(manhattan_distance(agent_pos, outpost) for outpost in unvisited_outposts)
             
             if current_min_distance < self.previous_min_distance:
-                reward += self.closer_to_outpost_reward
-                logger.info(f"Agent moved closer to an outpost. Reward: {self.closer_to_outpost_reward}")
+                closer_reward = self.closer_to_outpost_reward * (self.previous_min_distance - current_min_distance) / self.previous_min_distance
+                reward += closer_reward
+                logger.info(f"Agent moved closer to an outpost. Reward: {closer_reward}")
             elif current_min_distance > self.previous_min_distance:
-                reward += self.farther_from_outpost_penalty
-                logger.info(f"Agent moved away from outposts. Penalty: {self.farther_from_outpost_penalty}")
+                farther_penalty = self.farther_from_outpost_penalty * (current_min_distance - self.previous_min_distance) / self.previous_min_distance
+                reward += farther_penalty
+                logger.info(f"Agent moved away from outposts. Penalty: {farther_penalty}")
             
             self.previous_min_distance = current_min_distance
         else:
@@ -144,8 +178,15 @@ class CustomEnv(gym.Env):
         
         # Update recent path memory
         self.recent_path.append(agent_pos)
+        
+        return self._normalize_reward(reward)
 
-        return reward
+    def _normalize_reward(self, reward):
+        # Normalize reward to a fixed range (0-100)
+        min_reward = self.penalty_per_step * self.max_episode_steps
+        max_reward = self.completion_reward + self.new_outpost_reward * len(self.outpost_coords) + self.route_improvement_reward
+        normalized_reward = 100 * (reward - min_reward) / (max_reward - min_reward)
+        return max(0, min(normalized_reward, 100))  # Clamp between 0 and 100
 
     def get_episode_performance(self):
         return self.total_reward
@@ -157,6 +198,8 @@ class CustomEnv(gym.Env):
         self.outposts_visited.clear()
         self.early_stop = False
         self.step_count = 0
+        self.steps_without_progress = 0
+        self.best_distance_to_unvisited = float('inf')
         self.recent_path = deque(maxlen=len(self.outpost_coords))
         super().reset(seed=seed)
         if seed is not None:
@@ -174,7 +217,6 @@ class CustomEnv(gym.Env):
         return observation, {}
 
     def step(self, action):
-        logger.debug(f"Taking step {self.episode_step} with action {action}")
         self.episode_step += 1
 
         # Convert action to integer if it's a numpy array
@@ -189,9 +231,16 @@ class CustomEnv(gym.Env):
         reward = self._calculate_reward()
         self.total_reward += reward
         
-        terminated = self.early_stop or self.episode_step >= self.max_episode_steps
+        # Check termination conditions
+        terminated = self._check_termination()
         truncated = self.episode_step >= self.max_episode_steps
         
+        # Determine if the episode was successful (all outposts visited)
+        success = len(self.outposts_visited) == len(self.outpost_coords)
+
+        if terminated or truncated:
+            self.simulation_manager.add_episode_performance(self.total_reward, success)
+
         observation = self._get_observation()
         info = {
             "episode_step": self.episode_step,
@@ -208,6 +257,30 @@ class CustomEnv(gym.Env):
             logger.info(f"Episode ended. Total steps: {self.episode_step}, Total reward: {self.total_reward}, Outposts visited: {len(self.outposts_visited)}/{len(self.outpost_coords)}")
         
         return observation, reward, terminated, truncated, info
+
+    def _check_termination(self):
+        # Check if all outposts are visited
+        if len(self.outposts_visited) == len(self.outpost_coords):
+            logger.info("All outposts visited. Terminating episode.")
+            return True
+
+        # Check for no progress
+        current_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
+        unvisited_outposts = set(self.outpost_coords) - self.outposts_visited
+        if unvisited_outposts:
+            current_min_distance = min(manhattan_distance(current_position, outpost) for outpost in unvisited_outposts)
+            
+            if current_min_distance < self.best_distance_to_unvisited:
+                self.best_distance_to_unvisited = current_min_distance
+                self.steps_without_progress = 0
+            else:
+                self.steps_without_progress += 1
+
+            if self.steps_without_progress >= self.max_steps_without_progress:
+                logger.info(f"No progress made for {self.max_steps_without_progress} steps. Terminating episode.")
+                return True
+
+        return False
 
     def _get_observation(self):
         logger.debug("Getting observation")

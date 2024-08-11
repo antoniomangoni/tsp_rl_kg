@@ -3,9 +3,11 @@ import matplotlib.pyplot as plt
 import csv
 from collections import deque
 from game_manager import GameManager
+from logger import Logger
 
 class SimulationManager:
     def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10, plot=False):
+        self.logging = Logger()
         self.game_managers = []
         self.curriculum_indices = []
         self.create_games(number_of_environments, game_manager_args, plot)
@@ -18,8 +20,16 @@ class SimulationManager:
         self.min_episodes_per_curriculum = 10
         self.current_curriculum_episodes = 0
         self.performance_window = deque(maxlen=100)
-        self.performance_threshold = 0.7  # 70% of max possible reward for current level
+        self.performance_threshold = 0.6  # 70% of max possible reward for current level
         self.max_performance = max(gm.target_manager.target_route_energy for gm in self.game_managers)
+        self.success_rate_threshold = 0.5  # New threshold for task completion rate
+        self.performance_window = deque(maxlen=100)
+        self.success_window = deque(maxlen=100)  # New window to track task completion
+
+        # Plateau detection
+        self.plateau_threshold = 50  # Number of episodes to detect a plateau
+        self.plateau_counter = 0
+        self.best_performance = float('-inf')
 
         # print(f"Curriculum step size: ~{self.step_size} energy units")
         if plot:
@@ -56,22 +66,55 @@ class SimulationManager:
     def should_advance_curriculum(self):
         if self.current_curriculum_episodes < self.min_episodes_per_curriculum:
             return False
-        if not self.performance_window:
+        
+        if not self.performance_window or not self.success_window:
             return False
+        
         avg_performance = sum(self.performance_window) / len(self.performance_window)
+        success_rate = sum(self.success_window) / len(self.success_window)
+        
         current_max = self.game_managers[self.curriculum_indices[self.current_curriculum_index]].target_manager.target_route_energy
-        return avg_performance > self.performance_threshold * current_max
-
-    def add_episode_performance(self, performance):
+        
+        performance_criterion = avg_performance > self.performance_threshold * current_max
+        success_criterion = success_rate > self.success_rate_threshold
+        plateau_criterion = self.plateau_counter >= self.plateau_threshold
+        
+        self.logger.info(f"Curriculum advancement check: Performance: {avg_performance:.2f}, "
+                    f"Success rate: {success_rate:.2f}, Plateau counter: {self.plateau_counter}")
+        
+        if performance_criterion and success_criterion:
+            self.logger.info("Advancing curriculum based on performance and success rate.")
+            return True
+        elif plateau_criterion:
+            self.logger.info("Advancing curriculum due to performance plateau.")
+            return True
+        
+        return False
+    def add_episode_performance(self, performance, success):
         self.current_curriculum_episodes += 1
         self.performance_window.append(performance)
+        self.success_window.append(int(success))  # 1 if task completed, 0 otherwise
+        
+        # Update plateau detection
+        if performance > self.best_performance:
+            self.best_performance = performance
+            self.plateau_counter = 0
+        else:
+            self.plateau_counter += 1
 
     def advance_curriculum(self):
         if self.current_curriculum_index < len(self.curriculum_indices) - 1:
             self.current_curriculum_index += 1
             self.current_curriculum_episodes = 0
             self.performance_window.clear()
-            self.performance_threshold *= 0.995  # Decrease threshold for harder levels
+            self.success_window.clear()
+            self.plateau_counter = 0
+            self.best_performance = float('-inf')
+            self.performance_threshold *= 0.95  # Decrease threshold for harder levels
+            self.success_rate_threshold *= 0.95  # Decrease success rate threshold for harder levels
+            self.logger.info(f"Advanced to curriculum level {self.current_curriculum_index}. "
+                        f"New performance threshold: {self.performance_threshold:.2f}, "
+                        f"New success rate threshold: {self.success_rate_threshold:.2f}")
 
     def get_current_game_manager(self):
         return self.game_managers[self.curriculum_indices[self.current_curriculum_index]]
