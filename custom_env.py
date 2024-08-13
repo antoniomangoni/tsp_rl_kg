@@ -22,6 +22,7 @@ class CustomEnv(gym.Env):
         self.new_outpost_reward = 50  # Increased from 10
         self.completion_reward = 500  # Increased from 100
         self.route_improvement_reward = 300  # Increased from 200
+        self.better_route_than_algo_reward = 500  # New reward for beating the algorithm
         
         # Penalties
         self.penalty_per_step = -0.05  # Reduced from -0.1 to be less harsh
@@ -41,7 +42,9 @@ class CustomEnv(gym.Env):
         self.current_reward = 0
         self.outposts_visited = set()
         self.recent_path = None  # Will be initialized in reset()
-        
+        self.game_worlds_trained_in = 0
+        self.max_game_worlds_trained_in = min(100, simulation_manager_args['number_of_environments'] // 2)
+
         # New parameters
         self.time_penalty_factor = -0.01  # For the new time penalty
         self.outpost_reward_increase_factor = 0.5  # For increasing rewards of subsequent outposts
@@ -60,7 +63,7 @@ class CustomEnv(gym.Env):
             plot=plot
         )
         
-        self.current_game_index = -1 # set to -1 so reset increments to 0
+        self.current_game_index = self.simulation_manager.curriculum_indices[0]
         self.set_current_game_manager()
 
         self.max_nodes = self.kg.graph_manager.max_nodes
@@ -101,25 +104,53 @@ class CustomEnv(gym.Env):
 
     def set_current_game_manager(self):
         logger.info(f"Setting current game manager to index {self.current_game_index}")
+        print(f'Current game index: {self.current_game_index}')
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
         self.current_gm.start_game()
         self.environment = self.current_gm.environment
         self.agent_controler: Agent = self.current_gm.agent_controler
+        self.agent_controler.reset_agent()
         self.kg = self.current_gm.kg_class
         self.outpost_coords = self.environment.outpost_locations
-        self.best_route_energy = 0
+        self.best_route_energy = np.inf
         logger.info("Current game manager set successfully")
 
-    def update_current_game_manager(self, curriculum_index):
-        self.current_game_index = self.simulation_manager.curriculum_indices[curriculum_index]
+    def reset(self, seed=None, options=None):
+        logger.info("Resetting environment")
+        self.episode_step = 0
+        self.total_reward = 0
+        self.outposts_visited.clear()
+        self.early_stop = False
+        self.step_count = 0
+        self.steps_without_progress = 0
+        self.best_distance_to_unvisited = float('inf')
+        self.recent_path = deque(maxlen=len(self.outpost_coords))
+        
+        if seed is not None:
+            np.random.seed(seed)
+            self.action_space.seed(seed)
+        
+        # Update the game manager
+        self.current_game_index += 1
         self.set_current_game_manager()
+
+        self.best_route_energy = np.inf
+        self.early_stop = False
+        self.num_not_improvement_routes = 0
+        self.previous_min_distance = float('inf')
+        
+        observation = self._get_observation()
+        
+        assert self.observation_space['vision'].contains(observation['vision']), f"Vision data out of bounds: min={observation['vision'].min()}, max={observation['vision'].max()}"
+        
+        return observation, {}  # Return observation and an empty info dict
 
     def _calculate_reward(self):
         logger.info("Calculating reward...")
         agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
         
         # Start with the step penalty based on the energy requirement of the current terrain
-        current_terrain_energy_requirement = self.environment.terrain_object_grid[agent_pos[0]][agent_pos[1]].energy_requirement
+        current_terrain_energy_requirement = self.current_gm.target_manager.energy_req_grid[agent_pos]
         reward = self.penalty_per_step * current_terrain_energy_requirement
         
         # Implement time penalty
@@ -142,6 +173,9 @@ class CustomEnv(gym.Env):
                 reward += completion_reward
                 self.agent_controler.reset_energy_spent()
                 if self.agent_controler.energy_spent < self.best_route_energy:
+                    if self.agent_controler.energy_spent < self.current_gm.target_manager.target_route_energy:
+                        reward += self.better_route_than_algo_reward
+
                     improvement_reward = self.route_improvement_reward * (self.best_route_energy - self.agent_controler.energy_spent) / self.best_route_energy
                     reward += improvement_reward
                     self.best_route_energy = self.agent_controler.energy_spent
@@ -191,31 +225,6 @@ class CustomEnv(gym.Env):
     def get_episode_performance(self):
         return self.total_reward
 
-    def reset(self, seed=None, options=None):
-        logger.info("Resetting environment")
-        self.episode_step = 0
-        self.total_reward = 0
-        self.outposts_visited.clear()
-        self.early_stop = False
-        self.step_count = 0
-        self.steps_without_progress = 0
-        self.best_distance_to_unvisited = float('inf')
-        self.recent_path = deque(maxlen=len(self.outpost_coords))
-        super().reset(seed=seed)
-        if seed is not None:
-            np.random.seed(seed)
-        
-        # Use the current curriculum index from SimulationManager
-        self.update_current_game_manager(self.simulation_manager.current_curriculum_index)
-        
-        self.best_route_energy = np.inf
-        self.early_stop = False
-        self.num_not_improvement_routes = 0
-        self.previous_min_distance = float('inf')  # Initialize in the reset method
-        observation = self._get_observation()
-        assert self.observation_space['vision'].contains(observation['vision']), f"Vision data out of bounds: min={observation['vision'].min()}, max={observation['vision'].max()}"
-        return observation, {}
-
     def step(self, action):
         self.episode_step += 1
 
@@ -240,6 +249,11 @@ class CustomEnv(gym.Env):
 
         if terminated or truncated:
             self.simulation_manager.add_episode_performance(self.total_reward, success)
+            if self.simulation_manager.should_advance_curriculum():
+                self.simulation_manager.advance_curriculum()
+                self.current_game_index = self.simulation_manager.curriculum_indices[0]
+                self.set_current_game_manager(self.current_game_index)
+                self.reset(False)
 
         observation = self._get_observation()
         info = {

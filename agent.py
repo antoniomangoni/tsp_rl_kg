@@ -34,7 +34,13 @@ class Agent:
             9: lambda: self.collect_resource(1, 0),
             10: lambda: self.collect_resource(-1, 0),
         }
-        
+    
+    def reset_agent(self):
+        self.wood = 0
+        self.stone = 0
+        self.energy_spent = 0
+        self.agent = self.environment.player
+
     def get_kg(self, kg : KG):
         self.kg = kg
 

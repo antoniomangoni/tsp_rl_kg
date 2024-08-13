@@ -24,16 +24,40 @@ class EnvironmentManager:
         self.model_args = model_args
 
     def make_env(self):
-        env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args)
+        env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args, plot = True)
         return Monitor(env)
 
     def set_kg_completeness(self, env, completeness):
         # Access the unwrapped environment to set KG completeness
         env.unwrapped.set_kg_completeness(completeness)
 
+from stable_baselines3.common.callbacks import BaseCallback
+
+class CurriculumCallback(BaseCallback):
+    def __init__(self, eval_env, custom_logger, verbose=0):
+        super(CurriculumCallback, self).__init__(verbose)
+        self.eval_env = eval_env
+        self.custom_logger = custom_logger  # Use a different name to avoid conflicts
+
+    def _on_step(self) -> bool:
+        if self.n_calls % self.model.n_steps == 0:
+            self.custom_logger.info(f"Step {self.n_calls}", logger_name='training')
+            
+            # Check if curriculum should advance
+            if self.training_env.envs[0].unwrapped.simulation_manager.should_advance_curriculum():
+                self.training_env.envs[0].unwrapped.simulation_manager.advance_curriculum()
+                self.custom_logger.info(f"Advancing to curriculum level {self.training_env.envs[0].unwrapped.simulation_manager.current_curriculum_index}", logger_name='training')
+                
+                # Reset both training and eval environments
+                self.training_env.reset()
+                self.eval_env.reset()
+
+        return True
+
 class ModelTrainer:
-    def __init__(self, env, logger, device):
+    def __init__(self, env, eval_env, logger, device):
         self.env = env
+        self.eval_env = eval_env
         self.logger = logger
         self.device = device
         self.rl_model = None
@@ -54,39 +78,20 @@ class ModelTrainer:
 
     def train(self, total_timesteps, eval_callback, timeout=3600):
         self.logger.info("Starting model training", logger_name='training')
-        start_time = time.time()
-        steps_taken = 0
-        episode_number = 0
-        while steps_taken < total_timesteps:
-            if time.time() - start_time > timeout:
-                self.logger.warning("Training timed out after 1 hour", logger_name='training')
-                break
-
-            obs, _ = self.env.reset()  # Reset at the start of each episode
-            done = False
-            episode_reward = 0
-            episode_number += 1
-            print(f"Starting episode {episode_number}")
-            
-            while not done and steps_taken < total_timesteps:
-                action, _ = self.rl_model.predict(obs, deterministic=False)
-                action = action.item() if isinstance(action, np.ndarray) else action
-                obs, reward, terminated, truncated, info = self.env.step(action)
-                done = terminated or truncated
-                episode_reward += reward
-                steps_taken += 1
-
-                # Update the model
-                self.rl_model.learn(total_timesteps=1, callback=eval_callback, reset_num_timesteps=False)
-
-            # Episode ended, update curriculum if needed
-            self.env.unwrapped.simulation_manager.add_episode_performance(episode_reward)
-            if self.env.unwrapped.simulation_manager.should_advance_curriculum():
-                self.env.unwrapped.simulation_manager.advance_curriculum()
-                self.logger.info(f"Advancing to curriculum level {self.env.unwrapped.simulation_manager.current_curriculum_index}", logger_name='training')
-                self.env.unwrapped.update_current_game_manager(self.env.unwrapped.simulation_manager.current_curriculum_index)
-
-            self.log_training_stats()
+        
+        curriculum_callback = CurriculumCallback(self.eval_env, self.logger)
+        
+        try:
+            self.rl_model.learn(
+                total_timesteps=total_timesteps,
+                callback=[eval_callback, curriculum_callback],
+                reset_num_timesteps=False,
+                tb_log_name="PPO",
+                progress_bar=True
+            )
+        except Exception as e:
+            self.logger.error(f"An error occurred during training: {str(e)}")
+            self.logger.error(traceback.format_exc())
 
         self.logger.info("Model training completed", logger_name='training')
 
@@ -118,7 +123,22 @@ class ModelTrainer:
 
     def evaluate_model(self, eval_env, n_eval_episodes=10):
         self.logger.info("Starting final model evaluation", logger_name='eval')
-        mean_reward, std_reward = evaluate_policy(self.rl_model, eval_env, n_eval_episodes=n_eval_episodes)
+        
+        episode_rewards = []
+        for _ in range(n_eval_episodes):
+            obs, _ = eval_env.reset()
+            done = False
+            episode_reward = 0
+            while not done:
+                action, _ = self.rl_model.predict(obs, deterministic=True)
+                obs, reward, terminated, truncated, _ = eval_env.step(action)
+                episode_reward += reward
+                done = terminated or truncated
+            episode_rewards.append(episode_reward)
+        
+        mean_reward = np.mean(episode_rewards)
+        std_reward = np.std(episode_rewards)
+        
         self.logger.info(f"Final evaluation: Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}", logger_name='eval')
         return mean_reward, std_reward
 
@@ -149,16 +169,20 @@ class AblationStudy:
             experiment_name = f"kg_completeness_{kg_completeness}"
             self.logger.info(f"Running experiment: {experiment_name}")
             
-            trainer = Trainer(kg_completeness, ablation_study=self)
-            trainer.setup(self.base_config)
-            trainer.env_manager.set_kg_completeness(trainer.env, kg_completeness)
-            trainer.env_manager.set_kg_completeness(trainer.eval_env, kg_completeness)
-            
-            result = trainer.run(experiment_name)
-            
-            self.results[experiment_name] = result
-            
-            self.logger.info(f"Experiment {experiment_name} completed")
+            try:
+                trainer = Trainer(kg_completeness, ablation_study=self)
+                trainer.setup(self.base_config)
+                trainer.env_manager.set_kg_completeness(trainer.env, kg_completeness)
+                trainer.env_manager.set_kg_completeness(trainer.eval_env, kg_completeness)
+                
+                result = trainer.run(experiment_name)
+                
+                self.results[experiment_name] = result
+                
+                self.logger.info(f"Experiment {experiment_name} completed")
+            except Exception as e:
+                self.logger.error(f"An error occurred during experiment {experiment_name}: {str(e)}")
+                self.logger.error(traceback.format_exc())
         
         self._save_results()
         self.logger.info("Ablation Study completed")
@@ -208,7 +232,7 @@ class Trainer:
         self.eval_env.unwrapped.simulation_manager.performance_threshold = config['curriculum_config']['performance_threshold']
         self.logger.info("Evaluation environment created successfully", logger_name='eval')
 
-        self.model_trainer = ModelTrainer(self.env, self.logger, self.device)
+        self.model_trainer = ModelTrainer(self.env, self.eval_env, self.logger, self.device)
         self.model_trainer.create_model(config['model_config'])
 
     def run(self, experiment_name):
@@ -223,8 +247,10 @@ class Trainer:
         profiler = cProfile.Profile()
         profiler.enable()
 
-        self.model_trainer.train(total_timesteps=self.config['total_timesteps'], 
-                                eval_callback=eval_callback)
+        self.model_trainer.train(
+            total_timesteps=self.config['total_timesteps'], 
+            eval_callback=eval_callback,
+            timeout=3600)
 
         profiler.disable()
         stats = pstats.Stats(profiler).sort_stats('cumulative')
@@ -258,8 +284,8 @@ if __name__ == '__main__':
 
     base_config = {
         'model_args': {'num_actions': 11},
-        'simulation_manager_args': {'number_of_environments': 1000, 'number_of_curricula': 10},
-        'game_manager_args': {'num_tiles': 12, 'screen_size': 200, 'vision_range': 1},
+        'simulation_manager_args': {'number_of_environments': 5000, 'number_of_curricula': 30},
+        'game_manager_args': {'num_tiles': 10, 'screen_size': 200, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
             'batch_size': 64,
@@ -270,7 +296,7 @@ if __name__ == '__main__':
         'min_episodes_per_curriculum': 5,
         'performance_threshold': 0.85,
         },
-        'total_timesteps': 100000
+        'total_timesteps': 1000000
     }
 
     kg_completeness_values = [0.3, 0.65, 1.0]

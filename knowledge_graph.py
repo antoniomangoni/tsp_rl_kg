@@ -29,8 +29,8 @@ class KnowledgeGraph():
 
         self.init_graph_tensors()
         self.complete_graph()
-        if plot:
-            self.visualise_graph()
+        # if plot:
+        #     self.visualise_graph()
 
     def create_node(self, coordinates, z_level, mask=0):
         x, y, z_level, type_id, mask = self.create_node_features(coordinates, z_level, mask)

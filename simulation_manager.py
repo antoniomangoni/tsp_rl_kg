@@ -1,18 +1,21 @@
 import numpy as np
+import time
 import matplotlib.pyplot as plt
 import csv
 from collections import deque
 from game_manager import GameManager
-from logger import Logger
+import logging
+logger = logging.getLogger(__name__)
 
 class SimulationManager:
     def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10, plot=False):
-        self.logging = Logger()
+        self.logger = logger
         self.game_managers = []
         self.curriculum_indices = []
         self.create_games(number_of_environments, game_manager_args, plot)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
-        self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
+        self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula + 1)
+        print(f"Curriculum indices: {self.curriculum_indices}, Step size: {step_size}")
         self.step_size = round(step_size, 2)
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
 
@@ -23,7 +26,6 @@ class SimulationManager:
         self.performance_threshold = 0.6  # 70% of max possible reward for current level
         self.max_performance = max(gm.target_manager.target_route_energy for gm in self.game_managers)
         self.success_rate_threshold = 0.5  # New threshold for task completion rate
-        self.performance_window = deque(maxlen=100)
         self.success_window = deque(maxlen=100)  # New window to track task completion
 
         # Plateau detection
@@ -56,11 +58,12 @@ class SimulationManager:
         min_energy, max_energy = min(energy_values), max(energy_values)
         step_size = (max_energy - min_energy) / number_of_curricula
         simulation_indices = []
-        for step in range(number_of_curricula + 1):
+        for step in range(number_of_curricula):
             target_energy = min_energy + step * step_size
             closest_index = np.abs(np.array(energy_values) - target_energy).argmin()
             if closest_index not in simulation_indices:
                 simulation_indices.append(closest_index)
+        simulation_indices.pop()  # Remove the last index to avoid the highest energy value
         return simulation_indices, step_size
     
     def should_advance_curriculum(self):
@@ -149,7 +152,8 @@ class SimulationManager:
         ax2.tick_params(right=False, labelright=False)  # Turn off ticks and tick labels for the secondary axis
 
         plt.tight_layout()
-        plt.savefig(f'Writing/{title}.png')
+        t = time.localtime()
+        plt.savefig(f'Writing/{title}_{t}.png')
         plt.show()
 
     def create_plots(self, energy_values, curriculum_indices):
