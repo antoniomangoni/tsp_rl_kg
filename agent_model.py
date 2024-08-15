@@ -1,5 +1,5 @@
 import torch
-torch.set_default_dtype(torch.float16)
+torch.set_default_dtype(torch.float32)
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GATConv, global_mean_pool
@@ -7,32 +7,32 @@ from torch_geometric.data import Data
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 import gymnasium as gym
 
-torch_dtype = torch.float16
+torch_dtype = torch.float32
 
 class VisionProcessor(BaseFeaturesExtractor):
-    def __init__(self, observation_space, features_dim=128):
+    def __init__(self, observation_space, features_dim=64):  # Reduced from 128
         super(VisionProcessor, self).__init__(observation_space, features_dim)
         channels, height, width = observation_space
         self.cnn = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.Conv2d(3, 16, kernel_size=3, padding=1),  # Reduced from 32
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),  # Reduced from 64
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),  # Reduced from 128
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),  # Reduced from 256
             nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Flatten()
         )
-        total_conv_size = 256 * height * width
+        total_conv_size = 128 * height * width
         self.fc = nn.Sequential(
-            nn.Linear(total_conv_size, 512),
+            nn.Linear(total_conv_size, 256),  # Reduced from 512
             nn.ReLU(),
-            nn.Linear(512, features_dim)
+            nn.Linear(256, features_dim)
         )
 
     def forward(self, observations):
@@ -41,15 +41,15 @@ class VisionProcessor(BaseFeaturesExtractor):
         return x
 
 class GraphProcessor(nn.Module):
-    def __init__(self, num_graph_node_features, output_dim=128):
+    def __init__(self, num_graph_node_features, output_dim=64):  # Reduced from 128
         super(GraphProcessor, self).__init__()
         self.output_dim = output_dim
-        self.gat1 = GATConv(num_graph_node_features, 64, heads=4)
-        self.gat2 = GATConv(64 * 4, 128)
+        self.gat1 = GATConv(num_graph_node_features, 32, heads=4)  # Reduced from 64
+        self.gat2 = GATConv(32 * 4, 64)  # Reduced from 128
         self.fc = nn.Sequential(
-            nn.Linear(128, 256),
+            nn.Linear(64, 128),  # Reduced from 256
             nn.ReLU(),
-            nn.Linear(256, output_dim)
+            nn.Linear(128, output_dim)
         )
 
     def forward(self, x, edge_index, batch):
@@ -60,24 +60,24 @@ class GraphProcessor(nn.Module):
         return x
 
 class AgentModel(BaseFeaturesExtractor):
-    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 256):
+    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 128):  # Reduced from 256
         super().__init__(observation_space, features_dim=features_dim)
         
         vision_shape = observation_space.spaces['vision'].shape
         num_node_features = observation_space.spaces['node_features'].shape[1]
         
-        self.vision_processor = VisionProcessor(vision_shape, features_dim=256)
-        self.graph_processor = GraphProcessor(num_node_features, output_dim=256)
+        self.vision_processor = VisionProcessor(vision_shape, features_dim=128)  # Reduced from 256
+        self.graph_processor = GraphProcessor(num_node_features, output_dim=128)  # Reduced from 256
         
         combined_input_size = self.vision_processor.features_dim + self.graph_processor.output_dim
         self.fc = nn.Sequential(
-            nn.Linear(combined_input_size, 512),
+            nn.Linear(combined_input_size, 256),  # Reduced from 512
             nn.ReLU(),
-            nn.Linear(512, 256),
+            nn.Linear(256, 128),  # Reduced from 256
             nn.ReLU(),
-            nn.Linear(256, features_dim)
+            nn.Linear(128, features_dim)
         )
-        self.dropout = nn.Dropout(p=0.3)
+        self.dropout = nn.Dropout(p=0.2)  # Reduced from 0.3
         
         self._initialize_weights()
 

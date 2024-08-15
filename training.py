@@ -1,6 +1,6 @@
 import os
 import torch
-torch.set_default_dtype(torch.float16)
+torch.set_default_dtype(torch.float32)
 import cProfile
 import pstats
 import traceback
@@ -344,7 +344,7 @@ if __name__ == '__main__':
         'game_manager_args': {'num_tiles': 6, 'screen_size': 200, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
-            'batch_size': 2,
+            'batch_size': 1,
             'learning_rate': 5e-4,
             'gamma': 0.995
         },
