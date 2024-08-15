@@ -8,11 +8,11 @@ import warnings
 import os
 import json
 import numpy as np
+import pandas as pd
 from datetime import datetime
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
 from custom_env import CustomEnv
 from agent_model import AgentModel
 from logger import Logger
@@ -24,29 +24,74 @@ class EnvironmentManager:
         self.model_args = model_args
 
     def make_env(self):
-        env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args, plot = True)
+        env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args, plot = False)
         return Monitor(env)
 
     def set_kg_completeness(self, env, completeness):
         # Access the unwrapped environment to set KG completeness
         env.unwrapped.set_kg_completeness(completeness)
 
-from stable_baselines3.common.callbacks import BaseCallback
+class TrainingMetrics:
+    def __init__(self):
+        self.steps = []
+        self.performances = []
+        self.game_manager_indices = []
+        self.best_route_energies = []
+        self.curriculum_steps = []
+        self.target_route_energies = []
+
+    def add_metric(self, step, performance, game_manager_index, best_route_energy, curriculum_step, target_route_energy):
+        self.steps.append(step)
+        self.performances.append(performance)
+        self.game_manager_indices.append(game_manager_index)
+        self.best_route_energies.append(best_route_energy)
+        self.curriculum_steps.append(curriculum_step)
+        self.target_route_energies.append(target_route_energy)
+
+    def save_to_csv(self, filename):
+        # replace any special characters and spaces in the filename with underscores
+        filename = filename.replace(' ', '_')
+        filename = filename.replace('-', '_')
+        filename = filename.replace('.', '_')
+        filename = ''.join(e for e in filename if e.isalnum() or e == '_')
+
+        df = pd.DataFrame({
+            'Step': self.steps,
+            'Performance': self.performances,
+            'Game Manager Index': self.game_manager_indices,
+            'Best Route Energy': self.best_route_energies,
+            'Curriculum Step': self.curriculum_steps,
+            'Target Route Energy': self.target_route_energies
+        })
+        df.to_csv(filename, index=False)
 
 class CurriculumCallback(BaseCallback):
-    def __init__(self, eval_env, custom_logger, verbose=0):
+    def __init__(self, eval_env, custom_logger, metrics, verbose=0):
         super(CurriculumCallback, self).__init__(verbose)
         self.eval_env = eval_env
-        self.custom_logger = custom_logger  # Use a different name to avoid conflicts
+        self.custom_logger = custom_logger
+        self.metrics = metrics
 
     def _on_step(self) -> bool:
         if self.n_calls % self.model.n_steps == 0:
             self.custom_logger.info(f"Step {self.n_calls}", logger_name='training')
             
+            env = self.training_env.envs[0].unwrapped
+            performance = env.get_episode_performance()
+            game_manager_index = env.current_game_index
+            best_route_energy = env.best_route_energy
+            curriculum_step = env.simulation_manager.current_curriculum_index
+            target_route_energy = env.current_gm.target_manager.target_route_energy
+            
+            self.metrics.add_metric(
+                self.n_calls, performance, game_manager_index,
+                best_route_energy, curriculum_step, target_route_energy
+            )
+            
             # Check if curriculum should advance
-            if self.training_env.envs[0].unwrapped.simulation_manager.should_advance_curriculum():
-                self.training_env.envs[0].unwrapped.simulation_manager.advance_curriculum()
-                self.custom_logger.info(f"Advancing to curriculum level {self.training_env.envs[0].unwrapped.simulation_manager.current_curriculum_index}", logger_name='training')
+            if env.simulation_manager.should_advance_curriculum():
+                env.simulation_manager.advance_curriculum()
+                self.custom_logger.info(f"Advancing to curriculum level {env.simulation_manager.current_curriculum_index}", logger_name='training')
                 
                 # Reset both training and eval environments
                 self.training_env.reset()
@@ -61,6 +106,7 @@ class ModelTrainer:
         self.logger = logger
         self.device = device
         self.rl_model = None
+        self.metrics = TrainingMetrics()
 
     def create_model(self, model_config):
         self.logger.info("Creating PPO model", logger_name='training')
@@ -79,7 +125,7 @@ class ModelTrainer:
     def train(self, total_timesteps, eval_callback, timeout=3600):
         self.logger.info("Starting model training", logger_name='training')
         
-        curriculum_callback = CurriculumCallback(self.eval_env, self.logger)
+        curriculum_callback = CurriculumCallback(self.eval_env, self.logger, self.metrics)
         
         try:
             self.rl_model.learn(
@@ -94,6 +140,9 @@ class ModelTrainer:
             self.logger.error(traceback.format_exc())
 
         self.logger.info("Model training completed", logger_name='training')
+        
+        # Save metrics after training
+        self.metrics.save_to_csv("training_metrics.csv")
 
     def log_training_stats(self):
         mean_reward = self.calculate_mean_reward()
@@ -251,6 +300,10 @@ class Trainer:
             total_timesteps=self.config['total_timesteps'], 
             eval_callback=eval_callback,
             timeout=3600)
+        
+        # Save metrics
+        metrics_file = os.path.join(experiment_dir, f"{experiment_name}_metrics.csv")
+        self.model_trainer.metrics.save_to_csv(metrics_file)
 
         profiler.disable()
         stats = pstats.Stats(profiler).sort_stats('cumulative')
@@ -285,7 +338,7 @@ if __name__ == '__main__':
     base_config = {
         'model_args': {'num_actions': 11},
         'simulation_manager_args': {'number_of_environments': 5000, 'number_of_curricula': 30},
-        'game_manager_args': {'num_tiles': 10, 'screen_size': 200, 'vision_range': 1},
+        'game_manager_args': {'num_tiles': 6, 'screen_size': 200, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
             'batch_size': 64,

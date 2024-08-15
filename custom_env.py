@@ -252,7 +252,7 @@ class CustomEnv(gym.Env):
             if self.simulation_manager.should_advance_curriculum():
                 self.simulation_manager.advance_curriculum()
                 self.current_game_index = self.simulation_manager.curriculum_indices[0]
-                self.set_current_game_manager(self.current_game_index)
+                self.set_current_game_manager()
                 self.reset(False)
 
         observation = self._get_observation()

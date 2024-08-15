@@ -36,7 +36,7 @@ class GameManager:
             width=self.num_tiles, 
             height=self.num_tiles, 
             scale=10, 
-            terrain_thresholds=np.array([0.2, 0.38, 0.5, 0.7, 0.9, 1.0]), 
+            terrain_thresholds=np.array([0.1, 0.2, 0.5, 0.7, 0.9, 1.0]), 
             octaves=3, persistence=0.2, lacunarity=2.0
         )
         heightmap = heightmap_generator.generate()

@@ -28,6 +28,7 @@ class Environment:
         }
         self.terrain_colour_map = self.get_terrain_colour_map()
         self.suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
+        self.less_suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
 
         self.initialize_environment()
         self.add_outposts()
@@ -74,6 +75,15 @@ class Environment:
             self.entity_group.add(entity)
             self.entity_index_grid[x, y] = entity.id
             self.terrain_object_grid[x, y].add_entity(entity)
+            
+            if isinstance(terrain, Plains): # terrain.evelation == isinstance(terrain, Plains):
+                self.less_suitable_terrain_locations['Plains'].append((x, y))
+            if isinstance(terrain, Hills):
+                self.less_suitable_terrain_locations['Hills'].append((x, y))
+            if isinstance(terrain, Mountains):
+                self.less_suitable_terrain_locations['Mountains'].append((x, y))
+            elif isinstance(terrain, Snow):
+                self.less_suitable_terrain_locations['Snow'].append((x, y))
         else:
             if isinstance(terrain, Plains): # terrain.evelation == isinstance(terrain, Plains):
                 self.suitable_terrain_locations['Plains'].append((x, y))
@@ -86,6 +96,8 @@ class Environment:
 
     def add_outposts(self):
         possible_locations = self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills']
+        if len(possible_locations) < self.number_of_outposts:
+            possible_locations += self.suitable_terrain_locations['Mountains'] + self.suitable_terrain_locations['Snow']
         selected_locations = random.sample(possible_locations, min(len(possible_locations), self.number_of_outposts))
 
         for x, y in selected_locations:
@@ -108,7 +120,13 @@ class Environment:
         return possible_locations
 
     def init_player(self):
-        location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
+        if len(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills']) > 0:
+            location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
+        elif len(self.suitable_terrain_locations['Mountains'] + self.suitable_terrain_locations['Snow']) > 0:
+            location = random.choice(self.suitable_terrain_locations['Mountains'] + self.suitable_terrain_locations['Snow'])
+        else:
+            location = random.choice(self.less_suitable_terrain_locations)
+            self.remove_entity(location[0], location[1])
         player = Player(location[0], location[1], self.tile_size)
         self.entity_group.add(player, layer=2)
         # Cannot use the entity_index_grid to store the player id, as it is already used to store the woodpath id
