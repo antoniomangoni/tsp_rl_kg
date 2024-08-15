@@ -1,10 +1,13 @@
 import torch
+torch.set_default_tensor_type(torch.float16)
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GATConv, global_mean_pool
 from torch_geometric.data import Data
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 import gymnasium as gym
+
+torch_dtype = torch.float16
 
 class VisionProcessor(BaseFeaturesExtractor):
     def __init__(self, observation_space, features_dim=128):
@@ -85,7 +88,7 @@ class AgentModel(BaseFeaturesExtractor):
         batch_size = observations['node_features'].shape[0]
         num_nodes = observations['node_features'].shape[1]
         
-        x = observations['node_features'].view(batch_size * num_nodes, -1).float()
+        x = observations['node_features'].view(batch_size * num_nodes, -1).to(torch_dtype)
         edge_index = observations['edge_index'].long()
         edge_index = edge_index + (torch.arange(batch_size, device=edge_index.device) * num_nodes).view(-1, 1, 1)
         edge_index = edge_index.view(2, -1)
@@ -117,4 +120,4 @@ class AgentModel(BaseFeaturesExtractor):
             print(f"Output mean: {output.mean().item():.4f}")
             print(f"Output std: {output.std().item():.4f}")
             print(f"Vision features mean: {self.vision_processor(observations['vision']).mean().item():.4f}")
-            print(f"Graph features mean: {self.graph_processor(Data(x=observations['node_features'].float(), edge_index=observations['edge_index'].long(), edge_attr=observations['edge_attr'].float(), batch=torch.zeros(observations['node_features'].shape[0], dtype=torch.long))).mean().item():.4f}")
+            print(f"Graph features mean: {self.graph_processor(Data(x=observations['node_features'].to(torch_dtype), edge_index=observations['edge_index'].long(), edge_attr=observations['edge_attr'].to(torch_dtype), batch=torch.zeros(observations['node_features'].shape[0], dtype=torch.long))).mean().item():.4f}")

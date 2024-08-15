@@ -71,7 +71,7 @@ class CustomEnv(gym.Env):
 
         self.vision_pixel_side_size = (2 * self.vision_range + 1) * self.current_gm.tile_size
         vision_shape = (3, self.vision_pixel_side_size, self.vision_pixel_side_size)
-        vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.float32)
+        vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.float16)
 
         # Flatten graph data into fixed-size arrays
         node_feature_space = spaces.Box(low=0, high=7, shape=(self.max_nodes, self.kg.graph.num_node_features), dtype=np.uint8)
@@ -302,10 +302,10 @@ class CustomEnv(gym.Env):
         graph: Data = self.current_gm.kg_class.get_subgraph()
 
         # Ensure correct shapes
-        node_features = np.zeros((self.max_nodes, graph.num_node_features), dtype=np.float32)
+        node_features = np.zeros((self.max_nodes, graph.num_node_features), dtype=np.float16)
         node_features[:graph.num_nodes, :] = graph.x.numpy()
 
-        edge_attr = np.zeros((self.max_edges, graph.num_edge_features), dtype=np.float32)
+        edge_attr = np.zeros((self.max_edges, graph.num_edge_features), dtype=np.float16)
         edge_attr[:graph.num_edges, :] = graph.edge_attr.numpy()
 
         edge_index = np.zeros((2, self.max_edges), dtype=np.int64)
@@ -313,7 +313,7 @@ class CustomEnv(gym.Env):
 
         logger.debug("Observation retrieved")
         return {
-            'vision': vision.astype(np.float32) / 255.0,  # Normalize to [0, 1]
+            'vision': vision.astype(np.float16) / 255.0,  # Normalize to [0, 1]
             'node_features': node_features,
             'edge_attr': edge_attr,
             'edge_index': edge_index
@@ -329,7 +329,7 @@ class CustomEnv(gym.Env):
 
     def _get_vision(self):
         vision_surface = self.get_clamped_surface()
-        vision_array = pygame.surfarray.array3d(vision_surface).astype(np.float32)
+        vision_array = pygame.surfarray.array3d(vision_surface).astype(np.float16)
         vision_array = np.transpose(vision_array, (2, 0, 1))  # Change from (H, W, C) to (C, H, W)
         return vision_array
     
