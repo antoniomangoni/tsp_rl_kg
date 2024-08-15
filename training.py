@@ -17,7 +17,7 @@ from custom_env import CustomEnv
 from agent_model import AgentModel
 from logger import Logger
 
-
+torch.cuda.empty_cache()
 
 class EnvironmentManager:
     def __init__(self, game_manager_args, simulation_manager_args, model_args):
@@ -116,7 +116,8 @@ class ModelTrainer:
                     self.env, 
                     policy_kwargs={
                         'features_extractor_class': AgentModel,
-                        'features_extractor_kwargs': {'features_dim': 256},
+                        'features_extractor_kwargs': {'features_dim': 128},
+                        'torch_dtype': torch.float16
                     },
                     **model_config,
                     device=self.device,
@@ -343,7 +344,7 @@ if __name__ == '__main__':
         'game_manager_args': {'num_tiles': 6, 'screen_size': 200, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
-            'batch_size': 32,
+            'batch_size': 2,
             'learning_rate': 5e-4,
             'gamma': 0.995
         },
