@@ -117,8 +117,7 @@ class ModelTrainer:
                     self.env, 
                     policy_kwargs={
                         'features_extractor_class': AgentModel,
-                        'features_extractor_kwargs': {'features_dim': 128},
-                        'torch_dtype': torch.float16
+                        'features_extractor_kwargs': {'features_dim': 128}
                     },
                     **model_config,
                     device=self.device,
