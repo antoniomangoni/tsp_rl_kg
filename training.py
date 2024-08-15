@@ -17,6 +17,8 @@ from custom_env import CustomEnv
 from agent_model import AgentModel
 from logger import Logger
 
+
+
 class EnvironmentManager:
     def __init__(self, game_manager_args, simulation_manager_args, model_args):
         self.game_manager_args = game_manager_args
@@ -341,9 +343,9 @@ if __name__ == '__main__':
         'game_manager_args': {'num_tiles': 6, 'screen_size': 200, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
-            'batch_size': 64,
-            'learning_rate': 3e-4,
-            'gamma': 0.99
+            'batch_size': 32,
+            'learning_rate': 5e-4,
+            'gamma': 0.995
         },
         'curriculum_config': {
         'min_episodes_per_curriculum': 5,
