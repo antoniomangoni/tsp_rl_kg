@@ -1,5 +1,5 @@
 import torch
-torch.set_default_tensor_type(torch.float16)
+torch.set_default_dtype(torch.float16)
 import torch.nn as nn
 import torch.nn.functional as F
 from torch_geometric.nn import GATConv, global_mean_pool

@@ -1,6 +1,6 @@
 import os
 import torch
-torch.set_default_tensor_type(torch.float16)
+torch.set_default_dtype(torch.float16)
 import cProfile
 import pstats
 import traceback
