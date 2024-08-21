@@ -86,8 +86,8 @@ class GameManager:
             self.game_step()
             # pygame.time.wait(1000)
             # save the surface to an image
-            pygame.image.save(self.screen, "small_game_background.jpeg")
-            exit()
+            # pygame.image.save(self.screen, "small_game_background.jpeg")
+            # exit()
 
         pygame.quit()
         print('Game closed')

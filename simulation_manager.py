@@ -8,11 +8,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 class SimulationManager:
-    def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10, plot=False):
+    def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10,
+                 min_episodes_per_curriculum=1, plot=False):
+        self.number_of_environments = number_of_environments
         self.logger = logger
         self.game_managers = []
-        self.curriculum_indices = []
-        self.create_games(number_of_environments, game_manager_args, plot)
+        self.create_games(self.number_of_environments, game_manager_args, plot)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula + 1)
         print(f"Curriculum indices: {self.curriculum_indices}, Step size: {step_size}")
@@ -20,7 +21,7 @@ class SimulationManager:
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
 
         self.current_curriculum_index = 0
-        self.min_episodes_per_curriculum = 10
+        self.min_episodes_per_curriculum = min_episodes_per_curriculum
         self.current_curriculum_episodes = 0
         self.performance_window = deque(maxlen=100)
         self.performance_threshold = 0.6  # 70% of max possible reward for current level
@@ -52,6 +53,17 @@ class SimulationManager:
         energy = game_manager.target_manager.target_route_energy
         index = next((i for i, gm in enumerate(self.game_managers) if energy < gm.target_manager.target_route_energy), len(self.game_managers))
         self.game_managers.insert(index, game_manager)
+
+    def get_current_game_manager(self):
+        return self.game_managers[self.curriculum_indices[self.current_curriculum_index]]
+    
+    def get_next_game_manager(self):
+        current_index = self.curriculum_indices[self.current_curriculum_index]
+        next_index = self.curriculum_indices[self.current_curriculum_index + 1]
+        if next_index < self.number_of_environments:
+            return self.game_managers[next_index]
+        else:
+            False
 
     def get_curriculum(self, number_of_curricula):
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
@@ -118,9 +130,11 @@ class SimulationManager:
             self.logger.info(f"Advanced to curriculum level {self.current_curriculum_index}. "
                         f"New performance threshold: {self.performance_threshold:.2f}, "
                         f"New success rate threshold: {self.success_rate_threshold:.2f}")
-
-    def get_current_game_manager(self):
-        return self.game_managers[self.curriculum_indices[self.current_curriculum_index]]
+            next_curriculum_index = self.curriculum_indices[self.current_curriculum_index + 1]
+            if next_curriculum_index < self.number_of_environments:
+                return next_curriculum_index
+            else:
+                return -1
 
     def plot_curriculum(self, x_values, y_values, indices, simulation_points, xlabel, ylabel, title = "Not named"):
         """

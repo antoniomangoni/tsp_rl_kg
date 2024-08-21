@@ -67,7 +67,7 @@ class Agent:
         """ Adding a terrain node automatically adds the corresponding entity node"""
 
         discovered_now = 0
-        vision = self.vision_range * 2
+        vision = int(self.vision_range * 2)
         
         for y in range(self.agent.grid_y - vision, self.agent.grid_y + vision + 1):
             for x in range(self.agent.grid_x - vision, self.agent.grid_x + vision + 1):

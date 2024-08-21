@@ -1,5 +1,7 @@
 import os
 import torch
+import torch.nn as nn
+from torch_geometric.nn import GATConv
 torch.set_default_dtype(torch.float32)
 import cProfile
 import pstats
@@ -69,17 +71,23 @@ class TrainingMetrics:
         df.to_csv(filename, index=False)
 
 class CurriculumCallback(BaseCallback):
-    def __init__(self, eval_env, custom_logger, metrics, verbose=0):
+    def __init__(self, eval_env, custom_logger, metrics, print_weight_stats_freq=1000, verbose=0):
         super(CurriculumCallback, self).__init__(verbose)
         self.eval_env = eval_env
         self.custom_logger = custom_logger
         self.metrics = metrics
+        self.should_stop = False
+        self.print_weight_stats_freq = print_weight_stats_freq
 
     def _on_step(self) -> bool:
         if self.n_calls % self.model.n_steps == 0:
             self.custom_logger.info(f"Step {self.n_calls}", logger_name='training')
             
             env = self.training_env.envs[0].unwrapped
+            if env.early_stop:
+                self.custom_logger.info("Early stop condition met. Stopping training.", logger_name='training')
+                self.should_stop = True
+                return False 
             performance = env.get_episode_performance()
             game_manager_index = env.current_game_index
             best_route_energy = env.best_route_energy
@@ -100,7 +108,52 @@ class CurriculumCallback(BaseCallback):
                 self.training_env.reset()
                 self.eval_env.reset()
 
+            # Print weight statistics
+            if self.n_calls % self.print_weight_stats_freq == 0:
+                self.print_weight_statistics()
+
         return True
+
+    def print_weight_statistics(self):
+        self.custom_logger.info("Weight Statistics:", logger_name='training')
+        agent_model = self.model.policy.features_extractor
+
+        # Vision Processor
+        self.print_module_statistics(agent_model.vision_processor, "Vision Processor")
+
+        # Graph Processor
+        self.print_module_statistics(agent_model.graph_processor, "Graph Processor")
+
+        # Combined Fully Connected Layers
+        self.print_module_statistics(agent_model.fc, "Combined FC")
+
+        # Dropout layer doesn't have learnable parameters, so we skip it
+
+    def print_module_statistics(self, module, module_name):
+        for name, sub_module in module.named_modules():
+            if isinstance(sub_module, (nn.Conv2d, nn.Linear, GATConv)):
+                self.print_layer_statistics(sub_module, f"{module_name} - {name}")
+
+    def print_layer_statistics(self, layer, layer_name):
+        if hasattr(layer, 'weight'):
+            weights = layer.weight.data
+            weight_stats = self.compute_stats(weights)
+            self.custom_logger.info(f"{layer_name} weights - {weight_stats}", logger_name='training')
+            # print(f"{layer_name} weights - {weight_stats}")
+
+        if hasattr(layer, 'bias') and layer.bias is not None:
+            bias = layer.bias.data
+            bias_stats = self.compute_stats(bias)
+            self.custom_logger.info(f"{layer_name} bias - {bias_stats}", logger_name='training')
+            # print(f"{layer_name} bias - {bias_stats}")
+
+    def compute_stats(self, tensor):
+        return {
+            'mean': tensor.mean().item(),
+            'std': tensor.std().item(),
+            'min': tensor.min().item(),
+            'max': tensor.max().item()
+        }
 
 class ModelTrainer:
     def __init__(self, env, eval_env, logger, device):
@@ -117,7 +170,7 @@ class ModelTrainer:
                     self.env, 
                     policy_kwargs={
                         'features_extractor_class': AgentModel,
-                        'features_extractor_kwargs': {'features_dim': 128}
+                        'features_extractor_kwargs': {'features_dim': 64}
                     },
                     **model_config,
                     device=self.device,
@@ -141,8 +194,11 @@ class ModelTrainer:
         except Exception as e:
             self.logger.error(f"An error occurred during training: {str(e)}")
             self.logger.error(traceback.format_exc())
-
-        self.logger.info("Model training completed", logger_name='training')
+        
+        if curriculum_callback.should_stop:
+            self.logger.info("Training ended early due to early stop condition", logger_name='training')
+        else:
+            self.logger.info("Model training completed", logger_name='training')
         
         # Save metrics after training
         self.metrics.save_to_csv("training_metrics.csv")
@@ -337,19 +393,22 @@ class Trainer:
 
 if __name__ == '__main__':
     os.environ['PYGAME_DETECT_AVX2'] = '1'
-
+    min_episodes_per_curriculum = 5
     base_config = {
         'model_args': {'num_actions': 11},
-        'simulation_manager_args': {'number_of_environments': 5000, 'number_of_curricula': 30},
-        'game_manager_args': {'num_tiles': 6, 'screen_size': 200, 'vision_range': 1},
+        'simulation_manager_args': {
+            'number_of_environments': 3000,
+            'number_of_curricula': 20,
+            'min_episodes_per_curriculum': min_episodes_per_curriculum},
+        'game_manager_args': {'num_tiles': 6, 'screen_size': 24, 'vision_range': 1},
         'model_config': {
-            'n_steps': 2048,
-            'batch_size': 1,
-            'learning_rate': 5e-4,
+            'n_steps': 8192,
+            'batch_size': 512,
+            'learning_rate': 6e-4,
             'gamma': 0.995
         },
         'curriculum_config': {
-        'min_episodes_per_curriculum': 5,
+        'min_episodes_per_curriculum': min_episodes_per_curriculum,
         'performance_threshold': 0.85,
         },
         'total_timesteps': 1000000

@@ -16,8 +16,8 @@ if __name__ == '__main__':
     }
 
     game_manager_args = {
-        'num_tiles': 16,
-        'screen_size': 1200,
+        'num_tiles': 4,
+        'screen_size': 800,
         'kg_completeness': 0.1,
         'vision_range': 2
     }

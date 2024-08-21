@@ -19,19 +19,24 @@ class CustomEnv(gym.Env):
         logger.info("Initializing CustomEnv")
 
         # Base rewards
-        self.new_outpost_reward = 50  # Increased from 10
-        self.completion_reward = 500  # Increased from 100
-        self.route_improvement_reward = 300  # Increased from 200
-        self.better_route_than_algo_reward = 500  # New reward for beating the algorithm
+        self.new_outpost_reward = 50
+        self.completion_reward = 500
+        self.route_improvement_reward = 300
+        self.better_route_than_algo_reward = 500
         
         # Penalties
-        self.penalty_per_step = -0.05  # Reduced from -0.1 to be less harsh
-        self.farther_from_outpost_penalty = -1.0  # Increased from -0.3
-        self.circular_behavior_penalty = -2.0  # Increased from -0.5
+        self.penalty_per_step = -0.5
+        self.farther_from_outpost_penalty = -1.0
+        self.circular_behavior_penalty = -2.0
         
         # Positive reinforcements
-        self.closer_to_outpost_reward = 2.0  # Increased from 0.5
+        self.closer_to_outpost_reward = 0.8 # Decreased from 2.0
         
+        # New parameters
+        self.time_penalty_factor = -0.01  # For the new time penalty
+        self.outpost_reward_increase_factor = 0.5  # For increasing rewards of subsequent outposts
+        self.completion_time_bonus_factor = 1.0  # For time bonus in completion reward
+
         # Route improvement tracking
         self.max_not_improvement_routes = 5
         self.num_not_improvement_routes = 0
@@ -45,10 +50,7 @@ class CustomEnv(gym.Env):
         self.game_worlds_trained_in = 0
         self.max_game_worlds_trained_in = min(100, simulation_manager_args['number_of_environments'] // 2)
 
-        # New parameters
-        self.time_penalty_factor = -0.01  # For the new time penalty
-        self.outpost_reward_increase_factor = 0.5  # For increasing rewards of subsequent outposts
-        self.completion_time_bonus_factor = 1.0  # For time bonus in completion reward
+
 
         self.num_actions = model_args['num_actions']
         self.num_tiles = game_manager_args['num_tiles']
@@ -60,6 +62,7 @@ class CustomEnv(gym.Env):
             game_manager_args,
             simulation_manager_args['number_of_environments'], 
             simulation_manager_args['number_of_curricula'],
+            simulation_manager_args['min_episodes_per_curriculum'],
             plot=plot
         )
         
@@ -105,6 +108,7 @@ class CustomEnv(gym.Env):
     def set_current_game_manager(self):
         logger.info(f"Setting current game manager to index {self.current_game_index}")
         print(f'Current game index: {self.current_game_index}')
+
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
         self.current_gm.start_game()
         self.environment = self.current_gm.environment
@@ -132,10 +136,13 @@ class CustomEnv(gym.Env):
         
         # Update the game manager
         self.current_game_index += 1
+        if self.current_game_index >= self.simulation_manager.number_of_environments:
+            self.early_stop = True
+            logger.info("All environments completed. Ending simulation.")
+            return self._get_observation(), {} 
         self.set_current_game_manager()
 
         self.best_route_energy = np.inf
-        self.early_stop = False
         self.num_not_improvement_routes = 0
         self.previous_min_distance = float('inf')
         
@@ -250,10 +257,13 @@ class CustomEnv(gym.Env):
         if terminated or truncated:
             self.simulation_manager.add_episode_performance(self.total_reward, success)
             if self.simulation_manager.should_advance_curriculum():
-                self.simulation_manager.advance_curriculum()
-                self.current_game_index = self.simulation_manager.curriculum_indices[0]
-                self.set_current_game_manager()
-                self.reset(False)
+                self.current_game_index = self.simulation_manager.advance_curriculum()
+                if self.current_game_index > self.simulation_manager.number_of_environments:
+                    logger.info("All curricula completed. Ending simulation.")
+                    self.early_stop = True
+                else:
+                    self.set_current_game_manager()
+                    self.reset(False)
 
         observation = self._get_observation()
         info = {
