@@ -30,7 +30,7 @@ class CustomEnv(gym.Env):
         self.circular_behavior_penalty = -2.0
         
         # Positive reinforcements
-        self.closer_to_outpost_reward = 0.8 # Decreased from 2.0
+        self.closer_to_outpost_reward = 0.55 # Decreased from 2.0
         
         # New parameters
         self.time_penalty_factor = -0.01  # For the new time penalty
@@ -166,6 +166,7 @@ class CustomEnv(gym.Env):
         
         # Check if agent reached a new outpost
         if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:
+            print(f'Agent reached new outpost at {agent_pos}')
             self.outposts_visited.add(agent_pos)
             outposts_visited = len(self.outposts_visited)
             # Increase reward for reaching outposts, with higher rewards for later outposts
@@ -177,23 +178,25 @@ class CustomEnv(gym.Env):
             if outposts_visited == len(self.outpost_coords):
                 # Increase reward for completing the route
                 completion_reward = self.completion_reward * (1 + 1 / self.episode_step)  # Bonus for faster completion
+                print(f'All outposts visited, completion reward: {completion_reward}')
                 reward += completion_reward
-                self.agent_controler.reset_energy_spent()
+                
                 if self.agent_controler.energy_spent < self.best_route_energy:
-                    if self.agent_controler.energy_spent < self.current_gm.target_manager.target_route_energy:
-                        reward += self.better_route_than_algo_reward
-
                     improvement_reward = self.route_improvement_reward * (self.best_route_energy - self.agent_controler.energy_spent) / self.best_route_energy
+                    print(f'Best route energy improved, reward: {improvement_reward}')
                     reward += improvement_reward
                     self.best_route_energy = self.agent_controler.energy_spent
                     self.num_not_improvement_routes = 0
+                    if self.agent_controler.energy_spent < self.current_gm.target_manager.target_route_energy:
+                        print(f'Agent route energy better than algorithm, reward: {self.better_route_than_algo_reward}')
+                        reward += self.better_route_than_algo_reward
                 else:
                     self.num_not_improvement_routes += 1
                     if self.num_not_improvement_routes >= self.max_not_improvement_routes:
                         self.early_stop = True
-                logger.info(f"All outposts visited. Completion reward: {completion_reward}")
-                self.early_stop = True
-                return self._normalize_reward(reward)  # Early return if all outposts are visited
+                self.agent_controler.reset_energy_spent()
+                # logger.info(f"All outposts visited. Completion reward: {completion_reward}")
+                # return self._normalize_reward(reward)  # Early return if all outposts are visited
         
         unvisited_outposts = set(self.outpost_coords) - self.outposts_visited
         if unvisited_outposts:

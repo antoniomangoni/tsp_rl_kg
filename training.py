@@ -37,21 +37,25 @@ class EnvironmentManager:
         env.unwrapped.set_kg_completeness(completeness)
 
 class TrainingMetrics:
-    def __init__(self):
+    def __init__(self, num_actions):
         self.steps = []
         self.performances = []
         self.game_manager_indices = []
         self.best_route_energies = []
         self.curriculum_steps = []
         self.target_route_energies = []
+        self.num_actions = num_actions
+        self.action_counts = [[] for _ in range(num_actions)]
 
-    def add_metric(self, step, performance, game_manager_index, best_route_energy, curriculum_step, target_route_energy):
+    def add_metric(self, step, performance, game_manager_index, best_route_energy, curriculum_step, target_route_energy, action_counts):
         self.steps.append(step)
         self.performances.append(performance)
         self.game_manager_indices.append(game_manager_index)
         self.best_route_energies.append(best_route_energy)
         self.curriculum_steps.append(curriculum_step)
         self.target_route_energies.append(target_route_energy)
+        for i, count in enumerate(action_counts):
+            self.action_counts[i].append(count)
 
     def save_to_csv(self, filename):
         # replace any special characters and spaces in the filename with underscores
@@ -68,6 +72,12 @@ class TrainingMetrics:
             'Curriculum Step': self.curriculum_steps,
             'Target Route Energy': self.target_route_energies
         })
+
+        total_actions = np.sum(self.action_counts, axis=0)
+        # Add columns for each action
+        for i in range(self.num_actions):
+            df[f'Action_{i}'] = self.action_counts[i] / total_actions
+
         df.to_csv(filename, index=False)
 
 class CurriculumCallback(BaseCallback):
@@ -78,31 +88,47 @@ class CurriculumCallback(BaseCallback):
         self.metrics = metrics
         self.should_stop = False
         self.print_weight_stats_freq = print_weight_stats_freq
+        self.action_counts = np.zeros(metrics.num_actions, dtype=int)
+        self.num_envs = getattr(eval_env.unwrapped, 'num_envs', 1)  # Use unwrapped to access num_envs
 
     def _on_step(self) -> bool:
+        # Update action counts based on the actions taken
+        actions = self.locals['actions']
+        if isinstance(actions, np.ndarray):
+            self.action_counts += np.bincount(actions, minlength=self.metrics.num_actions)
+        else:
+            self.action_counts[actions] += 1
+
         if self.n_calls % self.model.n_steps == 0:
             self.custom_logger.info(f"Step {self.n_calls}", logger_name='training')
             
-            env = self.training_env.envs[0].unwrapped
-            if env.early_stop:
+            env = self.training_env.envs[0] if hasattr(self.training_env, 'envs') else self.training_env
+            unwrapped_env = env.unwrapped  # Get the unwrapped environment
+
+            if unwrapped_env.early_stop:
                 self.custom_logger.info("Early stop condition met. Stopping training.", logger_name='training')
                 self.should_stop = True
                 return False 
-            performance = env.get_episode_performance()
-            game_manager_index = env.current_game_index
-            best_route_energy = env.best_route_energy
-            curriculum_step = env.simulation_manager.current_curriculum_index
-            target_route_energy = env.current_gm.target_manager.target_route_energy
+
+            performance = unwrapped_env.get_episode_performance()
+            game_manager_index = unwrapped_env.current_game_index
+            best_route_energy = unwrapped_env.best_route_energy
+            curriculum_step = unwrapped_env.simulation_manager.current_curriculum_index
+            target_route_energy = unwrapped_env.current_gm.target_manager.target_route_energy
             
             self.metrics.add_metric(
                 self.n_calls, performance, game_manager_index,
-                best_route_energy, curriculum_step, target_route_energy
+                best_route_energy, curriculum_step, target_route_energy,
+                self.action_counts
             )
             
+            # Reset action counts
+            self.action_counts = np.zeros(self.metrics.num_actions, dtype=int)
+            
             # Check if curriculum should advance
-            if env.simulation_manager.should_advance_curriculum():
-                env.simulation_manager.advance_curriculum()
-                self.custom_logger.info(f"Advancing to curriculum level {env.simulation_manager.current_curriculum_index}", logger_name='training')
+            if unwrapped_env.simulation_manager.should_advance_curriculum():
+                unwrapped_env.simulation_manager.advance_curriculum()
+                self.custom_logger.info(f"Advancing to curriculum level {unwrapped_env.simulation_manager.current_curriculum_index}", logger_name='training')
                 
                 # Reset both training and eval environments
                 self.training_env.reset()
@@ -162,7 +188,7 @@ class ModelTrainer:
         self.logger = logger
         self.device = device
         self.rl_model = None
-        self.metrics = TrainingMetrics()
+        self.metrics = TrainingMetrics(env.action_space.n)
 
     def create_model(self, model_config):
         self.logger.info("Creating PPO model", logger_name='training')
@@ -397,12 +423,12 @@ if __name__ == '__main__':
     base_config = {
         'model_args': {'num_actions': 11},
         'simulation_manager_args': {
-            'number_of_environments': 3000,
-            'number_of_curricula': 20,
+            'number_of_environments': 4000,
+            'number_of_curricula': 400,
             'min_episodes_per_curriculum': min_episodes_per_curriculum},
         'game_manager_args': {'num_tiles': 6, 'screen_size': 24, 'vision_range': 1},
         'model_config': {
-            'n_steps': 8192,
+            'n_steps': 2048,
             'batch_size': 512,
             'learning_rate': 6e-4,
             'gamma': 0.995
