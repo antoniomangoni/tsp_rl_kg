@@ -44,16 +44,24 @@ class TrainingMetrics:
         self.best_route_energies = []
         self.curriculum_steps = []
         self.target_route_energies = []
+        self.efficiency = []
+        self.improvement = []
+        self.gap = []
         self.num_actions = num_actions
         self.action_counts = [[] for _ in range(num_actions)]
 
-    def add_metric(self, step, performance, game_manager_index, best_route_energy, curriculum_step, target_route_energy, action_counts):
+    def add_metric(self, step, performance, game_manager_index,
+                   best_route_energy, curriculum_step, target_route_energy,
+                   efficiency, improvement, gap, action_counts):
         self.steps.append(step)
         self.performances.append(performance)
         self.game_manager_indices.append(game_manager_index)
         self.best_route_energies.append(best_route_energy)
         self.curriculum_steps.append(curriculum_step)
         self.target_route_energies.append(target_route_energy)
+        self.efficiency.append(efficiency)
+        self.improvement.append(improvement)
+        self.gap.append(gap)
         for i, count in enumerate(action_counts):
             self.action_counts[i].append(count)
 
@@ -70,7 +78,10 @@ class TrainingMetrics:
             'Game Manager Index': self.game_manager_indices,
             'Best Route Energy': self.best_route_energies,
             'Curriculum Step': self.curriculum_steps,
-            'Target Route Energy': self.target_route_energies
+            'Target Route Energy': self.target_route_energies,
+            'Efficiency': self.efficiency,
+            'Improvement': self.improvement,
+            'Gap': self.gap
         })
 
         total_actions = np.sum(self.action_counts, axis=0)
@@ -109,16 +120,22 @@ class CurriculumCallback(BaseCallback):
                 self.custom_logger.info("Early stop condition met. Stopping training.", logger_name='training')
                 self.should_stop = True
                 return False 
-
-            performance = unwrapped_env.get_episode_performance()
-            game_manager_index = unwrapped_env.current_game_index
-            best_route_energy = unwrapped_env.best_route_energy
-            curriculum_step = unwrapped_env.simulation_manager.current_curriculum_index
-            target_route_energy = unwrapped_env.current_gm.target_manager.target_route_energy
             
+            metrics = unwrapped_env.get_metrics()
+
+            performance = metrics.get('performance', 0)
+            game_manager_index = metrics.get('game_manager_index', 0)
+            best_route_energy = metrics.get('best_route_energy', 0)
+            curriculum_step = metrics.get('curriculum_step', 0)
+            target_route_energy = metrics.get('target_route_energy', 0)
+            efficiency = metrics.get('best_route_energy', 0)
+            improvement = metrics.get('improvement', 0)
+            gap = metrics.get('gap', 0)
+
             self.metrics.add_metric(
                 self.n_calls, performance, game_manager_index,
                 best_route_energy, curriculum_step, target_route_energy,
+                efficiency, improvement, gap,
                 self.action_counts
             )
             
@@ -419,14 +436,14 @@ class Trainer:
 
 if __name__ == '__main__':
     os.environ['PYGAME_DETECT_AVX2'] = '1'
-    min_episodes_per_curriculum = 5
+    min_episodes_per_curriculum = 4
     base_config = {
         'model_args': {'num_actions': 11},
         'simulation_manager_args': {
             'number_of_environments': 4000,
             'number_of_curricula': 400,
             'min_episodes_per_curriculum': min_episodes_per_curriculum},
-        'game_manager_args': {'num_tiles': 6, 'screen_size': 24, 'vision_range': 1},
+        'game_manager_args': {'num_tiles': 12, 'screen_size': 36, 'vision_range': 1},
         'model_config': {
             'n_steps': 2048,
             'batch_size': 512,
@@ -440,7 +457,7 @@ if __name__ == '__main__':
         'total_timesteps': 1000000
     }
 
-    kg_completeness_values = [0.3, 0.65, 1.0]
+    kg_completeness_values = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
     logger = Logger('ablation_study.log')
     ablation_study = AblationStudy(base_config, kg_completeness_values, logger)

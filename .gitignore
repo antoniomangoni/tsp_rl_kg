@@ -3,3 +3,6 @@
 
 # ignore saved models
 ppo_custom*
+
+# ignore results folder
+results
