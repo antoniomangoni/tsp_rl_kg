@@ -38,13 +38,25 @@ class Environment:
         self.environment_changed_flag = False
         self.changed_tiles_list = []
 
-        self.heat_map = np.zeros_like(self.heightmap)
+        # print(f"entity index grid{self.entity_index_grid}")
 
-    def update_heat_map(self, x, y, intensity=10):
-        # Reduce all values by 1 and clip to the range [0, intensity]
-        self.heat_map = np.clip(self.heat_map - 1, 0, intensity)
-        # Increase the value at (x, y) by intensity, ensuring it doesn't exceed the max intensity
-        self.heat_map[x, y] = np.clip(self.heat_map[x, y] + intensity, 0, intensity)
+    def get_random_zero_coordinate(self):
+        zero_coords = np.argwhere(self.entity_index_grid == 0)
+        if zero_coords.size == 0:
+            non_five_coords = np.argwhere(self.entity_index_grid != 5)
+            if non_five_coords.size == 0:
+                return None  # No available coordinates
+            coord = random.choice(non_five_coords)
+            entity = self.terrain_object_grid[coord[0], coord[1]].get_entity()
+            if entity:
+                self.delete_entity(entity)
+            return coord.tolist()
+        return random.choice(zero_coords).tolist()
+
+    def get_random_less_suitable_location(self):
+        keys = list(self.less_suitable_terrain_locations.keys())
+        key = random.choice(keys)
+        return random.choice(self.less_suitable_terrain_locations[key])
 
     def get_terrain_colour_map(self):
         terrain = Terrain(0, 0, self.tile_size, 0)
@@ -118,6 +130,16 @@ class Environment:
                 self.suitable_terrain_locations['Mountains'].remove((x, y))
             if (x, y) in self.suitable_terrain_locations['Snow']:
                 self.suitable_terrain_locations['Snow'].remove((x, y))
+            
+            if (x, y) in self.less_suitable_terrain_locations['Plains']:
+                self.less_suitable_terrain_locations['Plains'].remove((x, y))
+            if (x, y) in self.less_suitable_terrain_locations['Hills']:
+                self.less_suitable_terrain_locations['Hills'].remove((x, y))
+            if (x, y) in self.less_suitable_terrain_locations['Mountains']:
+                self.less_suitable_terrain_locations['Mountains'].remove((x, y))
+            if (x, y) in self.less_suitable_terrain_locations['Snow']:
+                self.less_suitable_terrain_locations['Snow'].remove((x, y))
+
 
         return possible_locations
 
@@ -127,8 +149,8 @@ class Environment:
         elif len(self.suitable_terrain_locations['Mountains'] + self.suitable_terrain_locations['Snow']) > 0:
             location = random.choice(self.suitable_terrain_locations['Mountains'] + self.suitable_terrain_locations['Snow'])
         else:
-            location = random.choice(self.less_suitable_terrain_locations)
-            self.remove_entity(location[0], location[1])
+            location = self.get_random_zero_coordinate()
+            self.terrain_object_grid[location[0], location[1]].remove_entity()
         player = Player(location[0], location[1], self.tile_size)
         self.entity_group.add(player, layer=2)
         # Cannot use the entity_index_grid to store the player id, as it is already used to store the woodpath id

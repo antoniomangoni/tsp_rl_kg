@@ -71,6 +71,9 @@ class TrainingMetrics:
         filename = filename.replace('-', '_')
         filename = filename.replace('.', '_')
         filename = ''.join(e for e in filename if e.isalnum() or e == '_')
+        # if file ends with _csv replace it with .csv
+        if filename.endswith('_csv'):
+            filename = filename[:-4] + '.csv'
 
         df = pd.DataFrame({
             'Step': self.steps,
@@ -128,7 +131,7 @@ class CurriculumCallback(BaseCallback):
             best_route_energy = metrics.get('best_route_energy', 0)
             curriculum_step = metrics.get('curriculum_step', 0)
             target_route_energy = metrics.get('target_route_energy', 0)
-            efficiency = metrics.get('best_route_energy', 0)
+            efficiency = metrics.get('best_efficiency', 0)
             improvement = metrics.get('improvement', 0)
             gap = metrics.get('gap', 0)
 
@@ -440,12 +443,12 @@ if __name__ == '__main__':
     base_config = {
         'model_args': {'num_actions': 11},
         'simulation_manager_args': {
-            'number_of_environments': 4000,
-            'number_of_curricula': 400,
+            'number_of_environments': 3000,
+            'number_of_curricula': 30,
             'min_episodes_per_curriculum': min_episodes_per_curriculum},
-        'game_manager_args': {'num_tiles': 12, 'screen_size': 36, 'vision_range': 1},
+        'game_manager_args': {'num_tiles': 5, 'screen_size': 20, 'vision_range': 1},
         'model_config': {
-            'n_steps': 2048,
+            'n_steps': 2048 * 2,
             'batch_size': 512,
             'learning_rate': 6e-4,
             'gamma': 0.995
@@ -457,7 +460,7 @@ if __name__ == '__main__':
         'total_timesteps': 1000000
     }
 
-    kg_completeness_values = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
 
     logger = Logger('ablation_study.log')
     ablation_study = AblationStudy(base_config, kg_completeness_values, logger)

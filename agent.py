@@ -2,6 +2,7 @@ from environment import Environment
 from entities import Tree, MossyRock, SnowyRock, Outpost, WoodPath
 from terrains import DeepWater, Water
 from knowledge_graph import KnowledgeGraph as KG
+import time
 
 class Agent:
     def __init__(self, environment : Environment, vision_range : int):
@@ -10,6 +11,7 @@ class Agent:
         self.entity_id_grid = self.environment.entity_index_grid
         self.kg = None
         self.agent = self.environment.player
+        self.agent_step_count = 0
 
         self.resouce_max = 5
         self.vision_range = vision_range 
@@ -36,15 +38,16 @@ class Agent:
         }
     
     def reset_agent(self):
+        self.reset_energy_spent()
         self.wood = 0
         self.stone = 0
-        self.energy_spent = 0
         self.agent = self.environment.player
 
     def get_kg(self, kg : KG):
         self.kg = kg
 
     def agent_action(self, action):
+        self.agent_step_count += 1
         if action in self.movement_actions:
             dx, dy = self.movement_actions[action]
             self.move_agent(dx, dy)
@@ -56,6 +59,7 @@ class Agent:
         
     def reset_energy_spent(self):
         self.energy_spent = 0
+        self.agent_step_count = 0
 
     def move_agent(self, dx, dy):
         new_x, new_y = self.environment.move_entity(self.agent, dx, dy)
@@ -79,6 +83,8 @@ class Agent:
         return discovered_now
 
     def build_path(self):
+        if (self.agent.grid_x, self.agent.grid_y) in self.environment.outpost_locations:
+            return
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
             return
         if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):

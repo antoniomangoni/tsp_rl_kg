@@ -81,12 +81,15 @@ class GameManager:
         self.rerender()
 
     def run(self):
+        i = 0
         self.start_game()
         while self.running:
             self.game_step()
             # pygame.time.wait(1000)
             # save the surface to an image
-            # pygame.image.save(self.screen, "small_game_background.jpeg")
+            # if i % 10 == 0:
+            #     pygame.image.save(self.screen, f"game_world_{i}.jpeg")
+            # i += 1
             # exit()
 
         pygame.quit()

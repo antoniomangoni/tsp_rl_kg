@@ -1,7 +1,7 @@
-Curriculum step size,2.13 energy units
-Number of Environments,5000
-Number of Curricula,30
+Curriculum step size,1.55 energy units
+Number of Environments,2719
+Number of Curricula,27
 KG Completeness,1.0
 Vision Range,1
-Map Pixel Size,6
-Tile Size,33
+Map Pixel Size,5
+Tile Size,4

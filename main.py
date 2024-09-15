@@ -11,14 +11,14 @@ if __name__ == '__main__':
     }
 
     simulation_manager_args = {
-        'number_of_environments': 2000,
-        'number_of_curricula': 50
+        'number_of_environments': 3,
+        'number_of_curricula': 3
     }
 
     game_manager_args = {
         'num_tiles': 4,
         'screen_size': 800,
-        'kg_completeness': 0.1,
+        'kg_completeness': 1,
         'vision_range': 2
     }
 
@@ -31,15 +31,15 @@ if __name__ == '__main__':
 
     
 
-    from game_manager import GameManager
-    game_manager = GameManager(game_manager_args['num_tiles'], game_manager_args['screen_size'],
-                               game_manager_args['kg_completeness'], game_manager_args['vision_range'])
+    # from game_manager import GameManager
+    # game_manager = GameManager(game_manager_args['num_tiles'], game_manager_args['screen_size'],
+    #                            game_manager_args['kg_completeness'], game_manager_args['vision_range'])
                                
-    game_manager.run()
+    # game_manager.run()
 
-    # from simulation_manager import SimulationManager
-    # simulation_manager = SimulationManager(game_manager_args,
-    #                                        simulation_manager_args['number_of_environments'],
-    #                                        simulation_manager_args['number_of_curricula'])
+    from simulation_manager import SimulationManager
+    simulation_manager = SimulationManager(game_manager_args,
+                                           simulation_manager_args['number_of_environments'],
+                                           simulation_manager_args['number_of_curricula'])
     
-    # simulation_manager.game_managers[0].run()
+    simulation_manager.game_managers[0].run()

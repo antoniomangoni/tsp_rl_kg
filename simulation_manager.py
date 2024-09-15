@@ -34,6 +34,9 @@ class SimulationManager:
         self.plateau_counter = 0
         self.best_performance = float('-inf')
 
+        # Sanity Check
+        self.print_energy_routes()
+
         # print(f"Curriculum step size: ~{self.step_size} energy units")
         if plot:
             self.create_plots(energy_values, self.curriculum_indices)
@@ -41,9 +44,7 @@ class SimulationManager:
     def create_games(self, number_of_games, game_manager_args, plot):
         num_tiles = game_manager_args['num_tiles']
         screen_size = game_manager_args['screen_size']
-        # kg_completeness = game_manager_args['kg_completeness']
         vision_range = game_manager_args['vision_range']
-
         for _ in range(number_of_games):
             game_manager = GameManager(num_tiles, screen_size, vision_range, plot)
             if len(game_manager.environment.outpost_locations) >= 3:
@@ -51,14 +52,15 @@ class SimulationManager:
 
     def insert_game_manager_sorted(self, game_manager):
         energy = game_manager.target_manager.target_route_energy
-        index = next((i for i, gm in enumerate(self.game_managers) if energy < gm.target_manager.target_route_energy), len(self.game_managers))
-        self.game_managers.insert(index, game_manager)
+        if energy > 0:
+            index = next((i for i, gm in enumerate(self.game_managers) if energy < gm.target_manager.target_route_energy), len(self.game_managers))
+            self.game_managers.insert(index, game_manager)
 
     def get_current_game_manager(self):
         return self.game_managers[self.curriculum_indices[self.current_curriculum_index]]
     
     def get_next_game_manager(self):
-        current_index = self.curriculum_indices[self.current_curriculum_index]
+        print(f"Getting next game manager. Current curriculum index: {self.current_curriculum_index}, Current curriculum episodes: {self.current_curriculum_episodes}")
         next_index = self.curriculum_indices[self.current_curriculum_index + 1]
         if next_index < self.number_of_environments:
             return self.game_managers[next_index]
@@ -135,6 +137,11 @@ class SimulationManager:
                 return next_curriculum_index
             else:
                 return -1
+
+    def print_energy_routes(self):
+        print(f"Number of environments: {len(self.game_managers)}")
+        print(f"Minimum energy route: {self.game_managers[0].target_manager.target_route_energy}")
+        print(f"Maximum energy route: {self.game_managers[-1].target_manager.target_route_energy}")
 
     def plot_curriculum(self, x_values, y_values, indices, simulation_points, xlabel, ylabel, title = "Not named"):
         """

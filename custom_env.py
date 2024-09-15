@@ -69,7 +69,7 @@ class CustomEnv(gym.Env):
             plot=plot
         )
         
-        self.current_game_index = self.simulation_manager.curriculum_indices[0]
+        self.current_game_index = self.simulation_manager.curriculum_indices[0]  # Start with the first curriculum
         self.set_current_game_manager()
 
         self.max_nodes = self.kg.graph_manager.max_nodes
@@ -93,11 +93,11 @@ class CustomEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
-        self.max_episode_steps = 5000  # Maximum number of steps per episode
+        self.max_episode_steps = 2048 * 8  # Maximum number of steps per episode
 
         # New attributes for progress tracking
         self.steps_without_progress = 0
-        self.max_steps_without_progress = 500  # Adjust as needed
+        self.max_steps_without_progress = 2048 * 4  # Adjust as needed
         self.best_distance_to_unvisited = float('inf')
 
         self.episode_step = 0
@@ -117,6 +117,8 @@ class CustomEnv(gym.Env):
         self.environment = self.current_gm.environment
         self.agent_controler: Agent = self.current_gm.agent_controler
         self.agent_controler.reset_agent()
+        self.current_efficiency = 0
+        self.best_efficiency = 0
         self.kg = self.current_gm.kg_class
         self.outpost_coords = self.environment.outpost_locations
         self.logger.info("Current game manager set successfully")
@@ -167,29 +169,38 @@ class CustomEnv(gym.Env):
         
         # Check if agent reached a new outpost
         if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:
-            print(f'Agent reached new outpost at {agent_pos}')
             self.outposts_visited.add(agent_pos)
+            # print(f'New outpost at {agent_pos}, visited outposts: {len(self.outposts_visited)}, total outposts: {len(self.outpost_coords)}')
             outposts_visited = len(self.outposts_visited)
             # Increase reward for reaching outposts, with higher rewards for later outposts
             outpost_reward = self.new_outpost_reward * (1 + 0.5 * (outposts_visited - 1))
             reward += outpost_reward
-            self.logger.info(f"Agent reached new outpost. Reward: {outpost_reward}")
+            self.logger.info(f"New outpost. Reward: {outpost_reward}")
+            self.logger.info(f"Outposts visited: {outposts_visited}/{len(self.outpost_coords)}")
             self.recent_path.clear()  # Clear the path memory when reaching a new outpost
             
             # Check if all outposts are visited
             if len(self.outposts_visited) == len(self.outpost_coords):
+                print(f"Agent reached all outposts. Outposts visited: {self.outposts_visited}")
+                self.outposts_visited.clear()
+                assert len(self.outposts_visited) == 0, f"Outposts visited not cleared: {self.outposts_visited}"
                 completion_reward = self.completion_reward * (1 + 1 / self.episode_step)
+                print(f"Step: {self.agent_controler.agent_step_count}. All outposts visited. Completion reward: {completion_reward}")
                 reward += completion_reward
                 
                 agent_route_energy = self.agent_controler.energy_spent
+                self.agent_controler.reset_energy_spent()
+                assert self.agent_controler.energy_spent == 0, f"Agent energy spent not reset: {self.agent_controler.energy_spent}"
+
                 algorithmic_best_energy = self.current_gm.target_manager.target_route_energy
-                
-                self.current_efficiency = self.calculate_route_efficiency(agent_route_energy, algorithmic_best_energy)
-                
+                print(f'Agent route energy: {agent_route_energy}, algorithmic best energy: {algorithmic_best_energy}')
+
+                self.current_efficiency = self.calculate_route_efficiency(agent_route_energy)
+                print(f"Route Efficiency: {self.current_efficiency:.2f} - {self.interpret_efficiency(self.current_efficiency)}")
                 if self.current_efficiency > self.best_efficiency:
-                    self.improvement = self.calculate_relative_improvement(agent_route_energy, algorithmic_best_energy)
-                    self.gap = self.calculate_efficiency_gap(agent_route_energy, algorithmic_best_energy)
-                    
+                    self.improvement = self.calculate_relative_improvement(agent_route_energy)
+                    self.gap = self.calculate_efficiency_gap(agent_route_energy)
+                    print(f"New best route found. Improvement: {self.improvement:.2f}, Gap: {self.gap:.2f}")
                     improvement_reward = self.completion_reward * self.improvement  # Scale improvement reward
                     reward += improvement_reward
                     
@@ -205,7 +216,6 @@ class CustomEnv(gym.Env):
                         self.early_stop = True
                 
                 self.previous_best_route_energy = min(self.previous_best_route_energy, agent_route_energy)
-                self.agent_controler.reset_energy_spent()
                 
                 # Log performance metrics
                 self.logger.info(f"Route Completed - Efficiency: {self.current_efficiency:.2f}, Improvement: {self.improvement:.2f}, Gap: {self.gap:.2f}")
@@ -298,8 +308,8 @@ class CustomEnv(gym.Env):
 
     def _check_termination(self):
         # Check if all outposts are visited
-        if len(self.outposts_visited) == len(self.outpost_coords):
-            self.logger.info("All outposts visited. Terminating episode.")
+        if self.early_stop:
+            self.logger.info("Early stop condition reached. Terminating episode.")
             return True
 
         # Check for no progress
@@ -367,30 +377,28 @@ class CustomEnv(gym.Env):
         valid_edge_index_range = (observation['edge_index'].min() >= 0) and (observation['edge_index'].max() <= 128)
         return valid_node_range and valid_edge_attr_range and valid_edge_index_range
     
-    def calculate_route_efficiency(self, agent_route_energy, algorithmic_best_energy):
-        if algorithmic_best_energy == 0:
-            return 0
-        return algorithmic_best_energy / agent_route_energy  # No longer capped at 1
+    def calculate_route_efficiency(self, agent_route_energy):
+        if self.current_gm.target_manager.target_route_energy == 0:
+            raise ValueError("Algorithmic best energy cannot be zero")
+        return (self.current_gm.target_manager.target_route_energy / agent_route_energy) * 100
 
-    def calculate_relative_improvement(self, current_route_energy, algorithmic_best_energy):
-        current_efficiency = self.calculate_route_efficiency(current_route_energy, algorithmic_best_energy)
-        previous_efficiency = self.calculate_route_efficiency(self.previous_best_route_energy, algorithmic_best_energy)
+    def calculate_relative_improvement(self, current_route_energy):
+        current_efficiency = self.calculate_route_efficiency(current_route_energy)
+        previous_efficiency = self.calculate_route_efficiency(self.previous_best_route_energy)
         
         if previous_efficiency == 0:
             return float('inf') if current_efficiency > 0 else 0
         
         return (current_efficiency - previous_efficiency) / previous_efficiency
 
-    def calculate_efficiency_gap(self, agent_route_energy, algorithmic_best_energy):
-        return (agent_route_energy - algorithmic_best_energy) / algorithmic_best_energy
+    def calculate_efficiency_gap(self, agent_route_energy):
+        return max(0, (agent_route_energy - self.current_gm.target_manager.target_route_energy) / self.current_gm.target_manager.target_route_energy)
 
     def interpret_efficiency(self, efficiency):
-        if efficiency > 1:
-            return f"Outperforming algorithm by {(efficiency - 1) * 100:.2f}%"
-        elif efficiency == 1:
+        if efficiency == 100:
             return "Matching algorithmic best"
         else:
-            return f"{(1 - efficiency) * 100:.2f}% away from algorithmic best"
+            return f"{100 - efficiency:.2f}% away from algorithmic best"
 
     def get_metrics(self):
         return {
