@@ -19,5 +19,5 @@ graph TD
     
     TM --> |analyzes| ENV
     
-    REND --> |visualizes| ENV
-    REND --> |visualizes| AGENT
+    REND --> |renders| ENV
+    REND --> |renders| AGENT

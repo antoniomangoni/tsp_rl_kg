@@ -28724,3 +28724,139 @@ AttributeError: 'SimulationManager' object has no attribute 'logger'
 2024-09-15 09:37:20,098 - INFO - Environments closed successfully
 2024-09-15 09:37:20,098 - INFO - Environments closed successfully
 2024-09-15 09:37:20,098 - INFO - Environments closed successfully
+2024-09-15 21:00:57,662 - INFO - Creating environment
+2024-09-15 21:00:57,662 - INFO - Creating environment
+2024-09-15 21:01:01,287 - INFO - Environment created successfully
+2024-09-15 21:01:01,287 - INFO - Environment created successfully
+2024-09-15 21:01:04,081 - INFO - Creating PPO model
+2024-09-15 21:01:04,081 - INFO - Creating PPO model
+2024-09-15 21:01:06,111 - INFO - PPO model created successfully
+2024-09-15 21:01:06,111 - INFO - PPO model created successfully
+2024-09-15 21:01:06,111 - INFO - Starting model training
+2024-09-15 21:01:06,111 - INFO - Starting model training
+2024-09-15 21:02:06,326 - INFO - Creating environment
+2024-09-15 21:02:06,326 - INFO - Creating environment
+2024-09-15 21:02:09,657 - INFO - Environment created successfully
+2024-09-15 21:02:09,657 - INFO - Environment created successfully
+2024-09-15 21:02:12,386 - INFO - Creating PPO model
+2024-09-15 21:02:12,386 - INFO - Creating PPO model
+2024-09-15 21:02:14,502 - INFO - PPO model created successfully
+2024-09-15 21:02:14,502 - INFO - PPO model created successfully
+2024-09-15 21:02:14,503 - INFO - Starting model training
+2024-09-15 21:02:14,503 - INFO - Starting model training
+2024-09-15 21:03:01,331 - INFO - Step 4096
+2024-09-15 21:03:01,331 - INFO - Step 4096
+2024-09-15 21:03:01,953 - INFO - Model training completed
+2024-09-15 21:03:01,953 - INFO - Model training completed
+2024-09-15 21:03:01,982 - INFO - Saving model to results\20240915_210206\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-09-15 21:03:01,982 - INFO - Saving model to results\20240915_210206\kg_completeness_0.25\ppo_custom_env_kg_completeness_0.25
+2024-09-15 21:03:02,790 - INFO - Model saved successfully
+2024-09-15 21:03:02,790 - INFO - Model saved successfully
+2024-09-15 21:03:02,840 - INFO - Creating environment
+2024-09-15 21:03:02,840 - INFO - Creating environment
+2024-09-15 21:03:02,840 - INFO - Creating environment
+2024-09-15 21:03:05,698 - INFO - Environment created successfully
+2024-09-15 21:03:05,698 - INFO - Environment created successfully
+2024-09-15 21:03:05,698 - INFO - Environment created successfully
+2024-09-15 21:03:08,668 - INFO - Creating PPO model
+2024-09-15 21:03:08,668 - INFO - Creating PPO model
+2024-09-15 21:03:08,668 - INFO - Creating PPO model
+2024-09-15 21:03:10,651 - INFO - PPO model created successfully
+2024-09-15 21:03:10,651 - INFO - PPO model created successfully
+2024-09-15 21:03:10,651 - INFO - PPO model created successfully
+2024-09-15 21:03:10,652 - INFO - Starting model training
+2024-09-15 21:03:10,652 - INFO - Starting model training
+2024-09-15 21:03:10,652 - INFO - Starting model training
+2024-09-15 21:03:56,702 - INFO - Step 4096
+2024-09-15 21:03:56,702 - INFO - Step 4096
+2024-09-15 21:03:56,702 - INFO - Step 4096
+2024-09-15 21:03:57,028 - INFO - Model training completed
+2024-09-15 21:03:57,028 - INFO - Model training completed
+2024-09-15 21:03:57,028 - INFO - Model training completed
+2024-09-15 21:03:57,059 - INFO - Saving model to results\20240915_210206\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-09-15 21:03:57,059 - INFO - Saving model to results\20240915_210206\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-09-15 21:03:57,059 - INFO - Saving model to results\20240915_210206\kg_completeness_0.5\ppo_custom_env_kg_completeness_0.5
+2024-09-15 21:03:57,860 - INFO - Model saved successfully
+2024-09-15 21:03:57,860 - INFO - Model saved successfully
+2024-09-15 21:03:57,860 - INFO - Model saved successfully
+2024-09-15 21:03:57,913 - INFO - Creating environment
+2024-09-15 21:03:57,913 - INFO - Creating environment
+2024-09-15 21:03:57,913 - INFO - Creating environment
+2024-09-15 21:03:57,913 - INFO - Creating environment
+2024-09-15 21:04:01,422 - INFO - Environment created successfully
+2024-09-15 21:04:01,422 - INFO - Environment created successfully
+2024-09-15 21:04:01,422 - INFO - Environment created successfully
+2024-09-15 21:04:01,422 - INFO - Environment created successfully
+2024-09-15 21:04:04,266 - INFO - Creating PPO model
+2024-09-15 21:04:04,266 - INFO - Creating PPO model
+2024-09-15 21:04:04,266 - INFO - Creating PPO model
+2024-09-15 21:04:04,266 - INFO - Creating PPO model
+2024-09-15 21:04:06,038 - INFO - PPO model created successfully
+2024-09-15 21:04:06,038 - INFO - PPO model created successfully
+2024-09-15 21:04:06,038 - INFO - PPO model created successfully
+2024-09-15 21:04:06,038 - INFO - PPO model created successfully
+2024-09-15 21:04:06,041 - INFO - Starting model training
+2024-09-15 21:04:06,041 - INFO - Starting model training
+2024-09-15 21:04:06,041 - INFO - Starting model training
+2024-09-15 21:04:06,041 - INFO - Starting model training
+2024-09-15 21:04:51,534 - INFO - Step 4096
+2024-09-15 21:04:51,534 - INFO - Step 4096
+2024-09-15 21:04:51,534 - INFO - Step 4096
+2024-09-15 21:04:51,534 - INFO - Step 4096
+2024-09-15 21:04:52,010 - INFO - Model training completed
+2024-09-15 21:04:52,010 - INFO - Model training completed
+2024-09-15 21:04:52,010 - INFO - Model training completed
+2024-09-15 21:04:52,010 - INFO - Model training completed
+2024-09-15 21:04:52,054 - INFO - Saving model to results\20240915_210206\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-09-15 21:04:52,054 - INFO - Saving model to results\20240915_210206\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-09-15 21:04:52,054 - INFO - Saving model to results\20240915_210206\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-09-15 21:04:52,054 - INFO - Saving model to results\20240915_210206\kg_completeness_0.75\ppo_custom_env_kg_completeness_0.75
+2024-09-15 21:04:52,958 - INFO - Model saved successfully
+2024-09-15 21:04:52,958 - INFO - Model saved successfully
+2024-09-15 21:04:52,958 - INFO - Model saved successfully
+2024-09-15 21:04:52,958 - INFO - Model saved successfully
+2024-09-15 21:04:53,046 - INFO - Creating environment
+2024-09-15 21:04:53,046 - INFO - Creating environment
+2024-09-15 21:04:53,046 - INFO - Creating environment
+2024-09-15 21:04:53,046 - INFO - Creating environment
+2024-09-15 21:04:53,046 - INFO - Creating environment
+2024-09-15 21:04:56,092 - INFO - Environment created successfully
+2024-09-15 21:04:56,092 - INFO - Environment created successfully
+2024-09-15 21:04:56,092 - INFO - Environment created successfully
+2024-09-15 21:04:56,092 - INFO - Environment created successfully
+2024-09-15 21:04:56,092 - INFO - Environment created successfully
+2024-09-15 21:04:59,141 - INFO - Creating PPO model
+2024-09-15 21:04:59,141 - INFO - Creating PPO model
+2024-09-15 21:04:59,141 - INFO - Creating PPO model
+2024-09-15 21:04:59,141 - INFO - Creating PPO model
+2024-09-15 21:04:59,141 - INFO - Creating PPO model
+2024-09-15 21:05:01,129 - INFO - PPO model created successfully
+2024-09-15 21:05:01,129 - INFO - PPO model created successfully
+2024-09-15 21:05:01,129 - INFO - PPO model created successfully
+2024-09-15 21:05:01,129 - INFO - PPO model created successfully
+2024-09-15 21:05:01,129 - INFO - PPO model created successfully
+2024-09-15 21:05:01,132 - INFO - Starting model training
+2024-09-15 21:05:01,132 - INFO - Starting model training
+2024-09-15 21:05:01,132 - INFO - Starting model training
+2024-09-15 21:05:01,132 - INFO - Starting model training
+2024-09-15 21:05:01,132 - INFO - Starting model training
+2024-09-15 21:05:47,580 - INFO - Step 4096
+2024-09-15 21:05:47,580 - INFO - Step 4096
+2024-09-15 21:05:47,580 - INFO - Step 4096
+2024-09-15 21:05:47,580 - INFO - Step 4096
+2024-09-15 21:05:47,580 - INFO - Step 4096
+2024-09-15 21:05:47,951 - INFO - Model training completed
+2024-09-15 21:05:47,951 - INFO - Model training completed
+2024-09-15 21:05:47,951 - INFO - Model training completed
+2024-09-15 21:05:47,951 - INFO - Model training completed
+2024-09-15 21:05:47,951 - INFO - Model training completed
+2024-09-15 21:05:47,990 - INFO - Saving model to results\20240915_210206\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-09-15 21:05:47,990 - INFO - Saving model to results\20240915_210206\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-09-15 21:05:47,990 - INFO - Saving model to results\20240915_210206\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-09-15 21:05:47,990 - INFO - Saving model to results\20240915_210206\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-09-15 21:05:47,990 - INFO - Saving model to results\20240915_210206\kg_completeness_1.0\ppo_custom_env_kg_completeness_1.0
+2024-09-15 21:05:48,845 - INFO - Model saved successfully
+2024-09-15 21:05:48,845 - INFO - Model saved successfully
+2024-09-15 21:05:48,845 - INFO - Model saved successfully
+2024-09-15 21:05:48,845 - INFO - Model saved successfully
+2024-09-15 21:05:48,845 - INFO - Model saved successfully
