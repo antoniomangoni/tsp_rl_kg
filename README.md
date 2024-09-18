@@ -69,6 +69,8 @@ kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
 
 Contributions to this project are welcome. Please fork the repository and submit a pull request with your changes.
 
+There is a `requirements.txt` (which does not include plotly used in `test.py`) and an `environment_droplet.yml` for pip and conda environments respectively. 
+
 ## Contact
 
 Antonio Mangoni: antoniomangoni@gmail.com
