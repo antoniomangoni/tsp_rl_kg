@@ -457,7 +457,7 @@ if __name__ == '__main__':
         'min_episodes_per_curriculum': min_episodes_per_curriculum,
         'performance_threshold': 0.85,
         },
-        'total_timesteps': 1000000
+        'total_timesteps': 100000
     }
 
     kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
