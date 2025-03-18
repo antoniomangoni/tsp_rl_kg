@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tsp_rl_kg"
+version = "0.1.0"
+description = "Reinforcement learning with knowledge graphs for TSP game environment"
+requires-python = ">=3.12"
+authors = [
+    {name = "Antonio Mangoni", email = "antoniomangoni@gmail.com"},
+]
+readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "gymnasium>=0.29.1",
+    "networkx>=3.2.1",
+    "noise>=1.2.2",
+    "numpy>=2.1.1",
+    "pandas>=2.2.2",
+    "Pillow>=10.4.0",
+    "pygame>=2.5.2",
+    "scipy>=1.14.1",
+    "stable_baselines3>=2.3.2",
+    "torch>=2.6.0",
+    "torch_geometric>=2.6.0",
+]
+
+[project.scripts]
+tsp-rl-kg = "tsp_rl_kg.main:main"
+
+[tool.setuptools.package-data]
+tsp_rl_kg = ["assets/full_art/*.png", "assets/pixel_art/*.png"]
+
+# Tool configurations for development
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+select = ["E", "F", "B", "I"]
