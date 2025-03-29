@@ -53,3 +53,6 @@ line_length = 100
 line-length = 100
 target-version = "py312"
 select = ["E", "F", "B", "I"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
