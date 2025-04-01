@@ -2,7 +2,7 @@ import noise
 import numpy as np
 import random
 
-from helper_functions import time_function
+from tsp_rl_kg.utils.helper_functions import time_function
 
 class HeightmapGenerator:
     @time_function

@@ -1,10 +1,11 @@
-from graph_idx_manager import Graph_Manager
-
 import torch
-from torch_geometric.data import Data
-from torch_geometric.utils import to_networkx, k_hop_subgraph
 import matplotlib.pyplot as plt
 import numpy as np
+
+from torch_geometric.data import Data
+from torch_geometric.utils import to_networkx, k_hop_subgraph
+from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
+
 
 class KnowledgeGraph():
     def __init__(self, environment, vision_range, completion=1.0, plot=False):

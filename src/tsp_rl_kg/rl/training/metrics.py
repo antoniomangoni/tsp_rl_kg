@@ -1,4 +1,6 @@
-lass TrainingMetrics:
+import numpy as np
+
+class TrainingMetrics:
     def __init__(self, num_actions):
         self.steps = []
         self.performances = []

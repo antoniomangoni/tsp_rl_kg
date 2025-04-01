@@ -2,13 +2,13 @@ import numpy as np
 import pygame
 import random
 
-from heightmap_generator import HeightmapGenerator
-from environment import Environment
-from agent import Agent
-from renderer import Renderer
-from target import Target_Manager
+from tsp_rl_kg.game_world.heightmap_generator import HeightmapGenerator
+from tsp_rl_kg.game_world.environment import Environment
+from tsp_rl_kg.game_world.agent import Agent
+from tsp_rl_kg.renderer import Renderer
+from tsp_rl_kg.rl.target import Target_Manager
 
-from knowledge_graph import KnowledgeGraph
+from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
 
 class GameManager:
     def __init__(self, num_tiles=32, screen_size=800, vision_range=2, plot=False):

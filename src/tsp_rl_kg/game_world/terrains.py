@@ -1,7 +1,7 @@
-import random
 import pygame
 
-from entities import Tree, MossyRock, SnowyRock, Fish, WoodPath
+from tsp_rl_kg.game_world.entities import Tree, MossyRock, SnowyRock, Fish, WoodPath
+
 class Terrain:
     def __init__(self, x, y, tile_size, entity_prob):
         self.grid_x = x

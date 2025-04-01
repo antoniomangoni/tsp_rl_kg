@@ -1,7 +1,7 @@
 import pygame
 
-from environment import Environment
-from agent import Agent
+from tsp_rl_kg.game_world.environment import Environment
+from tsp_rl_kg.game_world.agent import Agent
 
 class Renderer:
     def __init__(self, environment: Environment, agent_control: Agent):

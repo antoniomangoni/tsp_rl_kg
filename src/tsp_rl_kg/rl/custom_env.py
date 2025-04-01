@@ -5,9 +5,8 @@ import pygame
 from torch_geometric.data import Data
 from collections import deque
 import logging
-from agent import Agent
-from agent_model import AgentModel
-from simulation_manager import SimulationManager
+from tsp_rl_kg.game_world.agent import Agent
+from tsp_rl_kg.rl.simulation_manager import SimulationManager
 
 def manhattan_distance(pos1, pos2):
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])

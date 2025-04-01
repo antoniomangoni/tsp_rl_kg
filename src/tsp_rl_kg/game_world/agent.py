@@ -1,7 +1,7 @@
-from environment import Environment
-from entities import Tree, MossyRock, SnowyRock, Outpost, WoodPath
-from terrains import DeepWater, Water
-from knowledge_graph import KnowledgeGraph as KG
+from tsp_rl_kg.game_world.environment import Environment
+from tsp_rl_kg.game_world.entities import Tree, MossyRock, SnowyRock, Outpost, WoodPath
+from tsp_rl_kg.game_world.terrains import DeepWater, Water
+from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph as KG
 import time
 
 class Agent:

@@ -1,5 +1,13 @@
+import numpy as np
+import torch.nn as nn
+from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.vec_env import VecEnv
+from torch_geometric.nn import GATConv
+from tsp_rl_kg.rl.simulation_manager import SimulationManager
+from tsp_rl_kg.rl.training.metrics import Metrics
+
 class CurriculumCallback(BaseCallback):
-    def __init__(self, eval_env, custom_logger, metrics, print_weight_stats_freq=1000, verbose=0):
+    def __init__(self, eval_env, custom_logger, metrics: Metrics, print_weight_stats_freq=1000, verbose=0):
         super(CurriculumCallback, self).__init__(verbose)
         self.eval_env = eval_env
         self.custom_logger = custom_logger

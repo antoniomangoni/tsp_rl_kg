@@ -1,8 +1,10 @@
 import gymnasium as gym
 from stable_baselines3 import PPO
 
-from custom_env import CustomEnv
-from simulation_manager import SimulationManager
+from tsp_rl_kg.rl.custom_env import CustomEnv
+from tsp_rl_kg.rl.simulation_manager import SimulationManager
+from tsp_rl_kg.game_world.game_manager import GameManager
+
 
 if __name__ == '__main__':
 
@@ -32,14 +34,14 @@ if __name__ == '__main__':
     
 
     # from game_manager import GameManager
-    # game_manager = GameManager(game_manager_args['num_tiles'], game_manager_args['screen_size'],
-    #                            game_manager_args['kg_completeness'], game_manager_args['vision_range'])
+    game_manager = GameManager(game_manager_args['num_tiles'], game_manager_args['screen_size'],
+                               game_manager_args['kg_completeness'], game_manager_args['vision_range'])
                                
-    # game_manager.run()
+    game_manager.run()
 
-    from simulation_manager import SimulationManager
-    simulation_manager = SimulationManager(game_manager_args,
-                                           simulation_manager_args['number_of_environments'],
-                                           simulation_manager_args['number_of_curricula'])
+    # from simulation_manager import SimulationManager
+    # simulation_manager = SimulationManager(game_manager_args,
+    #                                        simulation_manager_args['number_of_environments'],
+    #                                        simulation_manager_args['number_of_curricula'])
     
-    simulation_manager.game_managers[0].run()
+    # simulation_manager.game_managers[0].run()

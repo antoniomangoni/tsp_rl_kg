@@ -2,8 +2,8 @@ import random
 import pygame
 import numpy as np
 
-from entities import Player, Outpost, WoodPath, Tree, MossyRock, SnowyRock
-from terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
+from tsp_rl_kg.game_world.entities import Player, Outpost, WoodPath, Tree, MossyRock, SnowyRock
+from tsp_rl_kg.game_world.terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
 
 class Environment:
     def __init__(self, heightmap: np.ndarray, tile_size: int = 50, number_of_outposts: int = 3):

@@ -1,4 +1,10 @@
-os.environ['PYGAME_DETECT_AVX2'] = '1'
+import os
+import traceback
+from tsp_rl_kg.rl.training.ablation_study import AblationStudy
+from tsp_rl_kg.utils.logger import Logger
+
+# Uncomment for windows
+# os.environ['PYGAME_DETECT_AVX2'] = '1'
 min_episodes_per_curriculum = 4
 base_config = {
     'model_args': {'num_actions': 11},

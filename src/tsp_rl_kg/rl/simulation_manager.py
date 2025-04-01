@@ -3,7 +3,7 @@ import time
 import matplotlib.pyplot as plt
 import csv
 from collections import deque
-from game_manager import GameManager
+from tsp_rl_kg.game_world.game_manager import GameManager
 import logging
 logger = logging.getLogger(__name__)
 
