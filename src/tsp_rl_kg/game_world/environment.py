@@ -19,8 +19,8 @@ class Environment:
 
         self.entity_group = pygame.sprite.LayeredUpdates() # pygame.sprite.Group()
         self.terrain_definitions = {
-            0: {'class': DeepWater, 'entity_prob': 0},
-            1: {'class': Water, 'entity_prob': 0},
+            0: {'class': DeepWater, 'entity_prob': 0.4},
+            1: {'class': Water, 'entity_prob': 0.2},
             2: {'class': Plains, 'entity_prob': 0.3},
             3: {'class': Hills, 'entity_prob': 0.4},
             4: {'class': Mountains, 'entity_prob': 0.4},

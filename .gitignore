@@ -11,6 +11,8 @@ results
 **/*plot*/
 **/*plot*
 
+*.npy
+
 # Ignore zip files
 *.zip
 

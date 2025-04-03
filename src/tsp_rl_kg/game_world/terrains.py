@@ -69,35 +69,37 @@ class Terrain:
 class DeepWater(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
-        
+        self.name = "Deep Water"
         self.elevation = 0
         self.colour = self.set_colour(self.elevation)
         self.image = self.create_image()
-        self.energy_requirement = 10
+        self.energy_requirement = 12
         self.entity_type = Fish
         self.entity_prob = entity_prob
 
     def shallow(self):
         self.__class__ = Water
+        self.name = "Water"
         self.colour = (0, 0, 255)
         self.image = self.create_image()
         self.elevation = 1
-        self.energy_requirement = 6
+        self.energy_requirement = 8
         self.entity_type = Fish
 
 class Water(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
-        
+        self.name = "Water"
         self.elevation = 1
         self.colour = self.set_colour(self.elevation)
         self.image = self.create_image()
-        self.energy_requirement = 6
+        self.energy_requirement = 8
         self.entity_type = Fish
         self.entity_prob = entity_prob
 
     def land_fill(self):
         self.__class__ = Plains
+        self.name = "Plains"
         self.colour = (0, 255, 0)
         self.image = self.create_image()
         self.elevation = 2
@@ -107,7 +109,7 @@ class Water(Terrain):
 class Plains(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
-        
+        self.name = "Plains"
         self.elevation = 2
         self.colour = self.set_colour(self.elevation)
         self.image = self.create_image()
@@ -118,7 +120,7 @@ class Plains(Terrain):
 class Hills(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
-        
+        self.name = "Hills"
         self.elevation = 3
         self.colour = self.set_colour(self.elevation)
         self.image = self.create_image()
@@ -129,7 +131,7 @@ class Hills(Terrain):
 class Mountains(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
-        
+        self.name = "Mountains"
         self.elevation = 4
         self.colour = self.set_colour(self.elevation)
         self.image = self.create_image()
@@ -140,10 +142,10 @@ class Mountains(Terrain):
 class Snow(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
-        
+        self.name = "Snow"
         self.elevation = 5
         self.colour = self.set_colour(self.elevation)
         self.image = self.create_image()
-        self.energy_requirement = 4
+        self.energy_requirement = 6
         self.entity_type = SnowyRock
         self.entity_prob = entity_prob
