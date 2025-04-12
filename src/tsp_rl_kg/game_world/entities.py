@@ -1,18 +1,35 @@
 import pygame
 import os
+from pathlib import Path
 
 class Entity(pygame.sprite.Sprite):
     _images = {}
-
+    
     def __init__(self, x, y, art, tile_size):
         super().__init__()
-        # Ensure the image is loaded
         if art not in self._images:
-            full_path = os.path.join('assets', 'pixel_art', art)
-            if os.path.exists(full_path):  
-                self._images[art] = pygame.transform.scale(pygame.image.load(full_path), (tile_size, tile_size))
-            else:
-                raise FileNotFoundError(f"Image file {art} not found in Pixel_Art directory.")
+            module_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+            
+            possible_paths = [
+                module_dir / "assets" / "pixel_art" / art,                 # Within the module
+                module_dir.parent / "assets" / "pixel_art" / art,          # One level up
+                module_dir.parent.parent / "assets" / "pixel_art" / art,   # Two levels up (package parent)
+                module_dir.parent.parent.parent / "assets" / "pixel_art" / art,  # Three levels up (repository root)
+                Path("assets") / "pixel_art" / art                         # Relative to working directory
+            ]
+                        
+            for path in possible_paths:
+                if path.exists():
+                    self._images[art] = pygame.transform.scale(
+                        pygame.image.load(str(path)), 
+                        (tile_size, tile_size)
+                    )
+                    break
+            else:  # This runs if no paths were found
+                paths_str = "\n - ".join(str(p) for p in possible_paths)
+                raise FileNotFoundError(f"Did not find image: {art}. Tried:\n - {paths_str}")
+
+
         
         self.image = self._images[art]
         self.grid_x = x
