@@ -64,6 +64,9 @@ Thumbs.db
 *.exe
 *.war
 
+# keep pixel art and ignore other images
+/assets/full_art/
+
 # Large media files
 *.mp4
 *.tiff
@@ -71,7 +74,6 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
-*.png
 
 # Python virtual environments
 venv/
