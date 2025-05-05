@@ -12,7 +12,7 @@ def manhattan_distance(pos1, pos2):
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
 class CustomEnv(gym.Env):
-    def __init__(self, game_manager_args, simulation_manager_args, model_args, plot=False):
+    def __init__(self, game_manager_args, simulation_manager_args, model_args, word_embedding_dim, plot=False):
         super(CustomEnv, self).__init__()
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing CustomEnv")
@@ -79,7 +79,13 @@ class CustomEnv(gym.Env):
         vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.float16)
 
         # Flatten graph data into fixed-size arrays
-        node_feature_space = spaces.Box(low=0, high=7, shape=(self.max_nodes, self.kg.graph.num_node_features), dtype=np.uint8)
+        node_feature_space = spaces.Box(
+            low=-1.0, 
+            high=1.0, 
+            shape=(self.max_nodes, word_embedding_dim),
+            dtype=np.float32
+        )
+
         edge_attr_space = spaces.Box(low=0, high=1000, shape=(self.max_edges, self.kg.graph.num_edge_features), dtype=np.uint8)
         edge_index_space = spaces.Box(low=0, high=self.max_nodes-1, shape=(2, self.max_edges), dtype=np.int64)
 

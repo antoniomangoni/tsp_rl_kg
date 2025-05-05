@@ -29,7 +29,7 @@ if __name__ == '__main__':
     run_type = 2
 
     if run_type == 0:
-        env = CustomEnv(game_manager_args, simulation_manager_args, model_args)
+        env = CustomEnv(game_manager_args, simulation_manager_args, model_args, word_embedding_dim=512)
         
         # Instantiate the RL model (e.g., PPO)
         model = PPO('CnnPolicy', env, verbose=1)
@@ -94,5 +94,3 @@ if __name__ == '__main__':
             json.dump(terrain_dict, f)
         with open('entity_dict.json', 'w') as f:
             json.dump(entity_dict, f)
-
-        
