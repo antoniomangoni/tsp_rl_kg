@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class SimulationManager:
     def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10,
-                 min_episodes_per_curriculum=1, plot=False):
+                 min_episodes_per_curriculum=1, plot=False, converter=None):
         self.number_of_environments = number_of_environments
         self.logger = logger
         self.game_managers = []

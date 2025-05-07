@@ -65,7 +65,8 @@ class CustomEnv(gym.Env):
             simulation_manager_args['number_of_environments'], 
             simulation_manager_args['number_of_curricula'],
             simulation_manager_args['min_episodes_per_curriculum'],
-            plot=plot
+            plot=plot,
+            converter=converter,
         )
         
         self.current_game_index = self.simulation_manager.curriculum_indices[0]  # Start with the first curriculum
