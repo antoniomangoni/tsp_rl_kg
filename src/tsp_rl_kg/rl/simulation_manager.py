@@ -46,7 +46,7 @@ class SimulationManager:
         screen_size = game_manager_args['screen_size']
         vision_range = game_manager_args['vision_range']
         for _ in range(number_of_games):
-            game_manager = GameManager(num_tiles, screen_size, vision_range, plot)
+            game_manager = GameManager(num_tiles, screen_size, vision_range, plot, self.converter)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 

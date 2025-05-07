@@ -2,6 +2,7 @@ import os
 import json
 import traceback
 from datetime import datetime
+from typing import Literal
 from tsp_rl_kg.rl.training.trainer import Trainer
 from tsp_rl_kg.utils.logger import Logger
 from tsp_rl_kg.rl.training.environment_manager import EnvironmentManager
@@ -9,8 +10,9 @@ from tsp_rl_kg.rl.simulation_manager import SimulationManager
 from tsp_rl_kg.rl.training.trainer import Trainer
 
 class AblationStudy:
-    def __init__(self, base_config, kg_completeness_values, logger):
+    def __init__(self, base_config, kg_completeness_values, converter, logger):
         self.base_config = base_config
+        self.converter = converter
         self.kg_completeness_values = kg_completeness_values
         self.logger = logger
         self.results = {}

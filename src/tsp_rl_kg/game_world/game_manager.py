@@ -11,7 +11,7 @@ from tsp_rl_kg.rl.target import Target_Manager
 from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
 
 class GameManager:
-    def __init__(self, num_tiles=32, screen_size=800, vision_range=2, plot=False):
+    def __init__(self, num_tiles=32, screen_size=800, vision_range=2, plot=False, converter=None):
         self.num_tiles = num_tiles
         self.tile_size: int = screen_size // num_tiles
         self.environment = None
@@ -23,7 +23,7 @@ class GameManager:
         self.renderer = None
         self.running = True
         self.plot = plot
-
+        self.converter = converter
         self.initialize_components()
 
     def init_pygame(self):
@@ -48,7 +48,7 @@ class GameManager:
         self.target_manager = Target_Manager(self.environment)
 
     def init_knowledge_graph(self, kg_completeness):
-        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, kg_completeness, self.plot)
+        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, kg_completeness, self.plot, self.converter)
         self.agent_controler.get_kg(self.kg_class)
 
     def initialise_rendering(self):

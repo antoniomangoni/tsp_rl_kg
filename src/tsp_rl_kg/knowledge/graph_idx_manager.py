@@ -32,13 +32,6 @@ class Graph_Manager:
 
     def store_edge_indices(self, node_idx1, node_idx2, direct_edge_idx, reverse_edge_idx):
         """Store both directions of the edge along with their indices in the graph tensors."""
-        # if (node_idx1, node_idx2) in self.nodeTuples_edgeIdx_dict:
-        #     return
-        # if (node_idx2, node_idx1) in self.nodeTuples_edgeIdx_dict:
-        #     return
-        # if len(self.nodeTuples_edgeIdx_dict) >= self.max_edges:
-        #     print("Max edges reached.")
-        #     return
         self.nodeTuples_edgeIdx_dict[(node_idx1, node_idx2)] = direct_edge_idx
         self.nodeTuples_edgeIdx_dict[(node_idx2, node_idx1)] = reverse_edge_idx 
 

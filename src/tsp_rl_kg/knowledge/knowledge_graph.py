@@ -8,10 +8,12 @@ from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
 
 
 class KnowledgeGraph():
-    def __init__(self, environment, vision_range, completion=1.0, plot=False):
+    def __init__(self, environment, vision_range, completion=1.0, plot=False, converter=None):
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
+        self.terrain_embedding_array = converter.convert_terrain_to_embeddings(self.terrain_array) if converter else None
+        self.entity_embedding_array = converter.convert_entities_to_embeddings(self.entity_array) if converter else None
 
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
         self.entity_array[self.player_pos] = 0  # Remove the player from the entity array
@@ -42,13 +44,22 @@ class KnowledgeGraph():
     def create_node_features(self, coor, z_level, mask):
         x, y = coor
         if z_level == self.terrain_z_level:
-            type_id = self.terrain_array[x, y]
+            if self.terrain_embedding_array is not None:
+                type_id = self.terrain_embedding_array[x, y]
+            else:
+                type_id = self.terrain_array[x, y]
         elif z_level == self.entity_z_level:
-            type_id = self.entity_array[x, y]
-            if type_id == 0:
-                mask = 0
+            if self.entity_embedding_array is not None:
+                type_id = self.entity_embedding_array[x, y]
+            else:
+                type_id = self.entity_array[x, y]
+            # if type_id == 0:
+            #     mask = 0
         elif z_level == self.player_z_level:
-            type_id = 0  # Assuming player type_id is 0 and always visible
+            if self.converter is not None:
+                type_id = self.converter.agent_embedding
+            else:
+                type_id = 0  # Assuming player type_id is 0 and always visible
             mask = 1
         else:
             exit(f"Invalid z-level: {z_level}")
@@ -167,20 +178,33 @@ class KnowledgeGraph():
     def build_path_node(self, x, y):
         assert self.entity_array[x, y] == 6, "Entity type is not 6"
         node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-        self.set_new_node_type(node_idx, self.entity_array[x, y])
+        if self.entity_embedding_array is not None:
+            new_type = self.entity_embedding_array[x, y] = self.converter.path_embedding
+        else:
+            new_type = self.entity_array[x, y]
+        self.set_new_node_type(node_idx, new_type)
         self.activate_node_and_maybe_its_edges(node_idx)
         self.check_entites_active()
 
     def elevate_terrain_node(self, x, y):
         self.terrain_array[x, y] += 1
         node_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
-        self.set_new_node_type(node_idx, self.terrain_array[x, y])
+        if self.terrain_embedding_array is not None:
+            new_type = self.terrain_embedding_array[x, y] = self.converter.terrain_embedding_lookup[self.terrain_array[x, y]]
+        else:
+            new_type = self.terrain_array[x, y]
+        self.set_new_node_type(node_idx, new_type)
 
     def remove_entity_node(self, x, y):
         self.entity_array[x, y] = 0
         node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-        self.set_new_node_type(node_idx, 0)
-        self.deactivate_node_and_its_edges(node_idx)
+        if self.entity_embedding_array is not None:
+            new_type = self.entity_embedding_array[x, y] = self.converter.empty_embedding
+        else:
+            new_type = self.entity_array[x, y]
+        self.set_new_node_type(node_idx, new_type)
+        # deactivate the edges of the node
+        # self.deactivate_node_and_its_edges(node_idx)
 
     def move_player_node(self, x, y):
         self.player_pos = (x, y)

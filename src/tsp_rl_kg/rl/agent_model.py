@@ -6,7 +6,7 @@ from torch_geometric.data import Data
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 import gymnasium as gym
 
-torch_dtype = torch.float32
+torch_dtype = torch.float64
 
 class VisionProcessor(BaseFeaturesExtractor):
     """

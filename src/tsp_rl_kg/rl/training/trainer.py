@@ -21,7 +21,8 @@ class Trainer:
         self.config = config
         self.env_manager: EnvironmentManager = EnvironmentManager(config['game_manager_args'], 
                                               config['simulation_manager_args'], 
-                                              config['model_args'])
+                                              config['model_args'],
+                                              self.ablation_study.converter)
         
         self.logger.info("Creating environment", logger_name='training')
         self.env: CustomEnv = self.env_manager.make_env()
