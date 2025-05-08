@@ -91,7 +91,7 @@ class CustomEnv(gym.Env):
             node_feature_space = spaces.Box(
                 low=-1.0, 
                 high=1.0, 
-                shape=(self.max_nodes, converter.word_embedding_dim),
+                shape=(self.max_nodes, converter.embedding_dim),
                 dtype=np.float64
             )
 

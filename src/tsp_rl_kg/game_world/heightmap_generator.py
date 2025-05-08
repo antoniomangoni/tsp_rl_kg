@@ -62,7 +62,9 @@ class HeightmapGenerator:
     def classify_heightmap(self, heightmap: np.ndarray) -> np.ndarray:
         int_heightmap = np.zeros(heightmap.shape, dtype=int)
         num_thresholds = len(self.terrain_thresholds)
-
+        # print(f"THresholds: {self.terrain_thresholds}")
+        # print(f"Num thresholds: {num_thresholds}")
+        # print(f"Heightmap: {heightmap}")
         for index, threshold in enumerate(self.terrain_thresholds):
             if index == 0:
                 mask = heightmap < threshold
@@ -72,7 +74,7 @@ class HeightmapGenerator:
                 mask = (heightmap >= self.terrain_thresholds[index - 1]) & (heightmap < threshold)
             
             int_heightmap[mask] = index
-
+        # print(f"Int heightmap: {int_heightmap}")
         return int_heightmap
 
 

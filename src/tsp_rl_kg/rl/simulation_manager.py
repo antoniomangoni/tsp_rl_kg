@@ -12,6 +12,7 @@ class SimulationManager:
                  min_episodes_per_curriculum=1, plot=False, converter=None):
         self.number_of_environments = number_of_environments
         self.logger = logger
+        self.converter = converter
         self.game_managers = []
         self.create_games(self.number_of_environments, game_manager_args, plot)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)

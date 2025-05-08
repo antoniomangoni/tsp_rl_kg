@@ -6,7 +6,6 @@ from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx, k_hop_subgraph
 from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
 
-
 class KnowledgeGraph():
     def __init__(self, environment, vision_range, completion=1.0, plot=False, converter=None):
         self.environment = environment
@@ -14,7 +13,7 @@ class KnowledgeGraph():
         self.entity_array = environment.entity_index_grid
         self.converter = converter
         self.terrain_embedding_array = converter.convert_terrain_to_embeddings(self.terrain_array) if converter else None
-        self.entity_embedding_array = converter.convert_entities_to_embeddings(self.entity_array) if converter else None
+        self.entity_embedding_array = converter.convert_entity_to_embeddings(self.entity_array) if converter else None
 
         self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
         self.entity_array[self.player_pos] = 0  # Remove the player from the entity array
@@ -42,36 +41,43 @@ class KnowledgeGraph():
         self.graph.x[node_idx] = [x, y, z_level, type_id, mask]
         return node_idx
         
-    def create_node_features(self, coor, z_level, mask):
+    def create_node_features(self, coor, z_level, mask) -> tuple:
+        """Create node features based on coordinates and z-level."""
         x, y = coor
+        
         if z_level == self.terrain_z_level:
             if self.terrain_embedding_array is not None:
-                type_id = self.terrain_embedding_array[x, y]
+                embedding = self.terrain_embedding_array[x, y]
             else:
-                type_id = self.terrain_array[x, y]
+                embedding = self.terrain_array[x, y]
         elif z_level == self.entity_z_level:
             if self.entity_embedding_array is not None:
-                type_id = self.entity_embedding_array[x, y]
+                embedding = self.entity_embedding_array[x, y]
             else:
-                type_id = self.entity_array[x, y]
-            # if type_id == 0:
+                embedding = self.entity_array[x, y]
+            # if embedding == 0:
             #     mask = 0
         elif z_level == self.player_z_level:
             if self.converter is not None:
-                type_id = self.converter.agent_embedding
+                embedding = self.converter.agent_embedding
             else:
-                type_id = 0  # Assuming player type_id is 0 and always visible
+                embedding = 0  # Assuming player embedding is 0 and always visible
             mask = 1
         else:
             exit(f"Invalid z-level: {z_level}")
-        return x, y, z_level, type_id, mask
+        return embedding
+        # return x, y, z_level, embedding, mask
 
     def init_graph_tensors(self):
         self.num_possible_nodes = self.environment.width * self.environment.height * 2 + 1  # 2 z-levels and a player node
         self.graph_manager.set_max_nodes(self.num_possible_nodes)
         self.num_possible_edges, _, _ = self.compute_total_possible_edges()
         self.graph_manager.set_max_edges(self.num_possible_edges)
-        feature_size = 5 # x, y, z_level, type_id, mask
+        # feature_size = 5 # x, y, z_level, type_id, mask
+        if self.converter:
+            feature_size = self.converter.embedding_dim
+        else:
+            feature_size = 1
         edge_attr_size = 2 # distance, mask
         self.graph = Data(
             x=torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.int),
@@ -241,10 +247,11 @@ class KnowledgeGraph():
 
     def create_node(self, coordinates, z_level, mask=0):
         features = self.create_node_features(coordinates, z_level, mask)
-        if features is None:
-            return None
         node_idx = self.graph_manager.create_idx(coordinates, z_level)
-        self.graph.x[node_idx] = torch.tensor(features, dtype=torch.int)
+        if self.converter:
+            self.graph.x[node_idx] = torch.tensor(features, dtype=torch.float64)
+        else:
+            self.graph.x[node_idx] = torch.tensor(features, dtype=torch.int)
         return node_idx
     
     def add_nodes(self):
