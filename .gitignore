@@ -13,6 +13,8 @@ results
 
 *.npy
 
+*.jpeg
+
 # Ignore zip files
 *.zip
 

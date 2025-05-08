@@ -87,9 +87,9 @@ class GameManager:
             self.game_step()
             # pygame.time.wait(1000)
             # save the surface to an image
-            # if i % 10 == 0:
-            #     pygame.image.save(self.screen, f"game_world_{i}.jpeg")
-            # i += 1
+            if i % 10 == 0:
+                pygame.image.save(self.screen, f"game_world_{i}.jpeg")
+            i += 1
             # exit()
 
         pygame.quit()

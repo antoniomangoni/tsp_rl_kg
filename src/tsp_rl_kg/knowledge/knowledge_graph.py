@@ -12,6 +12,7 @@ class KnowledgeGraph():
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
+        self.converter = converter
         self.terrain_embedding_array = converter.convert_terrain_to_embeddings(self.terrain_array) if converter else None
         self.entity_embedding_array = converter.convert_entities_to_embeddings(self.entity_array) if converter else None
 

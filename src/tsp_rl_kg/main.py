@@ -19,14 +19,14 @@ if __name__ == '__main__':
     }
 
     game_manager_args = {
-        'num_tiles': 4,
+        'num_tiles': 50,
         'screen_size': 800,
         'kg_completeness': 1,
         'vision_range': 2
     }
 
-    # 0: RL, 1: Simulation, 2: just GameManager
-    run_type = 2
+    # 0: RL, 2: Simulation, 1: just GameManager
+    run_type = 1
 
     if run_type == 0:
         env = CustomEnv(game_manager_args, simulation_manager_args, model_args, word_embedding_dim=512)
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         model = PPO('CnnPolicy', env, verbose=1)
 
     elif run_type == 1:
-
+        # this will create many images
         game_manager = GameManager(game_manager_args['num_tiles'], game_manager_args['screen_size'],
                                 game_manager_args['kg_completeness'], game_manager_args['vision_range'])
                                
