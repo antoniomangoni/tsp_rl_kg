@@ -73,12 +73,15 @@ class KnowledgeGraph():
         self.graph_manager.set_max_nodes(self.num_possible_nodes)
         self.num_possible_edges, _, _ = self.compute_total_possible_edges()
         self.graph_manager.set_max_edges(self.num_possible_edges)
+        edge_attr_size = 2 # distance, mask
         # feature_size = 5 # x, y, z_level, type_id, mask
         if self.converter:
             feature_size = self.converter.embedding_dim
+            _x = torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.float64)
         else:
             feature_size = 1
-        edge_attr_size = 2 # distance, mask
+            _x = torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.int)
+        
         self.graph = Data(
             x=torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.int),
             edge_index=torch.full((2, self.num_possible_edges), -1, dtype=torch.int),
@@ -116,6 +119,7 @@ class KnowledgeGraph():
         assert torch.all(self.graph.edge_attr[:, 1] >= 0), "Some edge attributes are uninitialized."
         
     def is_node_active(self, idx):
+        return True
         if self.graph.x[idx][4] == 1:
             return True
         else:
@@ -136,7 +140,7 @@ class KnowledgeGraph():
         return True
 
     def activate_node_and_maybe_its_edges(self, idx):
-        self.set_node_mask_1(idx)
+        # self.set_node_mask_1(idx)
         # activate the nodes edges if the corresponding node is activated
         node_pairs = self.graph_manager.retrieve_edge_node_pairs_from_node(idx)
         for node_pair in node_pairs:
@@ -161,20 +165,25 @@ class KnowledgeGraph():
                     print(f"Edge {edge_idx_2} is not active")
 
     def deactivate_node_and_its_edges(self, node_idx):
-        self.set_node_mask_0(node_idx)
+        # self.set_node_mask_0(node_idx)
         edge_indices = self.graph_manager.retrieve_edge_indicies_from_node(node_idx)
         for edge_idx in edge_indices:
             self.set_edge_mask_0(edge_idx)
 
     def set_new_node_type(self, idx, new_type):
-        self.graph.x[idx][3] = new_type
+        # Convert to correct tensor type if needed
+        if not isinstance(new_type, torch.Tensor):
+            if self.converter:
+                self.graph.x[idx] = torch.tensor(new_type, dtype=torch.float64)
+            else:
+                self.graph.x[idx] = torch.tensor(new_type, dtype=torch.int)
 
-    def set_node_mask_0(self, idx):
-        self.graph.x[idx][4] = 0
+    # # def set_node_mask_0(self, idx):
+    #     self.graph.x[idx][4] = 0
 
-    def set_node_mask_1(self, idx):
-        # x, y, z_level, type_id, mask
-        self.graph.x[idx][4] = 1
+    # # def set_node_mask_1(self, idx):
+    #     # x, y, z_level, type_id, mask
+    #     self.graph.x[idx][4] = 1
 
     def set_edge_mask_0(self, idx):
         self.graph.edge_attr[idx][1] = 0
