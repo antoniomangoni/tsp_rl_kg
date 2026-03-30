@@ -1,15 +1,16 @@
 from tsp_rl_kg.rl.custom_env import CustomEnv
+from tsp_rl_kg.config import GameManagerConfig, SimulationManagerConfig, ModelArgs
 from stable_baselines3.common.monitor import Monitor
 
 class EnvironmentManager:
-    def __init__(self, game_manager_args, simulation_manager_args, model_args, converter):
-        self.game_manager_args = game_manager_args
-        self.simulation_manager_args = simulation_manager_args
+    def __init__(self, game_manager_config: GameManagerConfig | dict, simulation_manager_config: SimulationManagerConfig | dict, model_args: ModelArgs | dict, converter):
+        self.game_manager_config = game_manager_config
+        self.simulation_manager_config = simulation_manager_config
         self.model_args = model_args
         self.converter = converter
 
     def make_env(self):
-        env = CustomEnv(self.game_manager_args, self.simulation_manager_args, self.model_args, self.converter, plot = False)
+        env = CustomEnv(self.game_manager_config, self.simulation_manager_config, self.model_args, self.converter, plot = False)
         return Monitor(env)
 
     def set_kg_completeness(self, env, completeness):

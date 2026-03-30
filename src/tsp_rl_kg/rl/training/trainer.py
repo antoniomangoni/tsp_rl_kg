@@ -8,6 +8,7 @@ from tsp_rl_kg.rl.custom_env import CustomEnv
 from tsp_rl_kg.rl.training.model_trainer import ModelTrainer
 from tsp_rl_kg.rl.training.environment_manager import EnvironmentManager
 from tsp_rl_kg.utils.logger import Logger
+from tsp_rl_kg.config import TrainingConfig
 
 class Trainer:
     def __init__(self, current_kg_completeness, ablation_study):
@@ -17,27 +18,31 @@ class Trainer:
         self.current_kg_completeness = current_kg_completeness
         self.ablation_study = ablation_study
 
-    def setup(self, config):
+    def setup(self, config: TrainingConfig | dict):
+        if isinstance(config, dict):
+            config = TrainingConfig.from_dict(config)
         self.config = config
-        self.env_manager: EnvironmentManager = EnvironmentManager(config['game_manager_args'], 
-                                              config['simulation_manager_args'], 
-                                              config['model_args'],
-                                              self.ablation_study.converter)
+        self.env_manager: EnvironmentManager = EnvironmentManager(
+            config.game_manager,
+            config.simulation_manager,
+            config.model_args,
+            self.ablation_study.converter,
+        )
         
         self.logger.info("Creating environment", logger_name='training')
         self.env: CustomEnv = self.env_manager.make_env()
-        self.env.unwrapped.simulation_manager.min_episodes_per_curriculum = config['curriculum_config']['min_episodes_per_curriculum']
-        self.env.unwrapped.simulation_manager.performance_threshold = config['curriculum_config']['performance_threshold']
+        self.env.unwrapped.simulation_manager.min_episodes_per_curriculum = config.curriculum.min_episodes_per_curriculum
+        self.env.unwrapped.simulation_manager.performance_threshold = config.curriculum.performance_threshold
         self.logger.info("Environment created successfully", logger_name='training')
 
         self.logger.info("Creating evaluation environment", logger_name='eval')
         self.eval_env: CustomEnv = self.env_manager.make_env()
-        self.eval_env.unwrapped.simulation_manager.min_episodes_per_curriculum = config['curriculum_config']['min_episodes_per_curriculum']
-        self.eval_env.unwrapped.simulation_manager.performance_threshold = config['curriculum_config']['performance_threshold']
+        self.eval_env.unwrapped.simulation_manager.min_episodes_per_curriculum = config.curriculum.min_episodes_per_curriculum
+        self.eval_env.unwrapped.simulation_manager.performance_threshold = config.curriculum.performance_threshold
         self.logger.info("Evaluation environment created successfully", logger_name='eval')
 
         self.model_trainer = ModelTrainer(self.env, self.eval_env, self.logger, self.device)
-        self.model_trainer.create_model(config['model_config'])
+        self.model_trainer.create_model(config.model_config)
 
     def run(self, experiment_name):
         # Create a subdirectory for this experiment within the results directory
@@ -52,7 +57,7 @@ class Trainer:
         profiler.enable()
 
         self.model_trainer.train(
-            total_timesteps=self.config['total_timesteps'], 
+            total_timesteps=self.config.total_timesteps, 
             eval_callback=eval_callback,
             timeout=3600)
         
@@ -82,7 +87,7 @@ class Trainer:
         return {
             'mean_reward': mean_reward,
             'std_reward': std_reward,
-            'config': self.config,
+            'config': self.config.to_dict() if hasattr(self.config, 'to_dict') else self.config,
             'model_path': model_path,
             'stats_file': stats_file
         }

@@ -3,29 +3,38 @@ import traceback
 from typing import Literal
 from tsp_rl_kg.rl.training.ablation_study import AblationStudy
 from tsp_rl_kg.utils.logger import Logger
+from tsp_rl_kg.config import (
+    CurriculumConfig,
+    GameManagerConfig,
+    ModelArgs,
+    ModelConfig,
+    SimulationManagerConfig,
+    TrainingConfig,
+)
 
 # Uncomment for windows
 # os.environ['PYGAME_DETECT_AVX2'] = '1'
 min_episodes_per_curriculum = 4
-base_config = {
-    'model_args': {'num_actions': 11},
-    'simulation_manager_args': {
-        'number_of_environments': 3000,
-        'number_of_curricula': 30,
-        'min_episodes_per_curriculum': min_episodes_per_curriculum},
-    'game_manager_args': {'num_tiles': 5, 'screen_size': 20, 'vision_range': 1},
-    'model_config': {
-        'n_steps': 2048 * 2,
-        'batch_size': 512,
-        'learning_rate': 6e-4,
-        'gamma': 0.995
-    },
-    'curriculum_config': {
-    'min_episodes_per_curriculum': min_episodes_per_curriculum,
-    'performance_threshold': 0.85,
-    },
-    'total_timesteps': 100000
-}
+base_config = TrainingConfig(
+    game_manager=GameManagerConfig(num_tiles=5, screen_size=20, vision_range=1),
+    simulation_manager=SimulationManagerConfig(
+        number_of_environments=3000,
+        number_of_curricula=30,
+        min_episodes_per_curriculum=min_episodes_per_curriculum,
+    ),
+    model_args=ModelArgs(num_actions=11),
+    model_config=ModelConfig(
+        n_steps=2048 * 2,
+        batch_size=512,
+        learning_rate=6e-4,
+        gamma=0.995,
+    ),
+    curriculum=CurriculumConfig(
+        min_episodes_per_curriculum=min_episodes_per_curriculum,
+        performance_threshold=0.85,
+    ),
+    total_timesteps=100000,
+)
 
 kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
 

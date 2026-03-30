@@ -9,21 +9,40 @@ from tsp_rl_kg.renderer import Renderer
 from tsp_rl_kg.rl.target import Target_Manager
 
 from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
+from tsp_rl_kg.config import GameManagerConfig
+
 
 class GameManager:
-    def __init__(self, num_tiles=32, screen_size=800, vision_range=2, plot=False, converter=None):
-        self.num_tiles = num_tiles
-        self.tile_size: int = screen_size // num_tiles
+    def __init__(
+        self,
+        config: GameManagerConfig | None = None,
+        plot: bool = False,
+        converter=None,
+        # Legacy positional args — prefer config
+        num_tiles: int | None = None,
+        screen_size: int | None = None,
+        vision_range: int | None = None,
+    ):
+        if config is not None:
+            self._config = config
+        else:
+            self._config = GameManagerConfig(
+                num_tiles=num_tiles if num_tiles is not None else 32,
+                screen_size=screen_size if screen_size is not None else 800,
+                vision_range=vision_range if vision_range is not None else 2,
+            )
+        self.num_tiles = self._config.num_tiles
+        self.tile_size: int = self._config.screen_size // self._config.num_tiles
         self.environment = None
         self.agent_controler = None
         self.agent = None
         self.target_manager = None
         self.route_energy_list = []
-        self.vision_range = vision_range
         self.renderer = None
         self.running = True
         self.plot = plot
         self.converter = converter
+        self.vision_range = self._config.vision_range
         self.initialize_components()
 
     def init_pygame(self):

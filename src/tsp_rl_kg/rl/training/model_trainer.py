@@ -5,6 +5,7 @@ from stable_baselines3 import PPO
 from tsp_rl_kg.rl.training.metrics import TrainingMetrics
 from tsp_rl_kg.rl.agent_model import AgentModel
 from tsp_rl_kg.rl.training.callbacks import CurriculumCallback
+from tsp_rl_kg.config import ModelConfig
 
 class ModelTrainer:
     def __init__(self, env, eval_env, logger, device):
@@ -15,7 +16,9 @@ class ModelTrainer:
         self.rl_model = None
         self.metrics = TrainingMetrics(env.action_space.n)
 
-    def create_model(self, model_config):
+    def create_model(self, model_config: ModelConfig | dict):
+        if isinstance(model_config, dict):
+            model_config = ModelConfig(**model_config)
         self.logger.info("Creating PPO model", logger_name='training')
         self.rl_model = PPO("MultiInputPolicy", 
                     self.env, 
@@ -23,7 +26,7 @@ class ModelTrainer:
                         'features_extractor_class': AgentModel,
                         'features_extractor_kwargs': {'features_dim': 64}
                     },
-                    **model_config,
+                    **model_config.to_dict(),
                     device=self.device,
                     verbose=1
         )

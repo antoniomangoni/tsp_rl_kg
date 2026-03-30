@@ -7,15 +7,41 @@ from collections import deque
 import logging
 from tsp_rl_kg.game_world.agent import Agent
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
+from tsp_rl_kg.config import GameManagerConfig, SimulationManagerConfig, ModelArgs
 
 def manhattan_distance(pos1, pos2):
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
 
 class CustomEnv(gym.Env):
-    def __init__(self, game_manager_args, simulation_manager_args, model_args, converter=None, plot=False):
+    def __init__(self, game_manager_args: GameManagerConfig | dict, simulation_manager_args: SimulationManagerConfig | dict, model_args: ModelArgs | dict, converter=None, plot=False):
         super(CustomEnv, self).__init__()
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing CustomEnv")
+
+        # Normalize to typed configs
+        if isinstance(game_manager_args, dict):
+            self._gm_config = GameManagerConfig(**{
+                k: v for k, v in game_manager_args.items()
+                if k in GameManagerConfig.__dataclass_fields__
+            })
+        else:
+            self._gm_config = game_manager_args
+
+        if isinstance(simulation_manager_args, dict):
+            self._sim_config = SimulationManagerConfig(**{
+                k: v for k, v in simulation_manager_args.items()
+                if k in SimulationManagerConfig.__dataclass_fields__
+            })
+        else:
+            self._sim_config = simulation_manager_args
+
+        if isinstance(model_args, dict):
+            self._model_args = ModelArgs(**{
+                k: v for k, v in model_args.items()
+                if k in ModelArgs.__dataclass_fields__
+            })
+        else:
+            self._model_args = model_args
 
         # Base rewards
         self.new_outpost_reward = 30
@@ -52,19 +78,17 @@ class CustomEnv(gym.Env):
         self.outposts_visited = set()
         self.recent_path = None  # Will be initialized in reset()
         self.game_worlds_trained_in = 0
-        self.max_game_worlds_trained_in = min(100, simulation_manager_args['number_of_environments'] // 2)
+        self.max_game_worlds_trained_in = min(100, self._sim_config.number_of_environments // 2)
 
-        self.num_actions = model_args['num_actions']
-        self.num_tiles = game_manager_args['num_tiles']
-        self.screen_size = game_manager_args['screen_size']
+        self.num_actions = self._model_args.num_actions
+        self.num_tiles = self._gm_config.num_tiles
+        self.screen_size = self._gm_config.screen_size
         # self.kg_completeness = game_manager_args['kg_completeness']
-        self.vision_range = game_manager_args['vision_range']
+        self.vision_range = self._gm_config.vision_range
     
         self.simulation_manager = SimulationManager(
-            game_manager_args,
-            simulation_manager_args['number_of_environments'], 
-            simulation_manager_args['number_of_curricula'],
-            simulation_manager_args['min_episodes_per_curriculum'],
+            self._gm_config,
+            sim_config=self._sim_config,
             plot=plot,
             converter=converter,
         )

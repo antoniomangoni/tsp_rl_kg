@@ -4,54 +4,52 @@ from stable_baselines3 import PPO
 from tsp_rl_kg.rl.custom_env import CustomEnv
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
 from tsp_rl_kg.game_world.game_manager import GameManager
+from tsp_rl_kg.config import GameManagerConfig, ModelArgs, SimulationManagerConfig
 
 import numpy as np
 
 if __name__ == '__main__':
 
-    model_args = {
-        'num_actions': 11
-    }
+    model_args = ModelArgs(num_actions=11)
 
-    simulation_manager_args = {
-        'number_of_environments': 2,
-        'number_of_curricula': 3
-    }
+    simulation_manager_config = SimulationManagerConfig(
+        number_of_environments=2,
+        number_of_curricula=3,
+    )
 
-    game_manager_args = {
-        'num_tiles': 50,
-        'screen_size': 800,
-        'kg_completeness': 1,
-        'vision_range': 2
-    }
+    game_manager_config = GameManagerConfig(
+        num_tiles=50,
+        screen_size=800,
+        vision_range=2,
+    )
 
     # 0: RL, 2: Simulation, 1: just GameManager
     run_type = 1
 
     if run_type == 0:
-        env = CustomEnv(game_manager_args, simulation_manager_args, model_args)
+        env = CustomEnv(game_manager_config, simulation_manager_config, model_args)
         
         # Instantiate the RL model (e.g., PPO)
         model = PPO('CnnPolicy', env, verbose=1)
 
     elif run_type == 1:
         # this will create many images
-        game_manager = GameManager(game_manager_args['num_tiles'], game_manager_args['screen_size'],
-                                game_manager_args['kg_completeness'], game_manager_args['vision_range'])
+        game_manager = GameManager(config=game_manager_config)
                                
         game_manager.run()
 
     elif run_type == 2:
-        simulation_manager = SimulationManager(game_manager_args,
-                                            simulation_manager_args['number_of_environments'],
-                                            simulation_manager_args['number_of_curricula'])
+        simulation_manager = SimulationManager(
+            game_manager_config,
+            sim_config=simulation_manager_config,
+        )
         
         # simulation_manager.game_managers[0].run()
 
-        game_world_array = np.zeros((simulation_manager_args['number_of_environments'],
+        game_world_array = np.zeros((simulation_manager_config.number_of_environments,
                                     2,  # terrain and entity
-                                    game_manager_args['num_tiles'],
-                                    game_manager_args['num_tiles']), dtype=np.uint8)
+                                    game_manager_config.num_tiles,
+                                    game_manager_config.num_tiles), dtype=np.uint8)
 
         for i, game_manager in enumerate(simulation_manager.game_managers):
             print(game_manager.environment.terrain_index_grid)

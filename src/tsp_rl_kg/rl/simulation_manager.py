@@ -4,17 +4,40 @@ import matplotlib.pyplot as plt
 import csv
 from collections import deque
 from tsp_rl_kg.game_world.game_manager import GameManager
+from tsp_rl_kg.config import GameManagerConfig, SimulationManagerConfig
 import logging
 logger = logging.getLogger(__name__)
 
 class SimulationManager:
-    def __init__(self, game_manager_args, number_of_environments=500, number_of_curricula=10,
-                 min_episodes_per_curriculum=1, plot=False, converter=None):
+    def __init__(
+        self,
+        game_manager_config: GameManagerConfig | dict,
+        sim_config: SimulationManagerConfig | None = None,
+        # Legacy positional args — ignored when sim_config is provided
+        number_of_environments: int = 500,
+        number_of_curricula: int = 10,
+        min_episodes_per_curriculum: int = 1,
+        plot: bool = False,
+        converter=None,
+    ):
+        # Accept either a GameManagerConfig or a legacy dict
+        if isinstance(game_manager_config, dict):
+            self._gm_config = GameManagerConfig(**{
+                k: v for k, v in game_manager_config.items() if k in GameManagerConfig.__dataclass_fields__
+            })
+        else:
+            self._gm_config = game_manager_config
+
+        if sim_config is not None:
+            number_of_environments = sim_config.number_of_environments
+            number_of_curricula = sim_config.number_of_curricula
+            min_episodes_per_curriculum = sim_config.min_episodes_per_curriculum
+
         self.number_of_environments = number_of_environments
         self.logger = logger
         self.converter = converter
         self.game_managers = []
-        self.create_games(self.number_of_environments, game_manager_args, plot)
+        self.create_games(self.number_of_environments, plot)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula + 1)
         print(f"Curriculum indices: {self.curriculum_indices}, Step size: {step_size}")
@@ -42,12 +65,11 @@ class SimulationManager:
         if plot:
             self.create_plots(energy_values, self.curriculum_indices)
 
-    def create_games(self, number_of_games, game_manager_args, plot):
-        num_tiles = game_manager_args['num_tiles']
-        screen_size = game_manager_args['screen_size']
-        vision_range = game_manager_args['vision_range']
+    def create_games(self, number_of_games, plot):
         for _ in range(number_of_games):
-            game_manager = GameManager(num_tiles, screen_size, vision_range, plot, self.converter)
+            game_manager = GameManager(
+                config=self._gm_config, plot=plot, converter=self.converter
+            )
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 

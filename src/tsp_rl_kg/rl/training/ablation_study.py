@@ -8,9 +8,12 @@ from tsp_rl_kg.utils.logger import Logger
 from tsp_rl_kg.rl.training.environment_manager import EnvironmentManager
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
 from tsp_rl_kg.rl.training.trainer import Trainer
+from tsp_rl_kg.config import TrainingConfig
 
 class AblationStudy:
-    def __init__(self, base_config, kg_completeness_values, logger, converter=None):
+    def __init__(self, base_config: TrainingConfig | dict, kg_completeness_values, logger, converter=None):
+        if isinstance(base_config, dict):
+            base_config = TrainingConfig.from_dict(base_config)
         self.base_config = base_config
         self.converter = converter
         self.kg_completeness_values = kg_completeness_values
@@ -71,5 +74,5 @@ class AblationStudy:
         # Save the base configuration
         config_file = os.path.join(self.results_dir, 'base_config.json')
         with open(config_file, 'w') as f:
-            json.dump(self.base_config, f, indent=4)
+            json.dump(self.base_config.to_dict(), f, indent=4)
         self.logger.info(f"Base configuration saved to {config_file}")
