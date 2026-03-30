@@ -2,6 +2,7 @@ import pygame
 
 from tsp_rl_kg.game_world.entities import Tree, MossyRock, SnowyRock, Fish, WoodPath
 
+
 class Terrain:
     _headless = False
 
@@ -27,7 +28,7 @@ class Terrain:
         image = pygame.Surface((self.tile_size, self.tile_size))
         image.fill(self.colour)
         return image
-    
+
     def add_entity(self, entity):
         self.entity_on_tile = entity
         self.entity_index = entity.id
@@ -70,6 +71,7 @@ class Terrain:
         else:
             return (0, 0, 0)
 
+
 class DeepWater(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
@@ -81,14 +83,6 @@ class DeepWater(Terrain):
         self.entity_type = Fish
         self.entity_prob = entity_prob
 
-    def shallow(self):
-        self.__class__ = Water
-        self.name = "Water"
-        self.colour = (0, 0, 255)
-        self.image = self.create_image()
-        self.elevation = 1
-        self.energy_requirement = 8
-        self.entity_type = Fish
 
 class Water(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
@@ -101,14 +95,6 @@ class Water(Terrain):
         self.entity_type = Fish
         self.entity_prob = entity_prob
 
-    def land_fill(self):
-        self.__class__ = Plains
-        self.name = "Plains"
-        self.colour = (0, 255, 0)
-        self.image = self.create_image()
-        self.elevation = 2
-        self.energy_requirement = 2
-        self.entity_type = Tree
 
 class Plains(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
@@ -121,6 +107,7 @@ class Plains(Terrain):
         self.entity_type = Tree
         self.entity_prob = entity_prob
 
+
 class Hills(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
@@ -132,6 +119,7 @@ class Hills(Terrain):
         self.entity_type = Tree
         self.entity_prob = entity_prob
 
+
 class Mountains(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):
         super().__init__(x, y, tile_size, entity_prob)
@@ -142,6 +130,7 @@ class Mountains(Terrain):
         self.energy_requirement = 5
         self.entity_type = MossyRock
         self.entity_prob = entity_prob
+
 
 class Snow(Terrain):
     def __init__(self, x, y, tile_size, entity_prob):

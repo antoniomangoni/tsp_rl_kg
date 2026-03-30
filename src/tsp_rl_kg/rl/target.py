@@ -4,6 +4,7 @@ from itertools import permutations
 import numpy as np
 from queue import PriorityQueue
 
+
 class Target_Manager:
     def __init__(self, environment):
         self.environment = environment
@@ -11,9 +12,9 @@ class Target_Manager:
         self.terrain_index_grid = environment.terrain_index_grid
         self.entity_index_grid = environment.entity_index_grid
         self.outpost_locations = environment.outpost_locations
-        
+
         self.energy_req_grid = self.get_energy_grid()
-        
+
         self.G = nx.Graph()
         self.shortest_path, self.min_path_length = self.get_target_trade_route()
         self.target_route_energy = self.get_route_energy(self.shortest_path)
@@ -24,28 +25,31 @@ class Target_Manager:
             for y in range(self.height):
                 grid[x, y] = self.environment.terrain_object_grid[x, y].energy_requirement
         return grid
-    
+
     def get_energy_required(self, path):
         """Calculate the energy required for a given path."""
         energy = 0
         for coords in path:
             energy += self.environment.terrain_object_grid[coords].energy_requirement
-        return energy 
-    
+        return energy
+
     def find_shortest_tsp_path(self):
         nodes = list(self.G.nodes())
         shortest_path = None
-        min_path_length = float('inf')
+        min_path_length = float("inf")
 
         for permutation in permutations(nodes):
             cycle = permutation + (permutation[0],)
-            path_length = sum(self.G.edges[cycle[n], cycle[n+1]]['weight'] for n in range(len(cycle) - 1))
+            path_length = sum(
+                self.G.edges[cycle[n], cycle[n + 1]]["weight"] for n in range(len(cycle) - 1)
+            )
 
             if path_length < min_path_length:
                 shortest_path = cycle
                 min_path_length = path_length
 
         return shortest_path, min_path_length
+
     def get_target_trade_route(self):
         self.create_grid_graph(self.outpost_locations)
         shortest_path_indices, min_path_length = self.find_shortest_tsp_path()
@@ -88,18 +92,13 @@ class Target_Manager:
         """Retrieve the energy requirement of the cell at (x, y)."""
         return self.environment.terrain_object_grid[x, y].energy_requirement
 
-    def get_energy_neighbous(self, x, y):
-        """Retrieve the energy requirements of the neighbors of the cell at (x, y)."""
-        neighbors = self.environment.get_neighbors(x, y)
-        return [self.get_cell_energy(x, y) for x, y in neighbors]
-
     def calculate_least_energy_path(self, start, end):
         """
         Calculate the path with the least energy required from start to end.
         Uses a variation of Dijkstra's algorithm adapted for energy costs.
         """
         # Initialize distance map with infinity
-        energy_cost = {coord: float('inf') for coord in np.ndindex(self.energy_req_grid.shape)}
+        energy_cost = {coord: float("inf") for coord in np.ndindex(self.energy_req_grid.shape)}
         energy_cost[start] = self.get_cell_energy(*start)  # Start cell energy
         prev = {coord: None for coord in np.ndindex(self.energy_req_grid.shape)}
 
@@ -134,7 +133,7 @@ class Target_Manager:
         """Calculate the least energy required to move from start to end."""
         path = self.calculate_least_energy_path(start, end)
         return sum(self.get_cell_energy(*coord) for coord in path)
-    
+
     def get_route_energy(self, route):
         """Calculate the total energy required for the path."""
         total_energy = 0

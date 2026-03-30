@@ -2,7 +2,15 @@ import random
 import pygame
 import numpy as np
 
-from tsp_rl_kg.game_world.entities import Entity, Player, Outpost, WoodPath, Tree, MossyRock, SnowyRock
+from tsp_rl_kg.game_world.entities import (
+    Entity,
+    Player,
+    Outpost,
+    WoodPath,
+    Tree,
+    MossyRock,
+    SnowyRock,
+)
 from tsp_rl_kg.game_world.terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
 
 
@@ -51,16 +59,21 @@ class Environment:
         else:
             self.entity_group = pygame.sprite.LayeredUpdates()
         self.terrain_definitions = {
-            0: {'class': DeepWater, 'entity_prob': 0.4},
-            1: {'class': Water, 'entity_prob': 0.2},
-            2: {'class': Plains, 'entity_prob': 0.3},
-            3: {'class': Hills, 'entity_prob': 0.4},
-            4: {'class': Mountains, 'entity_prob': 0.4},
-            5: {'class': Snow, 'entity_prob': 0.4},
+            0: {"class": DeepWater, "entity_prob": 0.4},
+            1: {"class": Water, "entity_prob": 0.2},
+            2: {"class": Plains, "entity_prob": 0.3},
+            3: {"class": Hills, "entity_prob": 0.4},
+            4: {"class": Mountains, "entity_prob": 0.4},
+            5: {"class": Snow, "entity_prob": 0.4},
         }
         self.terrain_colour_map = self.get_terrain_colour_map()
-        self.suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
-        self.less_suitable_terrain_locations = {'Plains': [], 'Hills': [], 'Mountains': [], 'Snow': []}
+        self.suitable_terrain_locations = {"Plains": [], "Hills": [], "Mountains": [], "Snow": []}
+        self.less_suitable_terrain_locations = {
+            "Plains": [],
+            "Hills": [],
+            "Mountains": [],
+            "Snow": [],
+        }
 
         self.initialize_environment()
         self.add_outposts()
@@ -102,8 +115,8 @@ class Environment:
             self.terrain_index_grid[x, y] = terrain_code
             terrain_info = self.terrain_definitions.get(terrain_code)
             if terrain_info:
-                terrain_class = terrain_info['class']
-                entity_prob = terrain_info['entity_prob']
+                terrain_class = terrain_info["class"]
+                entity_prob = terrain_info["entity_prob"]
                 # Instantiate the terrain with its corresponding properties
                 self.terrain_object_grid[x, y] = terrain_class(x, y, self.tile_size, entity_prob)
                 # Add entity to terrain if entity_prob is met
@@ -111,7 +124,7 @@ class Environment:
 
             else:
                 raise ValueError(f"Invalid terrain code: {terrain_code}")
-    
+
     def init_entity(self, terrain, x, y):
         if random.random() < terrain.entity_prob:
             entity_type = terrain.entity_type
@@ -119,30 +132,37 @@ class Environment:
             self.entity_group.add(entity)
             self.entity_index_grid[x, y] = entity.id
             self.terrain_object_grid[x, y].add_entity(entity)
-            
-            if isinstance(terrain, Plains): # terrain.evelation == isinstance(terrain, Plains):
-                self.less_suitable_terrain_locations['Plains'].append((x, y))
+
+            if isinstance(terrain, Plains):  # terrain.evelation == isinstance(terrain, Plains):
+                self.less_suitable_terrain_locations["Plains"].append((x, y))
             if isinstance(terrain, Hills):
-                self.less_suitable_terrain_locations['Hills'].append((x, y))
+                self.less_suitable_terrain_locations["Hills"].append((x, y))
             if isinstance(terrain, Mountains):
-                self.less_suitable_terrain_locations['Mountains'].append((x, y))
+                self.less_suitable_terrain_locations["Mountains"].append((x, y))
             elif isinstance(terrain, Snow):
-                self.less_suitable_terrain_locations['Snow'].append((x, y))
+                self.less_suitable_terrain_locations["Snow"].append((x, y))
         else:
-            if isinstance(terrain, Plains): # terrain.evelation == isinstance(terrain, Plains):
-                self.suitable_terrain_locations['Plains'].append((x, y))
+            if isinstance(terrain, Plains):  # terrain.evelation == isinstance(terrain, Plains):
+                self.suitable_terrain_locations["Plains"].append((x, y))
             if isinstance(terrain, Hills):
-                self.suitable_terrain_locations['Hills'].append((x, y))
+                self.suitable_terrain_locations["Hills"].append((x, y))
             if isinstance(terrain, Mountains):
-                self.suitable_terrain_locations['Mountains'].append((x, y))
+                self.suitable_terrain_locations["Mountains"].append((x, y))
             elif isinstance(terrain, Snow):
-                self.suitable_terrain_locations['Snow'].append((x, y))
+                self.suitable_terrain_locations["Snow"].append((x, y))
 
     def add_outposts(self):
-        possible_locations = self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills']
+        possible_locations = (
+            self.suitable_terrain_locations["Plains"] + self.suitable_terrain_locations["Hills"]
+        )
         if len(possible_locations) < self.number_of_outposts:
-            possible_locations += self.suitable_terrain_locations['Mountains'] + self.suitable_terrain_locations['Snow']
-        selected_locations = random.sample(possible_locations, min(len(possible_locations), self.number_of_outposts))
+            possible_locations += (
+                self.suitable_terrain_locations["Mountains"]
+                + self.suitable_terrain_locations["Snow"]
+            )
+        selected_locations = random.sample(
+            possible_locations, min(len(possible_locations), self.number_of_outposts)
+        )
 
         for x, y in selected_locations:
             outpost = Outpost(x, y, self.tile_size)
@@ -154,32 +174,47 @@ class Environment:
             self.outpost_locations.append((x, y))
 
             # remove the location from the list of suitable locations
-            if (x, y) in self.suitable_terrain_locations['Plains']:
-                self.suitable_terrain_locations['Plains'].remove((x, y))
-            if (x, y) in self.suitable_terrain_locations['Hills']:
-                self.suitable_terrain_locations['Hills'].remove((x, y))
-            if (x, y) in self.suitable_terrain_locations['Mountains']:
-                self.suitable_terrain_locations['Mountains'].remove((x, y))
-            if (x, y) in self.suitable_terrain_locations['Snow']:
-                self.suitable_terrain_locations['Snow'].remove((x, y))
-            
-            if (x, y) in self.less_suitable_terrain_locations['Plains']:
-                self.less_suitable_terrain_locations['Plains'].remove((x, y))
-            if (x, y) in self.less_suitable_terrain_locations['Hills']:
-                self.less_suitable_terrain_locations['Hills'].remove((x, y))
-            if (x, y) in self.less_suitable_terrain_locations['Mountains']:
-                self.less_suitable_terrain_locations['Mountains'].remove((x, y))
-            if (x, y) in self.less_suitable_terrain_locations['Snow']:
-                self.less_suitable_terrain_locations['Snow'].remove((x, y))
+            if (x, y) in self.suitable_terrain_locations["Plains"]:
+                self.suitable_terrain_locations["Plains"].remove((x, y))
+            if (x, y) in self.suitable_terrain_locations["Hills"]:
+                self.suitable_terrain_locations["Hills"].remove((x, y))
+            if (x, y) in self.suitable_terrain_locations["Mountains"]:
+                self.suitable_terrain_locations["Mountains"].remove((x, y))
+            if (x, y) in self.suitable_terrain_locations["Snow"]:
+                self.suitable_terrain_locations["Snow"].remove((x, y))
 
+            if (x, y) in self.less_suitable_terrain_locations["Plains"]:
+                self.less_suitable_terrain_locations["Plains"].remove((x, y))
+            if (x, y) in self.less_suitable_terrain_locations["Hills"]:
+                self.less_suitable_terrain_locations["Hills"].remove((x, y))
+            if (x, y) in self.less_suitable_terrain_locations["Mountains"]:
+                self.less_suitable_terrain_locations["Mountains"].remove((x, y))
+            if (x, y) in self.less_suitable_terrain_locations["Snow"]:
+                self.less_suitable_terrain_locations["Snow"].remove((x, y))
 
         return possible_locations
 
     def init_player(self):
-        if len(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills']) > 0:
-            location = random.choice(self.suitable_terrain_locations['Plains'] + self.suitable_terrain_locations['Hills'])
-        elif len(self.suitable_terrain_locations['Mountains'] + self.suitable_terrain_locations['Snow']) > 0:
-            location = random.choice(self.suitable_terrain_locations['Mountains'] + self.suitable_terrain_locations['Snow'])
+        if (
+            len(
+                self.suitable_terrain_locations["Plains"] + self.suitable_terrain_locations["Hills"]
+            )
+            > 0
+        ):
+            location = random.choice(
+                self.suitable_terrain_locations["Plains"] + self.suitable_terrain_locations["Hills"]
+            )
+        elif (
+            len(
+                self.suitable_terrain_locations["Mountains"]
+                + self.suitable_terrain_locations["Snow"]
+            )
+            > 0
+        ):
+            location = random.choice(
+                self.suitable_terrain_locations["Mountains"]
+                + self.suitable_terrain_locations["Snow"]
+            )
         else:
             location = self.get_random_zero_coordinate()
             self.terrain_object_grid[location[0], location[1]].remove_entity()
@@ -188,7 +223,7 @@ class Environment:
         # Cannot use the entity_index_grid to store the player id, as it is already used to store the woodpath id
         self.entity_index_grid[location[0], location[1]] = player.id
         return player
-    
+
     def update_terrain_passability(self, x, y, entity):
         terrain = self.terrain_object_grid[x, y]
         if isinstance(entity, WoodPath):
@@ -207,7 +242,7 @@ class Environment:
         # We never remove the entity from the entity_group, so no need to re-add it
         self.environment_changed(current_x, current_y, new_x, new_y)
         return new_x, new_y
-    
+
     def delete_entity(self, entity):
         x, y = entity.grid_x, entity.grid_y
         self.terrain_object_grid[x, y].remove_entity()
@@ -220,7 +255,7 @@ class Environment:
 
     def within_bounds(self, x, y):
         return 0 <= x < self.width and 0 <= y < self.height
-    
+
     def environment_changed(self, old_x, old_y, new_x, new_y):
         self.environment_changed_flag = True
         self.changed_tiles_list.append((old_x, old_y))
@@ -238,10 +273,21 @@ class Environment:
         self.single_environment_changed(x, y)
 
     def drop_rock_in_water(self, x, y, fill_type):
+        old_tile = self.terrain_object_grid[x, y]
+        entity_prob = old_tile.entity_prob
         if fill_type == 0:
-            self.terrain_object_grid[x, y].shallow()
+            new_tile = Water(x, y, self.tile_size, entity_prob)
         elif fill_type == 1:
-            self.terrain_object_grid[x, y].land_fill()
+            new_tile = Plains(x, y, self.tile_size, entity_prob)
+        else:
+            return
+        # Preserve entity reference from the old tile
+        if old_tile.entity_on_tile is not None:
+            new_tile.entity_on_tile = old_tile.entity_on_tile
+            new_tile.entity_index = old_tile.entity_index
+            new_tile.passable = old_tile.passable
+        self.terrain_object_grid[x, y] = new_tile
+        self.terrain_index_grid[x, y] = new_tile.elevation
         self.single_environment_changed(x, y)
 
     def get_neighbours(self, x, y):
@@ -257,11 +303,11 @@ class Environment:
 
     def environment_gamestate(self):
         return self.terrain_index_grid, self.entity_index_grid
-    
+
     def print_environment(self):
-        print('Terrain Index Grid:')
+        print("Terrain Index Grid:")
         print(self.terrain_index_grid)
-        print('Entity Index Grid:')
+        print("Entity Index Grid:")
         print(self.entity_index_grid)
         # number_of_fish = 0
         number_of_trees = 0
@@ -294,4 +340,3 @@ class Environment:
         print(f"Trees: {number_of_trees}")
         print(f"Mossy Rocks: {number_of_mossy_rocks}")
         print(f"Snowy Rocks: {number_of_snowy_rocks}")
-        

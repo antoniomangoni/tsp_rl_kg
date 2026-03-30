@@ -3,6 +3,7 @@ import pygame
 from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.game_world.agent import Agent
 
+
 class Renderer:
     def __init__(self, environment: Environment, agent_control: Agent):
         self.environment = environment
@@ -13,9 +14,8 @@ class Renderer:
 
         self.heatmap_colour = (255, 0, 0)  # Colour for the heatmap overlay is red
 
-        self.ui_height = 100  # Height for the UI panel at the bottom
-        self.surface = pygame.display.set_mode((self.window_width, self.window_height + self.ui_height))
-        
+        self.surface = pygame.display.set_mode((self.window_width, self.window_height))
+
         self.terrain_surface = pygame.Surface((self.window_width, self.window_height))
         self.terrain_surface.set_alpha(None)
 
@@ -24,13 +24,14 @@ class Renderer:
         for x in range(self.environment.width):
             for y in range(self.environment.height):
                 terrain_tile = self.environment.terrain_object_grid[x, y]
-                self.terrain_surface.blit(terrain_tile.image, (x * self.tile_size, y * self.tile_size))
-        
+                self.terrain_surface.blit(
+                    terrain_tile.image, (x * self.tile_size, y * self.tile_size)
+                )
+
         # Initial blit of the terrain surface onto the main surface
         self.surface.blit(self.terrain_surface, (0, 0))
         # Draw all entities for the first time
         self.environment.entity_group.draw(self.surface)
-        # self.render_ui()
         pygame.display.flip()
 
     def render_updated_tiles(self):
@@ -41,21 +42,25 @@ class Renderer:
         for x, y in self.environment.changed_tiles_list:
             self.update_tile(x, y)
             # Blit the updated terrain tile onto the main surface
-            rect = pygame.Rect(x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size)
+            rect = pygame.Rect(
+                x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size
+            )
             self.surface.blit(self.terrain_surface, rect.topleft, rect)
-        
+
         # Now redraw entities that are within or intersect the updated tiles.
         # This is a simplified approach. A more optimized method would check for actual intersections.
         self.environment.entity_group.draw(self.surface)
 
         # Finally, update the display only for the dirty rects
-        dirty_rects = [pygame.Rect(x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size) for x, y in self.environment.changed_tiles_list]
+        dirty_rects = [
+            pygame.Rect(x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size)
+            for x, y in self.environment.changed_tiles_list
+        ]
         pygame.display.update(dirty_rects)
 
         # Clear the list of changed tiles after updating
         self.environment.changed_tiles_list.clear()
         self.environment.environment_changed_flag = False
-        # self.render_changed_ui()
 
     def update_tile(self, x, y):
         # Directly access and redraw the terrain tile
@@ -64,17 +69,9 @@ class Renderer:
 
         # Redraw the entity if present on this tile
         if terrain_tile.entity_on_tile is not None:
-            self.surface.blit(terrain_tile.entity_on_tile.image, (x * self.tile_size, y * self.tile_size))
-
-    def get_clamped_view_view(self, x, y, width, height):
-        # Ensure the view area is within the bounds of the game screen
-        view_rect = pygame.Rect(x, y, width, height)
-        view_rect.clamp_ip(self.surface.get_rect())
-        return self.surface.subsurface(view_rect)
-    
-    ###################################################################
-    #   UI has not been implemented in this version of the renderer   #
-    ###################################################################
+            self.surface.blit(
+                terrain_tile.entity_on_tile.image, (x * self.tile_size, y * self.tile_size)
+            )
 
     def render_heatmap(self, max_intensity, bool_heatmap=False):
         if not bool_heatmap:
@@ -91,47 +88,3 @@ class Renderer:
                     heat_rect.fill(color[:3])
                     self.surface.blit(heat_rect, (x * self.tile_size, y * self.tile_size))
         pygame.display.update()
-
-    def render_ui(self):
-        # First, clear the UI area to ensure a clean slate for UI rendering
-        self.clear_ui_area()
-        
-        # Render the inventory text
-        self.render_inventory_text()
-
-    def render_changed_ui(self):
-        # Update the status bars and inventory text
-        self.render_inventory_text()
-
-    def clear_ui_area(self):
-        # Fill the UI background to clear previous frame's UI elements
-        pygame.draw.rect(self.surface, (0, 0, 0), (0, self.window_height, self.window_width, self.ui_height))
-
-    def render_inventory_text(self):
-        # Render inventory items as text
-        inventory_items = [
-            ('water', self.agent.water),
-            ('wood', self.agent.wood),
-            ('stone', self.agent.stone)
-        ]
-        inventory_start_x = 300
-        inventory_start_y = self.window_height + 10
-        font = pygame.font.Font(None, 24)
-        
-        for index, (item, quantity) in enumerate(inventory_items):
-            text = font.render(f"{item.capitalize()}: {quantity}", True, (255, 255, 255))
-            self.surface.blit(text, (inventory_start_x, inventory_start_y + index * 25))
-
-    def render_bar(self, x, y, value, max_value, color, label):
-        # Draw the status bar for a single attribute
-        bar_length = 200
-        bar_height = 20
-        fill_length = (value / max_value) * bar_length
-        # Background bar
-        pygame.draw.rect(self.surface, (255, 255, 255), (x, y, bar_length, bar_height), 2)
-        # Filled bar
-        pygame.draw.rect(self.surface, color, (x, y, fill_length, bar_height))
-        # Label text
-        font = pygame.font.Font(None, 24)
-        text = font.render(label, True, (255, 255, 255))
-        self.surface.blit(text, (x + bar_length + 5, y))

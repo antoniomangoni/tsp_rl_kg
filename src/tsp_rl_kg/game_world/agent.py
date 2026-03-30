@@ -152,29 +152,3 @@ class Agent:
                 self.stone += 1
             self.environment.delete_entity(resource)
             self.kg.remove_entity_node(x, y)
-
-
-"""
-These are not implemented as they do not fall within the scope of the project.
-They have been left here for future reference.
-
-
-    def collect_water(self):
-        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
-            self.water += 1
-        elif isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
-            self.water += 2
-
-    def drink(self):
-        self.rest()
-        if self.water > 0:
-            self.water -= 1
-            self.thirst = max(0, self.thirst - 5)
-
-    def eat(self):
-        self.rest()
-        if self.fish > 0:
-            self.fish -= 1
-            self.hunger = max(0, self.hunger - 5)
-
-"""
