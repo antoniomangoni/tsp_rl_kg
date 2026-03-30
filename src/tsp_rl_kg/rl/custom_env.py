@@ -1,82 +1,66 @@
+import logging
+
 import gymnasium as gym
-from gymnasium import spaces
 import numpy as np
 import pygame
+from gymnasium import spaces
 from torch_geometric.data import Data
-from collections import deque
-import logging
-from tsp_rl_kg.game_world.agent import Agent
-from tsp_rl_kg.rl.simulation_manager import SimulationManager
-from tsp_rl_kg.config import GameManagerConfig, SimulationManagerConfig, ModelArgs
 
-def manhattan_distance(pos1, pos2):
-        return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+from tsp_rl_kg.config import GameManagerConfig, ModelArgs, RewardConfig, SimulationManagerConfig
+from tsp_rl_kg.game_world.agent import Agent
+from tsp_rl_kg.rl.reward import RewardCalculator, manhattan_distance
+from tsp_rl_kg.rl.simulation_manager import SimulationManager
+
 
 class CustomEnv(gym.Env):
-    def __init__(self, game_manager_args: GameManagerConfig | dict, simulation_manager_args: SimulationManagerConfig | dict, model_args: ModelArgs | dict, converter=None, plot=False):
+    def __init__(
+        self,
+        game_manager_args: GameManagerConfig | dict,
+        simulation_manager_args: SimulationManagerConfig | dict,
+        model_args: ModelArgs | dict,
+        converter=None,
+        plot=False,
+    ):
         super(CustomEnv, self).__init__()
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing CustomEnv")
 
         # Normalize to typed configs
         if isinstance(game_manager_args, dict):
-            self._gm_config = GameManagerConfig(**{
-                k: v for k, v in game_manager_args.items()
-                if k in GameManagerConfig.__dataclass_fields__
-            })
+            self._gm_config = GameManagerConfig(
+                **{
+                    k: v
+                    for k, v in game_manager_args.items()
+                    if k in GameManagerConfig.__dataclass_fields__
+                }
+            )
         else:
             self._gm_config = game_manager_args
 
         if isinstance(simulation_manager_args, dict):
-            self._sim_config = SimulationManagerConfig(**{
-                k: v for k, v in simulation_manager_args.items()
-                if k in SimulationManagerConfig.__dataclass_fields__
-            })
+            self._sim_config = SimulationManagerConfig(
+                **{
+                    k: v
+                    for k, v in simulation_manager_args.items()
+                    if k in SimulationManagerConfig.__dataclass_fields__
+                }
+            )
         else:
             self._sim_config = simulation_manager_args
 
         if isinstance(model_args, dict):
-            self._model_args = ModelArgs(**{
-                k: v for k, v in model_args.items()
-                if k in ModelArgs.__dataclass_fields__
-            })
+            self._model_args = ModelArgs(
+                **{k: v for k, v in model_args.items() if k in ModelArgs.__dataclass_fields__}
+            )
         else:
             self._model_args = model_args
 
-        # Base rewards
-        self.new_outpost_reward = 30
-        self.completion_reward = 100
-        self.route_improvement_reward = 200
-        self.better_route_than_algo_reward = 200
-        
-        # Penalties
-        self.penalty_per_step = -0.5
-        self.farther_from_outpost_penalty = -1.0
-        self.circular_behavior_penalty = -2.0
-        
-        # Positive reinforcements
-        self.closer_to_outpost_reward = 0.55 # Decreased from 2.0
-        
-        # New parameters
-        self.time_penalty_factor = -0.01  # For the new time penalty
-        self.outpost_reward_increase_factor = 0.5  # For increasing rewards of subsequent outposts
-        self.completion_time_bonus_factor = 1.0  # For time bonus in completion reward
-
-        # Route improvement tracking
-        self.max_not_improvement_routes = 5
-        self.num_not_improvement_routes = 0
-
-        self.best_route_energy = float('inf')
-        self.previous_best_route_energy = float('inf')
-        self.best_efficiency = 0
-        self.current_efficiency = 0
-        self.improvement = 0
-        self.gap = 0
+        # Reward system
+        self._reward_config = RewardConfig()
+        self._reward_calculator: RewardCalculator | None = None  # created after first game set
 
         self.agent_steps = 0
         self.current_reward = 0
-        self.outposts_visited = set()
-        self.recent_path = None  # Will be initialized in reset()
         self.game_worlds_trained_in = 0
         self.max_game_worlds_trained_in = min(100, self._sim_config.number_of_environments // 2)
 
@@ -85,17 +69,19 @@ class CustomEnv(gym.Env):
         self.screen_size = self._gm_config.screen_size
         # self.kg_completeness = game_manager_args['kg_completeness']
         self.vision_range = self._gm_config.vision_range
-    
+
         self.simulation_manager = SimulationManager(
             self._gm_config,
             sim_config=self._sim_config,
             plot=plot,
             converter=converter,
         )
-        
-        self.current_game_index = self.simulation_manager.curriculum_indices[0]  # Start with the first curriculum
+
+        self.current_game_index = self.simulation_manager.curriculum_indices[
+            0
+        ]  # Start with the first curriculum
         self.set_current_game_manager()
-        
+
         self.max_nodes = self.kg.graph_manager.max_nodes
         self.max_edges = self.kg.graph_manager.max_edges
 
@@ -106,28 +92,37 @@ class CustomEnv(gym.Env):
         # Flatten graph data into fixed-size arrays
         if converter is None:
             node_feature_space = spaces.Box(
-                low=0, 
-                high=7, 
+                low=0,
+                high=7,
                 shape=(self.max_nodes, self.kg.graph.num_node_features),
-                dtype=np.uint8
+                dtype=np.uint8,
             )
         else:
             node_feature_space = spaces.Box(
-                low=-1.0, 
-                high=1.0, 
+                low=-1.0,
+                high=1.0,
                 shape=(self.max_nodes, converter.embedding_dim),
-                dtype=np.float64
+                dtype=np.float64,
             )
 
-        edge_attr_space = spaces.Box(low=0, high=self.max_edges-1, shape=(self.max_edges, self.kg.graph.num_edge_features), dtype=np.uint8)
-        edge_index_space = spaces.Box(low=0, high=self.max_nodes-1, shape=(2, self.max_edges), dtype=np.int64)
+        edge_attr_space = spaces.Box(
+            low=0,
+            high=self.max_edges - 1,
+            shape=(self.max_edges, self.kg.graph.num_edge_features),
+            dtype=np.uint8,
+        )
+        edge_index_space = spaces.Box(
+            low=0, high=self.max_nodes - 1, shape=(2, self.max_edges), dtype=np.int64
+        )
 
-        self.observation_space = spaces.Dict({
-            'vision': vision_space,
-            'node_features': node_feature_space,
-            'edge_attr': edge_attr_space,
-            'edge_index': edge_index_space
-        })
+        self.observation_space = spaces.Dict(
+            {
+                "vision": vision_space,
+                "node_features": node_feature_space,
+                "edge_attr": edge_attr_space,
+                "edge_index": edge_index_space,
+            }
+        )
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
@@ -136,7 +131,7 @@ class CustomEnv(gym.Env):
         # New attributes for progress tracking
         self.steps_without_progress = 0
         self.max_steps_without_progress = 2048 * 4  # Adjust as needed
-        self.best_distance_to_unvisited = float('inf')
+        self.best_distance_to_unvisited = float("inf")
 
         self.episode_step = 0
         self.total_reward = 0
@@ -148,148 +143,71 @@ class CustomEnv(gym.Env):
 
     def set_current_game_manager(self):
         self.logger.info(f"Setting current game manager to index {self.current_game_index}")
-        print(f'Current game index: {self.current_game_index}')
+        print(f"Current game index: {self.current_game_index}")
 
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
         self.current_gm.start_game()
         self.environment = self.current_gm.environment
         self.agent_controler: Agent = self.current_gm.agent_controler
         self.agent_controler.reset_agent()
-        self.current_efficiency = 0
-        self.best_efficiency = 0
         self.kg = self.current_gm.kg_class
         self.outpost_coords = self.environment.outpost_locations
+
+        # (Re)initialise reward calculator for this game world
+        if self._reward_calculator is None:
+            self._reward_calculator = RewardCalculator(
+                self._reward_config,
+                list(self.outpost_coords),
+                self.max_episode_steps,
+            )
+        else:
+            self._reward_calculator.reset_game(list(self.outpost_coords))
         self.logger.info("Current game manager set successfully")
 
     def reset(self, seed=None, options=None):
         self.logger.info("Resetting environment")
         self.episode_step = 0
         self.total_reward = 0
-        self.outposts_visited.clear()
         self.early_stop = False
         self.step_count = 0
         self.steps_without_progress = 0
-        self.best_distance_to_unvisited = float('inf')
-        self.recent_path = deque(maxlen=len(self.outpost_coords))
-        
+        self.best_distance_to_unvisited = float("inf")
+
         if seed is not None:
             np.random.seed(seed)
             self.action_space.seed(seed)
-        
+
         # Update the game manager
         self.current_game_index += 1
         if self.current_game_index >= self.simulation_manager.number_of_environments:
             self.early_stop = True
             self.logger.info("All environments completed. Ending simulation.")
-            return self._get_observation(), {} 
+            return self._get_observation(), {}
         self.set_current_game_manager()
 
-        self.num_not_improvement_routes = 0
-        self.previous_min_distance = float('inf')
-        
         observation = self._get_observation()
-        
-        assert self.observation_space['vision'].contains(observation['vision']), f"Vision data out of bounds: min={observation['vision'].min()}, max={observation['vision'].max()}"
-        
+
+        assert self.observation_space["vision"].contains(
+            observation["vision"]
+        ), f"Vision data out of bounds: min={observation['vision'].min()}, max={observation['vision'].max()}"
+
         return observation, {}  # Return observation and an empty info dict
 
-    def _calculate_reward(self):
-        self.logger.info("Calculating reward...")
+    def _calculate_reward(self) -> tuple[float, bool]:
         agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        
-        # Start with the step penalty based on the energy requirement of the current terrain
-        current_terrain_energy_requirement = self.current_gm.target_manager.energy_req_grid[agent_pos]
-        reward = self.penalty_per_step * current_terrain_energy_requirement
-        
-        # Implement time penalty
-        time_penalty = -0.01 * self.episode_step
-        reward += time_penalty
-        
-        # Check if agent reached a new outpost
-        if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:
-            self.outposts_visited.add(agent_pos)
-            # print(f'New outpost at {agent_pos}, visited outposts: {len(self.outposts_visited)}, total outposts: {len(self.outpost_coords)}')
-            outposts_visited = len(self.outposts_visited)
-            # Increase reward for reaching outposts, with higher rewards for later outposts
-            outpost_reward = self.new_outpost_reward * (1 + 0.5 * (outposts_visited - 1))
-            reward += outpost_reward
-            self.logger.info(f"New outpost. Reward: {outpost_reward}")
-            self.logger.info(f"Outposts visited: {outposts_visited}/{len(self.outpost_coords)}")
-            self.recent_path.clear()  # Clear the path memory when reaching a new outpost
-            
-            # Check if all outposts are visited
-            if len(self.outposts_visited) == len(self.outpost_coords):
-                print(f"Agent reached all outposts. Outposts visited: {self.outposts_visited}")
-                self.outposts_visited.clear()
-                assert len(self.outposts_visited) == 0, f"Outposts visited not cleared: {self.outposts_visited}"
-                completion_reward = self.completion_reward * (1 + 1 / self.episode_step)
-                print(f"Step: {self.agent_controler.agent_step_count}. All outposts visited. Completion reward: {completion_reward}")
-                reward += completion_reward
-                
-                agent_route_energy = self.agent_controler.energy_spent
-                self.agent_controler.reset_energy_spent()
-                assert self.agent_controler.energy_spent == 0, f"Agent energy spent not reset: {self.agent_controler.energy_spent}"
+        terrain_energy = self.current_gm.target_manager.energy_req_grid[agent_pos]
+        agent_energy_spent = self.agent_controler.energy_spent
+        algorithmic_best_energy = self.current_gm.target_manager.target_route_energy
 
-                algorithmic_best_energy = self.current_gm.target_manager.target_route_energy
-                print(f'Agent route energy: {agent_route_energy}, algorithmic best energy: {algorithmic_best_energy}')
-
-                self.current_efficiency = self.calculate_route_efficiency(agent_route_energy)
-                print(f"Route Efficiency: {self.current_efficiency:.2f} - {self.interpret_efficiency(self.current_efficiency)}")
-                if self.current_efficiency > self.best_efficiency:
-                    self.improvement = self.calculate_relative_improvement(agent_route_energy)
-                    self.gap = self.calculate_efficiency_gap(agent_route_energy)
-                    print(f"New best route found. Improvement: {self.improvement:.2f}, Gap: {self.gap:.2f}")
-                    improvement_reward = self.completion_reward * self.improvement  # Scale improvement reward
-                    reward += improvement_reward
-                    
-                    self.best_route_energy = agent_route_energy
-                    self.best_efficiency = self.current_efficiency
-                    self.num_not_improvement_routes = 0
-                    
-                    if agent_route_energy < algorithmic_best_energy:
-                        reward += self.better_route_than_algo_reward
-                else:
-                    self.num_not_improvement_routes += 1
-                    if self.num_not_improvement_routes >= self.max_not_improvement_routes:
-                        self.early_stop = True
-                
-                self.previous_best_route_energy = min(self.previous_best_route_energy, agent_route_energy)
-                
-                # Log performance metrics
-                self.logger.info(f"Route Completed - Efficiency: {self.current_efficiency:.2f}, Improvement: {self.improvement:.2f}, Gap: {self.gap:.2f}")
-
-            else:     
-                unvisited_outposts = set(self.outpost_coords) - self.outposts_visited
-                current_min_distance = min(manhattan_distance(agent_pos, outpost) for outpost in unvisited_outposts)
-                
-                if current_min_distance < self.previous_min_distance:
-                    closer_reward = self.closer_to_outpost_reward * (self.previous_min_distance - current_min_distance) / self.previous_min_distance
-                    reward += closer_reward
-                    self.logger.info(f"Agent moved closer to an outpost. Reward: {closer_reward}")
-                elif current_min_distance > self.previous_min_distance:
-                    farther_penalty = self.farther_from_outpost_penalty * (current_min_distance - self.previous_min_distance) / self.previous_min_distance
-                    reward += farther_penalty
-                    self.logger.info(f"Agent moved away from outposts. Penalty: {farther_penalty}")
-                
-                self.previous_min_distance = current_min_distance
-
-        
-        # Check for circular behavior
-        if agent_pos in self.recent_path:
-            reward += self.circular_behavior_penalty
-            self.logger.info(f"Agent repeated a path. Penalty: {self.circular_behavior_penalty}")
-        
-        # Update recent path memory
-        self.recent_path.append(agent_pos)
-        
-        return self._normalize_reward(reward)
-
-    def _normalize_reward(self, reward):
-        # Normalize reward to a fixed range (0-100)
-        min_reward = self.penalty_per_step * self.max_episode_steps
-        max_reward = self.completion_reward + self.new_outpost_reward * len(self.outpost_coords) + self.route_improvement_reward + self.better_route_than_algo_reward
-        normalized_reward = 100 * (reward - min_reward) / (max_reward - min_reward)
-        return max(0, min(normalized_reward, 100))  # Clamp between 0 and 100
+        reward, early_stop = self._reward_calculator.calculate(
+            agent_pos=agent_pos,
+            terrain_energy=terrain_energy,
+            episode_step=self.episode_step,
+            agent_energy_spent=agent_energy_spent,
+            algorithmic_best_energy=algorithmic_best_energy,
+            reset_energy_callback=self.agent_controler.reset_energy_spent,
+        )
+        return reward, early_stop
 
     def get_episode_performance(self):
         return self.total_reward
@@ -300,21 +218,23 @@ class CustomEnv(gym.Env):
         # Convert action to integer if it's a numpy array
         if isinstance(action, np.ndarray):
             action = action.item()
-        
+
         prev_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
         self.agent_controler.agent_action(action)
         new_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        
+
         self.current_gm.rerender()
-        reward = self._calculate_reward()
+        reward, early_stop = self._calculate_reward()
+        if early_stop:
+            self.early_stop = True
         self.total_reward += reward
-        
+
         # Check termination conditions
         terminated = self._check_termination()
         truncated = self.episode_step >= self.max_episode_steps
-        
+
         # Determine if the episode was successful (all outposts visited)
-        success = len(self.outposts_visited) == len(self.outpost_coords)
+        success = len(self._reward_calculator.outposts_visited) == len(self.outpost_coords)
 
         if terminated or truncated:
             self.simulation_manager.add_episode_performance(self.total_reward, success)
@@ -333,15 +253,23 @@ class CustomEnv(gym.Env):
             "prev_position": prev_position,
             "new_position": new_position,
             "energy_spent": self.agent_controler.energy_spent,
-            "outposts_visited": len(self.outposts_visited),
-            "total_reward": self.total_reward
+            "outposts_visited": len(self._reward_calculator.outposts_visited),
+            "total_reward": self.total_reward,
         }
-        
-        self.logger.debug(f"Step complete. Reward: {reward}, Total Reward: {self.total_reward}, Terminated: {terminated}, Truncated: {truncated}, Info: {info}")
-        
+
+        self.logger.debug(
+            f"Step complete. Reward: {reward}, Total Reward: {self.total_reward}, Terminated: {terminated}, Truncated: {truncated}, Info: {info}"
+        )
+
         if terminated or truncated:
-            self.logger.info(f"Episode ended. Total steps: {self.episode_step}, Total reward: {self.total_reward}, Outposts visited: {len(self.outposts_visited)}/{len(self.outpost_coords)}")
-        
+            visited = len(self._reward_calculator.outposts_visited)
+            total = len(self.outpost_coords)
+            self.logger.info(
+                f"Episode ended. Total steps: {self.episode_step}, "
+                f"Total reward: {self.total_reward}, "
+                f"Outposts visited: {visited}/{total}"
+            )
+
         return observation, reward, terminated, truncated, info
 
     def _check_termination(self):
@@ -352,10 +280,12 @@ class CustomEnv(gym.Env):
 
         # Check for no progress
         current_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        unvisited_outposts = set(self.outpost_coords) - self.outposts_visited
+        unvisited_outposts = set(self.outpost_coords) - self._reward_calculator.outposts_visited
         if unvisited_outposts:
-            current_min_distance = min(manhattan_distance(current_position, outpost) for outpost in unvisited_outposts)
-            
+            current_min_distance = min(
+                manhattan_distance(current_position, outpost) for outpost in unvisited_outposts
+            )
+
             if current_min_distance < self.best_distance_to_unvisited:
                 self.best_distance_to_unvisited = current_min_distance
                 self.steps_without_progress = 0
@@ -363,7 +293,9 @@ class CustomEnv(gym.Env):
                 self.steps_without_progress += 1
 
             if self.steps_without_progress >= self.max_steps_without_progress:
-                self.logger.info(f"No progress made for {self.max_steps_without_progress} steps. Terminating episode.")
+                self.logger.info(
+                    f"No progress made for {self.max_steps_without_progress} steps. Terminating episode."
+                )
                 return True
 
         return False
@@ -375,20 +307,20 @@ class CustomEnv(gym.Env):
 
         # Ensure correct shapes
         node_features = np.zeros((self.max_nodes, graph.num_node_features), dtype=np.float16)
-        node_features[:graph.num_nodes, :] = graph.x.numpy()
+        node_features[: graph.num_nodes, :] = graph.x.numpy()
 
         edge_attr = np.zeros((self.max_edges, graph.num_edge_features), dtype=np.float16)
-        edge_attr[:graph.num_edges, :] = graph.edge_attr.numpy()
+        edge_attr[: graph.num_edges, :] = graph.edge_attr.numpy()
 
         edge_index = np.zeros((2, self.max_edges), dtype=np.int64)
-        edge_index[:, :graph.num_edges] = graph.edge_index.numpy()
+        edge_index[:, : graph.num_edges] = graph.edge_index.numpy()
 
         self.logger.debug("Observation retrieved")
         return {
-            'vision': vision.astype(np.float16) / 255.0,  # Normalize to [0, 1]
-            'node_features': node_features,
-            'edge_attr': edge_attr,
-            'edge_index': edge_index
+            "vision": vision.astype(np.float16) / 255.0,  # Normalize to [0, 1]
+            "node_features": node_features,
+            "edge_attr": edge_attr,
+            "edge_index": edge_index,
         }
 
     def get_clamped_surface(self):
@@ -435,49 +367,20 @@ class CustomEnv(gym.Env):
                     vision[px : px + ts, py : py + ts] = colour
 
         return np.transpose(vision, (2, 0, 1)).astype(np.float16)
-    
+
     def close(self):
         self.current_gm.end_game()
         self.simulation_manager.save_data(self.kg_completeness)
 
-    def _validate_graph_observation(self, observation):
-        valid_node_range = (observation['node_features'].min() >= 0) and (observation['node_features'].max() <= 7)
-        valid_edge_attr_range = (observation['edge_attr'].min() >= 0) and (observation['edge_attr'].max() <= 232)
-        valid_edge_index_range = (observation['edge_index'].min() >= 0) and (observation['edge_index'].max() <= 128)
-        return valid_node_range and valid_edge_attr_range and valid_edge_index_range
-    
-    def calculate_route_efficiency(self, agent_route_energy):
-        if self.current_gm.target_manager.target_route_energy == 0:
-            raise ValueError("Algorithmic best energy cannot be zero")
-        return (self.current_gm.target_manager.target_route_energy / agent_route_energy) * 100
-
-    def calculate_relative_improvement(self, current_route_energy):
-        current_efficiency = self.calculate_route_efficiency(current_route_energy)
-        previous_efficiency = self.calculate_route_efficiency(self.previous_best_route_energy)
-        
-        if previous_efficiency == 0:
-            return float('inf') if current_efficiency > 0 else 0
-        
-        return (current_efficiency - previous_efficiency) / previous_efficiency
-
-    def calculate_efficiency_gap(self, agent_route_energy):
-        return max(0, (agent_route_energy - self.current_gm.target_manager.target_route_energy) / self.current_gm.target_manager.target_route_energy)
-
-    def interpret_efficiency(self, efficiency):
-        if efficiency == 100:
-            return "Matching algorithmic best"
-        else:
-            return f"{100 - efficiency:.2f}% away from algorithmic best"
-
     def get_metrics(self):
+        rc = self._reward_calculator
         return {
-            'performance': self.get_episode_performance(),
-            'game_manager_index': self.current_game_index,
-            'best_route_energy': self.best_route_energy,
-            'curriculum_index': self.simulation_manager.current_curriculum_index,
-            'target_route_energy': self.current_gm.target_manager.target_route_energy,
-            'best_efficiency': self.best_efficiency,
-            'improvement': self.improvement,
-            'gap': self.gap
-            }
-    
+            "performance": self.get_episode_performance(),
+            "game_manager_index": self.current_game_index,
+            "best_route_energy": rc.best_route_energy,
+            "curriculum_index": self.simulation_manager.current_curriculum_index,
+            "target_route_energy": self.current_gm.target_manager.target_route_energy,
+            "best_efficiency": rc.best_efficiency,
+            "improvement": rc.improvement,
+            "gap": rc.gap,
+        }

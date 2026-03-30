@@ -33,9 +33,7 @@ class SimulationManagerConfig:
                 f"number_of_environments must be >= 1, got {self.number_of_environments}"
             )
         if self.number_of_curricula < 1:
-            raise ValueError(
-                f"number_of_curricula must be >= 1, got {self.number_of_curricula}"
-            )
+            raise ValueError(f"number_of_curricula must be >= 1, got {self.number_of_curricula}")
         if self.min_episodes_per_curriculum < 1:
             raise ValueError(
                 f"min_episodes_per_curriculum must be >= 1, got {self.min_episodes_per_curriculum}"
@@ -80,6 +78,33 @@ class CurriculumConfig:
             raise ValueError(
                 f"performance_threshold must be in [0, 1], got {self.performance_threshold}"
             )
+
+
+@dataclass
+class RewardConfig:
+    """All reward weights, penalties, and thresholds for the reward system."""
+
+    # Base rewards
+    new_outpost_reward: float = 30.0
+    completion_reward: float = 100.0
+    route_improvement_reward: float = 200.0
+    better_route_than_algo_reward: float = 200.0
+
+    # Penalties
+    penalty_per_step: float = -0.5
+    farther_from_outpost_penalty: float = -1.0
+    circular_behavior_penalty: float = -2.0
+
+    # Positive reinforcements
+    closer_to_outpost_reward: float = 0.55
+
+    # Scaling factors
+    time_penalty_factor: float = -0.01
+    outpost_reward_increase_factor: float = 0.5
+    completion_time_bonus_factor: float = 1.0
+
+    # Route improvement tracking
+    max_not_improvement_routes: int = 5
 
 
 @dataclass
