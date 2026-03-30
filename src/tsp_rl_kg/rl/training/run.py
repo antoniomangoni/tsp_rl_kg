@@ -1,8 +1,5 @@
-import os
 import traceback
-from typing import Literal
-from tsp_rl_kg.rl.training.ablation_study import AblationStudy
-from tsp_rl_kg.utils.logger import Logger
+
 from tsp_rl_kg.config import (
     CurriculumConfig,
     GameManagerConfig,
@@ -11,6 +8,8 @@ from tsp_rl_kg.config import (
     SimulationManagerConfig,
     TrainingConfig,
 )
+from tsp_rl_kg.rl.training.ablation_study import AblationStudy
+from tsp_rl_kg.utils.logger import Logger
 
 # Uncomment for windows
 # os.environ['PYGAME_DETECT_AVX2'] = '1'
@@ -38,7 +37,7 @@ base_config = TrainingConfig(
 
 kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
 
-logger = Logger('ablation_study.log')
+logger = Logger("ablation_study.log")
 ablation_study = AblationStudy(base_config, kg_completeness_values, logger)
 
 try:

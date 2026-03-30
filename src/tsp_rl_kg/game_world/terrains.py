@@ -1,6 +1,6 @@
 import pygame
 
-from tsp_rl_kg.game_world.entities import Tree, MossyRock, SnowyRock, Fish, WoodPath
+from tsp_rl_kg.game_world.entities import Fish, MossyRock, SnowyRock, Tree, WoodPath
 
 
 class Terrain:

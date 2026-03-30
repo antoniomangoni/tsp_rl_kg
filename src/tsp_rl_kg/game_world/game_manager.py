@@ -1,15 +1,15 @@
-import numpy as np
-import pygame
 import random
 
-from tsp_rl_kg.game_world.heightmap_generator import HeightmapGenerator
-from tsp_rl_kg.game_world.environment import Environment
+import numpy as np
+import pygame
+
+from tsp_rl_kg.config import GameManagerConfig
 from tsp_rl_kg.game_world.agent import Agent
+from tsp_rl_kg.game_world.environment import Environment
+from tsp_rl_kg.game_world.heightmap_generator import HeightmapGenerator
+from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
 from tsp_rl_kg.renderer import Renderer
 from tsp_rl_kg.rl.target import Target_Manager
-
-from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
-from tsp_rl_kg.config import GameManagerConfig
 
 
 class GameManager:
@@ -53,11 +53,13 @@ class GameManager:
     def initialize_components(self):
         # Generate heightmap
         heightmap_generator = HeightmapGenerator(
-            width=self.num_tiles, 
-            height=self.num_tiles, 
-            scale=10, 
-            terrain_thresholds=np.array([0.1, 0.2, 0.5, 0.7, 0.9, 1.0]), 
-            octaves=3, persistence=0.2, lacunarity=2.0
+            width=self.num_tiles,
+            height=self.num_tiles,
+            scale=10,
+            terrain_thresholds=np.array([0.1, 0.2, 0.5, 0.7, 0.9, 1.0]),
+            octaves=3,
+            persistence=0.2,
+            lacunarity=2.0,
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(
@@ -66,16 +68,20 @@ class GameManager:
 
         self.agent_controler = Agent(self.environment, self.vision_range)
         self.agent = self.agent_controler.agent
-        
+
         self.target_manager = Target_Manager(self.environment)
 
     def init_knowledge_graph(self, kg_completeness):
-        self.kg_class = KnowledgeGraph(self.environment, self.vision_range, kg_completeness, self.plot, self.converter)
+        self.kg_class = KnowledgeGraph(
+            self.environment, self.vision_range, kg_completeness, self.plot, self.converter
+        )
         self.agent_controler.get_kg(self.kg_class)
 
     def initialise_rendering(self):
         self.renderer = Renderer(self.environment, self.agent_controler)
-        self.screen = pygame.display.set_mode((self.num_tiles * self.tile_size, self.num_tiles * self.tile_size))
+        self.screen = pygame.display.set_mode(
+            (self.num_tiles * self.tile_size, self.num_tiles * self.tile_size)
+        )
         self.renderer.init_render()
 
     def rerender(self):
@@ -97,14 +103,16 @@ class GameManager:
         if not self.headless:
             pygame.quit()
 
-
     #####################################################################################
     #   This is the main game loop that runs the game when the model is not being used  #
     #####################################################################################
- 
+
     def game_step(self):
         self.agent_controler.agent_action(random.randint(0, 10))
-        # self.environment.update_heat_map(self.agent.grid_x, self.agent.grid_y, self.target_manager.min_path_length)
+        # self.environment.update_heat_map(
+        #     self.agent.grid_x, self.agent.grid_y,
+        #     self.target_manager.min_path_length
+        # )
         self.rerender()
 
     def run(self):
@@ -120,6 +128,6 @@ class GameManager:
             # exit()
 
         pygame.quit()
-        print('Game closed')
+        print("Game closed")
         self.environment.print_environment()
         self.kg_class.visualise_graph()

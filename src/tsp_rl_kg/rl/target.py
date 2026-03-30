@@ -1,8 +1,8 @@
-import networkx as nx
-from scipy.spatial.distance import pdist, squareform
 from itertools import permutations
-import numpy as np
 from queue import PriorityQueue
+
+import networkx as nx
+import numpy as np
 
 
 class Target_Manager:
@@ -25,13 +25,6 @@ class Target_Manager:
             for y in range(self.height):
                 grid[x, y] = self.environment.terrain_object_grid[x, y].energy_requirement
         return grid
-
-    def get_energy_required(self, path):
-        """Calculate the energy required for a given path."""
-        energy = 0
-        for coords in path:
-            energy += self.environment.terrain_object_grid[coords].energy_requirement
-        return energy
 
     def find_shortest_tsp_path(self):
         nodes = list(self.G.nodes())

@@ -202,9 +202,11 @@ class CustomEnv(gym.Env):
 
         observation = self._get_observation()
 
-        assert self.observation_space["vision"].contains(
-            observation["vision"]
-        ), f"Vision data out of bounds: min={observation['vision'].min()}, max={observation['vision'].max()}"
+        assert self.observation_space["vision"].contains(observation["vision"]), (
+            f"Vision data out of bounds: "
+            f"min={observation['vision'].min()}, "
+            f"max={observation['vision'].max()}"
+        )
 
         return observation, {}  # Return observation and an empty info dict
 
@@ -273,7 +275,10 @@ class CustomEnv(gym.Env):
         }
 
         self.logger.debug(
-            f"Step complete. Reward: {reward}, Total Reward: {self.total_reward}, Terminated: {terminated}, Truncated: {truncated}, Info: {info}"
+            f"Step complete. Reward: {reward}, "
+            f"Total Reward: {self.total_reward}, "
+            f"Terminated: {terminated}, "
+            f"Truncated: {truncated}, Info: {info}"
         )
 
         if terminated or truncated:
@@ -309,7 +314,9 @@ class CustomEnv(gym.Env):
 
             if self.steps_without_progress >= self.max_steps_without_progress:
                 self.logger.info(
-                    f"No progress made for {self.max_steps_without_progress} steps. Terminating episode."
+                    f"No progress made for "
+                    f"{self.max_steps_without_progress} steps. "
+                    f"Terminating episode."
                 )
                 return True
 

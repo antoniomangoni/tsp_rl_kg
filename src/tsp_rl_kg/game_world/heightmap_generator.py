@@ -1,12 +1,23 @@
+import random
+
 import noise
 import numpy as np
-import random
 
 from tsp_rl_kg.utils.helper_functions import time_function
 
+
 class HeightmapGenerator:
     @time_function
-    def __init__(self, width: int, height: int, scale: float, terrain_thresholds: np.ndarray, octaves: int, persistence: float, lacunarity: float):
+    def __init__(
+        self,
+        width: int,
+        height: int,
+        scale: float,
+        terrain_thresholds: np.ndarray,
+        octaves: int,
+        persistence: float,
+        lacunarity: float,
+    ):
         self.width = width
         self.height = height
         self.scale = scale
@@ -32,23 +43,25 @@ class HeightmapGenerator:
         max_val = 0.0
         for x in range(self.width):
             for y in range(self.height):
-                height = noise.pnoise2(x / self.scale, 
-                                        y / self.scale, 
-                                        octaves=self.octaves, 
-                                        persistence=self.persistence, 
-                                        lacunarity=self.lacunarity, 
-                                        repeatx=self.width, 
-                                        repeaty=self.height, 
-                                        base=self.seed)
+                height = noise.pnoise2(
+                    x / self.scale,
+                    y / self.scale,
+                    octaves=self.octaves,
+                    persistence=self.persistence,
+                    lacunarity=self.lacunarity,
+                    repeatx=self.width,
+                    repeaty=self.height,
+                    base=self.seed,
+                )
                 height = (height + 1) / 2  # Normalize to [0, 1]
                 heightmap[x, y] = height
                 min_val = min(min_val, height)
                 max_val = max(max_val, height)
         return heightmap, min_val, max_val
-    
+
     def normalize_heightmap(self, heightmap: np.ndarray, min_val: float, max_val: float):
         heightmap -= min_val
-        heightmap /= (max_val - min_val)
+        heightmap /= max_val - min_val
 
     @time_function
     def classify_heightmap(self, heightmap: np.ndarray) -> np.ndarray:
@@ -64,9 +77,7 @@ class HeightmapGenerator:
                 mask = heightmap >= self.terrain_thresholds[index - 1]
             else:
                 mask = (heightmap >= self.terrain_thresholds[index - 1]) & (heightmap < threshold)
-            
+
             int_heightmap[mask] = index
         # print(f"Int heightmap: {int_heightmap}")
         return int_heightmap
-
-

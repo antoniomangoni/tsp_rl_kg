@@ -1,17 +1,18 @@
 import random
-import pygame
+
 import numpy as np
+import pygame
 
 from tsp_rl_kg.game_world.entities import (
     Entity,
-    Player,
-    Outpost,
-    WoodPath,
-    Tree,
     MossyRock,
+    Outpost,
+    Player,
     SnowyRock,
+    Tree,
+    WoodPath,
 )
-from tsp_rl_kg.game_world.terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
+from tsp_rl_kg.game_world.terrains import DeepWater, Hills, Mountains, Plains, Snow, Terrain, Water
 
 
 class _HeadlessEntityGroup:
@@ -106,7 +107,7 @@ class Environment:
     def get_terrain_colour_map(self):
         terrain = Terrain(0, 0, self.tile_size, 0)
         map = {}
-        for terrain_code, value in self.terrain_definitions.items():
+        for terrain_code, _value in self.terrain_definitions.items():
             map[terrain_code] = terrain.set_colour(terrain_code)
         return map
 
@@ -220,7 +221,8 @@ class Environment:
             self.terrain_object_grid[location[0], location[1]].remove_entity()
         player = Player(location[0], location[1], self.tile_size)
         self.entity_group.add(player, layer=2)
-        # Cannot use the entity_index_grid to store the player id, as it is already used to store the woodpath id
+        # Cannot use the entity_index_grid to store the player id,
+        # as it is already used to store the woodpath id
         self.entity_index_grid[location[0], location[1]] = player.id
         return player
 

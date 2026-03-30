@@ -1,9 +1,9 @@
-import torch
 import matplotlib.pyplot as plt
 import numpy as np
-
+import torch
 from torch_geometric.data import Data
-from torch_geometric.utils import to_networkx, k_hop_subgraph
+from torch_geometric.utils import k_hop_subgraph, to_networkx
+
 from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
 
 
@@ -63,7 +63,6 @@ class KnowledgeGraph:
                 embedding = self.converter.agent_embedding
             else:
                 embedding = 0  # Assuming player embedding is 0 and always visible
-            mask = 1
         else:
             exit(f"Invalid z-level: {z_level}")
         return embedding
@@ -108,9 +107,7 @@ class KnowledgeGraph:
                     activated_entities += 1
                 else:
                     deactivated_entities += 1
-        print(
-            f"Activated entities: {activated_entities}, Deactivated entities: {deactivated_entities}"
-        )
+        print(f"Activated: {activated_entities}, " f"Deactivated: {deactivated_entities}")
         assert (
             activated_entities + deactivated_entities == self.entity_array.size
         ), "Entity nodes do not match the entity array"
@@ -264,11 +261,11 @@ class KnowledgeGraph:
                             self.graph.edge_attr[edge_idx_1][0] = distance
                             self.graph.edge_attr[edge_idx_2][0] = distance
                         else:
-                            print(f"No edge indices found for nodes {entity_idx} and {player_idx}")
+                            print(
+                                f"No edge indices found for nodes" f" {entity_idx} and {player_idx}"
+                            )
                     else:
-                        print(
-                            f"Entity node {entity_idx} at position {(x, y)} is not active or not found"
-                        )
+                        print(f"Entity node {entity_idx} at " f"{(x, y)} not active/found")
 
     def create_node(self, coordinates, z_level, mask=0):
         features = self.create_node_features(coordinates, z_level, mask)
@@ -297,7 +294,7 @@ class KnowledgeGraph:
 
     def create_edge(self, node_idx1, coor_1, node_idx2, coor_2, distance=None, active=None):
         """Create an edge ensuring undirected consistency."""
-        if active == None:
+        if active is None:
             if self.is_node_active(node_idx1) and self.is_node_active(node_idx2):
                 active = 1
             else:
@@ -462,7 +459,8 @@ class KnowledgeGraph:
             plt.show()
 
     def resolve_color(self, type_id, z, mask):
-        # These colors are in RGB format, normalized to [0, 1] --> green, grey twice, red, brown, black
+        # These colors are in RGB format, normalized to [0, 1]
+        # --> green, grey twice, red, brown, black
         entity_colour_map = {
             2: (0.13, 0.33, 0.16),
             3: (0.61, 0.65, 0.62),

@@ -1,7 +1,7 @@
 import pygame
 
-from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.game_world.agent import Agent
+from tsp_rl_kg.game_world.environment import Environment
 
 
 class Renderer:
@@ -48,7 +48,7 @@ class Renderer:
             self.surface.blit(self.terrain_surface, rect.topleft, rect)
 
         # Now redraw entities that are within or intersect the updated tiles.
-        # This is a simplified approach. A more optimized method would check for actual intersections.
+        # A more optimized method would check for actual intersections.
         self.environment.entity_group.draw(self.surface)
 
         # Finally, update the display only for the dirty rects

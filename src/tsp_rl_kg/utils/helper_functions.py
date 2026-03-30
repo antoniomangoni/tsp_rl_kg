@@ -1,5 +1,5 @@
-import time
 import functools
+import time
 
 ENABLE_TIMING = False
 

@@ -13,48 +13,40 @@ torch_dtype = torch.float32
 
 class VisionProcessor(BaseFeaturesExtractor):
     """
-    VisionProcessor is a neural network module designed for processing visual input (image data).
-    It consists of a configurable number of convolutional layers followed by fully connected layers,
-    enabling it to extract hierarchical features from image observations and output a fixed-size feature vector.
+    Neural network module for processing visual input (image data).
 
-    Attributes:
-    -----------
+    Consists of configurable convolutional layers followed by fully
+    connected layers, extracting hierarchical features from image
+    observations and outputting a fixed-size feature vector.
+
+    Attributes
+    ----------
     num_conv_layers : int
-        The number of convolutional layers in the model. This is set to 4 by default.
+        Number of convolutional layers (default: 4).
     conv_channels : list of int
-        A list containing the number of output channels for each convolutional layer.
-        The default is [32, 64, 128, 256], meaning the first layer has 32 channels, the second 64, and so on.
+        Output channels for each convolutional layer.
+        Default: [32, 64, 128, 256].
     fc_dims : list of int
-        A list containing the sizes of the fully connected layers following the convolutional layers.
-        The default is [512], meaning a single fully connected layer with 512 units.
+        Sizes of fully connected layers after convolutions.
+        Default: [512].
     cnn : nn.Sequential
-        A sequential container that holds the convolutional and batch normalization layers,
-        along with ReLU activations and a flattening operation to prepare the data for fully connected layers.
+        Convolutional layers with batch norm, ReLU, and flatten.
     fc : nn.Sequential
-        A sequential container that holds the fully connected layers, including ReLU activations,
-        which reduce the output of the CNN to the desired feature dimension.
-
-    Methods:
-    --------
-    __init__(self, observation_space, features_dim=96):
-        Initializes the VisionProcessor with the specified observation space and feature dimension.
-
-    forward(self, observations):
-        Defines the forward pass of the model, processing input image data through the convolutional layers
-        followed by fully connected layers to produce a feature vector.
+        Fully connected layers reducing CNN output to
+        the desired feature dimension.
     """
 
     def __init__(self, observation_space, vision_params, features_dim=96):
         """
-        Initializes the VisionProcessor object.
+        Initialize the VisionProcessor.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         observation_space : tuple
-            The shape of the input images, typically in the form (channels, height, width).
-            This defines the input dimensions for the convolutional layers.
+            Shape of the input images (channels, height, width).
         features_dim : int, optional
-            The dimensionality of the output feature vector produced by the model. The default value is 96.
+            Dimensionality of the output feature vector.
+            Default: 96.
         """
         super(VisionProcessor, self).__init__(observation_space, features_dim)
 
@@ -108,15 +100,17 @@ class VisionProcessor(BaseFeaturesExtractor):
         """
         Forward pass through the VisionProcessor.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         observations : torch.Tensor
-            A batch of images with shape (batch_size, channels, height, width) to be processed.
+            Batch of images with shape
+            (batch_size, channels, height, width).
 
-        Returns:
-        --------
+        Returns
+        -------
         torch.Tensor
-            The output feature vector of size (batch_size, features_dim).
+            Output feature vector of size
+            (batch_size, features_dim).
         """
         # Pass the input through the convolutional layers
         x = self.cnn(observations)
@@ -127,46 +121,46 @@ class VisionProcessor(BaseFeaturesExtractor):
 
 class GraphProcessor(nn.Module):
     """
-    GraphProcessor is a neural network module designed for processing graph-structured data.
-    It utilizes Graph Attention Network (GAT) layers to capture relationships between nodes in a graph
-    and then applies fully connected layers to produce a fixed-size feature vector.
+    Neural network module for processing graph-structured data.
 
-    Attributes:
-    -----------
+    Uses Graph Attention Network (GAT) layers to capture node
+    relationships, then applies fully connected layers to produce
+    a fixed-size feature vector.
+
+    Attributes
+    ----------
     num_gat_layers : int
-        The number of GAT (Graph Attention Network) layers in the model. This is set to 2 by default.
+        Number of GAT layers (default: 2).
     gat_heads : list of int
-        A list containing the number of attention heads for each GAT layer.
-        The default is [4, 1], meaning the first GAT layer has 4 heads, and the second has 1 head.
+        Attention heads per GAT layer.
+        Default: [4, 1].
     fc_dims : list of int
-        A list containing the sizes of the fully connected layers following the GAT layers.
-        The default is [192], meaning a single fully connected layer with 192 units.
+        Sizes of fully connected layers after GAT.
+        Default: [192].
     gat : nn.ModuleList
-        A module list containing the GAT layers, allowing for flexible stacking of multiple GAT layers.
+        Stacked GAT layers.
     fc : nn.Sequential
-        A sequential container that holds the fully connected layers, including ReLU activations,
-        which reduce the output of the GAT layers to the desired feature dimension.
-
-    Methods:
-    --------
-    __init__(self, num_graph_node_features, output_dim=96):
-        Initializes the GraphProcessor with the specified number of input node features and output dimensions.
-
-    forward(self, x, edge_index, batch):
-        Defines the forward pass of the model, processing input node features through the GAT layers,
-        followed by global mean pooling and fully connected layers to produce a feature vector.
+        Fully connected layers reducing GAT output to
+        the desired feature dimension.
     """
 
-    def __init__(self, num_graph_node_features, graph_params, output_dim=96, gat_hidden_dim=48):
+    def __init__(
+        self,
+        num_graph_node_features,
+        graph_params,
+        output_dim=96,
+        gat_hidden_dim=48,
+    ):
         """
-        Initializes the GraphProcessor object.
+        Initialize the GraphProcessor.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         num_graph_node_features : int
-            The number of features for each node in the graph, which determines the input dimension for the first GAT layer.
+            Number of features per graph node.
         output_dim : int, optional
-            The dimensionality of the output feature vector produced by the model. The default value is 96.
+            Dimensionality of the output feature vector.
+            Default: 96.
         """
         super(GraphProcessor, self).__init__()
 
@@ -202,7 +196,7 @@ class GraphProcessor(nn.Module):
         # print(f"Input edge_index shape: {edge_index.shape}")
         # print(f"Input batch shape: {batch.shape}")
 
-        for i, gat_layer in enumerate(self.gat):
+        for _i, gat_layer in enumerate(self.gat):
             # print(f"Before GAT layer {i}: x shape = {x.shape}")
             x = F.relu(gat_layer(x, edge_index))
             # print(f"After GAT layer {i}: x shape = {x.shape}")
@@ -217,43 +211,30 @@ class GraphProcessor(nn.Module):
 
 class AgentModel(BaseFeaturesExtractor):
     """
-    AgentModel is a neural network module designed to process both visual and graph-structured data.
-    It combines the outputs of a VisionProcessor and a GraphProcessor to produce a unified feature vector
-    that can be used in reinforcement learning or other machine learning tasks.
+    Neural network module for processing both visual and
+    graph-structured data.
 
-    Attributes:
-    -----------
+    Combines outputs of a VisionProcessor and a GraphProcessor
+    to produce a unified feature vector for RL tasks.
+
+    Attributes
+    ----------
     vision_params : dict
-        Parameters for configuring the VisionProcessor, including the number of convolutional layers,
-        the number of channels for each layer, and the dimensions of the fully connected layers.
+        Config for VisionProcessor (conv layers, channels, FC).
     graph_params : dict
-        Parameters for configuring the GraphProcessor, including the number of GAT layers,
-        the number of attention heads for each layer, and the dimensions of the fully connected layers.
+        Config for GraphProcessor (GAT layers, heads, FC).
     fc_dims : list of int
-        A list containing the sizes of the fully connected layers that combine the outputs of the VisionProcessor
-        and GraphProcessor. This is automatically calculated based on the output sizes of these processors.
+        Sizes of FC layers combining vision and graph outputs.
     dropout_p : float
-        The probability of dropping out units in the dropout layer to prevent overfitting. Default is 0.25.
+        Dropout probability (default: 0.25).
     vision_processor : VisionProcessor
-        An instance of the VisionProcessor class, which processes visual input data.
+        Processes visual input data.
     graph_processor : GraphProcessor
-        An instance of the GraphProcessor class, which processes graph-structured data.
+        Processes graph-structured data.
     fc : nn.Sequential
-        A sequential container holding the fully connected layers that combine the processed visual and graph features.
+        FC layers combining vision and graph features.
     dropout : nn.Dropout
-        A dropout layer used to prevent overfitting.
-
-    Methods:
-    --------
-    __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 192):
-        Initializes the AgentModel with the specified observation space and feature dimension.
-
-    forward(self, observations):
-        Defines the forward pass of the model, processing visual and graph inputs,
-        combining their features, and passing them through fully connected layers.
-
-    _initialize_weights(self):
-        Initializes the weights of the convolutional and fully connected layers using Kaiming normalization.
+        Dropout layer to prevent overfitting.
     """
 
     def __init__(
@@ -263,16 +244,15 @@ class AgentModel(BaseFeaturesExtractor):
         model_config: AgentModelConfig | None = None,
     ):
         """
-        Initializes the AgentModel object.
+        Initialize the AgentModel.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         observation_space : gym.spaces.Dict
-            A dictionary space containing the observation spaces for vision and graph data.
-            The 'vision' key should map to a space with the shape of the image input,
-            and the 'node_features' key should map to a space with the shape of the graph node features.
+            Dict space with 'vision' and 'node_features' keys.
         features_dim : int, optional
-            The dimensionality of the final output feature vector produced by the model. The default value is 192.
+            Dimensionality of the final output feature vector.
+            Default: 192.
         """
         super().__init__(observation_space, features_dim=features_dim)
 
@@ -332,17 +312,19 @@ class AgentModel(BaseFeaturesExtractor):
         """
         Forward pass through the AgentModel.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         observations : dict
-            A dictionary containing 'vision' and 'node_features' keys. 'vision' should be a batch of images,
-            and 'node_features' should be the node feature matrix for the graph, along with 'edge_index'
-            and optionally 'edge_attr' and 'batch'.
+            Dict with 'vision' and 'node_features' keys.
+            'vision' is a batch of images; 'node_features'
+            is the node feature matrix, along with
+            'edge_index' and optionally 'edge_attr'/'batch'.
 
-        Returns:
-        --------
+        Returns
+        -------
         torch.Tensor
-            The output feature vector of size (batch_size, features_dim).
+            Output feature vector of size
+            (batch_size, features_dim).
         """
         # Process the visual input through the VisionProcessor
         vision_features = self.vision_processor(observations["vision"])
@@ -375,11 +357,10 @@ class AgentModel(BaseFeaturesExtractor):
 
     def _initialize_weights(self):
         """
-        Initializes the weights of the model using Kaiming normalization.
-        This ensures better convergence during training by setting the initial weights appropriately.
+        Initialize weights using Kaiming normalization.
 
-        Kaiming normalization is applied to Conv2D and Linear layers, while BatchNorm2D layers are initialized
-        with ones for weights and zeros for biases.
+        Applied to Conv2D and Linear layers. BatchNorm2D
+        layers get ones for weights and zeros for biases.
         """
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.Linear)):
@@ -396,9 +377,16 @@ class AgentModel(BaseFeaturesExtractor):
             print(f"Output shape: {output.shape}")
             print(f"Output mean: {output.mean().item():.4f}")
             print(f"Output std: {output.std().item():.4f}")
-            print(
-                f"Vision features mean: {self.vision_processor(observations['vision']).mean().item():.4f}"
+            vision_mean = self.vision_processor(observations["vision"]).mean().item()
+            print(f"Vision features mean: {vision_mean:.4f}")
+            graph_data = Data(
+                x=observations["node_features"].to(torch_dtype),
+                edge_index=observations["edge_index"].long(),
+                edge_attr=observations["edge_attr"].to(torch_dtype),
+                batch=torch.zeros(
+                    observations["node_features"].shape[0],
+                    dtype=torch.long,
+                ),
             )
-            print(
-                f"Graph features mean: {self.graph_processor(Data(x=observations['node_features'].to(torch_dtype), edge_index=observations['edge_index'].long(), edge_attr=observations['edge_attr'].to(torch_dtype), batch=torch.zeros(observations['node_features'].shape[0], dtype=torch.long))).mean().item():.4f}"
-            )
+            graph_mean = self.graph_processor(graph_data).mean().item()
+            print(f"Graph features mean: {graph_mean:.4f}")

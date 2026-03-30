@@ -1,5 +1,3 @@
-import time
-
 from tsp_rl_kg.config import AgentConfig
 from tsp_rl_kg.game_world.entities import MossyRock, Outpost, SnowyRock, Tree, WoodPath
 from tsp_rl_kg.game_world.environment import Environment
