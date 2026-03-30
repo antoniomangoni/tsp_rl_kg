@@ -26,13 +26,13 @@ class SimulationManager:
     ):
         # Accept either a GameManagerConfig or a legacy dict
         if isinstance(game_manager_config, dict):
-            self._gm_config = GameManagerConfig(
-                **{
-                    k: v
-                    for k, v in game_manager_config.items()
-                    if k in GameManagerConfig.__dataclass_fields__
-                }
-            )
+            gm_dict = {
+                k: v
+                for k, v in game_manager_config.items()
+                if k in GameManagerConfig.__dataclass_fields__
+            }
+            gm_dict.setdefault("headless", True)
+            self._gm_config = GameManagerConfig(**gm_dict)
         else:
             self._gm_config = game_manager_config
 

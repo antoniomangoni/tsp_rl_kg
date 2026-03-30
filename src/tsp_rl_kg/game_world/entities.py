@@ -13,22 +13,39 @@ ENTITY_ID_WOOD_PATH = 6
 ENTITY_ID_PLAYER = 7
 
 
-class Entity(pygame.sprite.Sprite):
-    _headless = False
-    _images = {}
+class BaseEntity:
+    """Lightweight entity base with position/id/name — no pygame dependency."""
 
-    def __init__(self, x, y, art, tile_size):
+    _headless = False
+
+    def __init__(self, x, y, tile_size):
         self.grid_x = x
         self.grid_y = y
         self.tile_size = tile_size
         self.screen_x = x * tile_size
         self.screen_y = y * tile_size
         self.id = None
+        self.name = None
+
+    def move(self, dx, dy):
+        self.grid_x += dx
+        self.grid_y += dy
+        self.screen_x = self.grid_x * self.tile_size
+        self.screen_y = self.grid_y * self.tile_size
+
+
+class Entity(BaseEntity, pygame.sprite.Sprite):
+    """Renderable entity. Loads sprite images when not in headless mode."""
+
+    _images = {}
+
+    def __init__(self, x, y, art, tile_size):
+        BaseEntity.__init__(self, x, y, tile_size)
 
         if self._headless:
             return
 
-        super().__init__()
+        pygame.sprite.Sprite.__init__(self)
         if art not in self._images:
             module_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -57,10 +74,7 @@ class Entity(pygame.sprite.Sprite):
         self.rect.y = self.screen_y
 
     def move(self, dx, dy):
-        self.grid_x += dx
-        self.grid_y += dy
-        self.screen_x = self.grid_x * self.tile_size
-        self.screen_y = self.grid_y * self.tile_size
+        super().move(dx, dy)
         if not self._headless:
             self.rect.x = self.screen_x
             self.rect.y = self.screen_y

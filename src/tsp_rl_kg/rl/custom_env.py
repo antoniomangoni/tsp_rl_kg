@@ -34,15 +34,20 @@ class CustomEnv(gym.Env):
 
         # Normalize to typed configs
         if isinstance(game_manager_args, dict):
-            self._gm_config = GameManagerConfig(
-                **{
-                    k: v
-                    for k, v in game_manager_args.items()
-                    if k in GameManagerConfig.__dataclass_fields__
-                }
-            )
+            gm_dict = {
+                k: v
+                for k, v in game_manager_args.items()
+                if k in GameManagerConfig.__dataclass_fields__
+            }
+            gm_dict.setdefault("headless", True)
+            self._gm_config = GameManagerConfig(**gm_dict)
         else:
             self._gm_config = game_manager_args
+
+        if not self._gm_config.headless:
+            self.logger.warning(
+                "CustomEnv created with headless=False — training will require a display server."
+            )
 
         if isinstance(simulation_manager_args, dict):
             self._sim_config = SimulationManagerConfig(

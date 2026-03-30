@@ -4,6 +4,7 @@ import numpy as np
 import pygame
 
 from tsp_rl_kg.game_world.entities import (
+    BaseEntity,
     Entity,
     MossyRock,
     Outpost,
@@ -30,6 +31,12 @@ class _HeadlessEntityGroup:
     def draw(self, surface) -> None:
         pass
 
+    def __iter__(self):
+        return iter(self._items)
+
+    def __len__(self):
+        return len(self._items)
+
 
 class Environment:
     def __init__(
@@ -42,6 +49,7 @@ class Environment:
         self.headless = headless
 
         # Propagate headless flag to Entity and Terrain classes
+        BaseEntity._headless = headless
         Entity._headless = headless
         Terrain._headless = headless
 

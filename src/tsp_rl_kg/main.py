@@ -25,7 +25,16 @@ if __name__ == "__main__":
     run_type = 1
 
     if run_type == 0:
-        env = CustomEnv(game_manager_config, simulation_manager_config, model_args)
+        env = CustomEnv(
+            GameManagerConfig(
+                num_tiles=game_manager_config.num_tiles,
+                screen_size=game_manager_config.screen_size,
+                vision_range=game_manager_config.vision_range,
+                headless=True,
+            ),
+            simulation_manager_config,
+            model_args,
+        )
 
         # Instantiate the RL model (e.g., PPO)
         model = PPO("CnnPolicy", env, verbose=1)
