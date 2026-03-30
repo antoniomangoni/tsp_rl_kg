@@ -4,6 +4,7 @@ import numpy as np
 import pygame
 
 from tsp_rl_kg.config import GameManagerConfig
+from tsp_rl_kg.game_world.actions import ActionType
 from tsp_rl_kg.game_world.agent import Agent
 from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.game_world.heightmap_generator import HeightmapGenerator
@@ -108,7 +109,7 @@ class GameManager:
     #####################################################################################
 
     def game_step(self):
-        self.agent_controler.agent_action(random.randint(0, 10))
+        self.agent_controler.agent_action(random.choice(list(ActionType)))
         # self.environment.update_heat_map(
         #     self.agent.grid_x, self.agent.grid_y,
         #     self.target_manager.min_path_length

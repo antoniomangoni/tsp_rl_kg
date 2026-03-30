@@ -1,4 +1,5 @@
 from tsp_rl_kg.config import AgentConfig
+from tsp_rl_kg.game_world.actions import COLLECT_DELTAS, MOVEMENT_DELTAS, ActionType
 from tsp_rl_kg.game_world.entities import MossyRock, Outpost, SnowyRock, Tree, WoodPath
 from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.game_world.terrains import DeepWater, Water
@@ -30,21 +31,6 @@ class Agent:
 
         self.wood = 0
         self.stone = 0
-        self.movement_actions = {
-            0: (-1, 0),  # Left
-            1: (1, 0),  # Right
-            2: (0, 1),  # Up
-            3: (0, -1),  # Down
-        }
-        self.other_actions = {
-            4: self.scout,
-            5: self.build_path,
-            6: self.place_rock,
-            7: lambda: self.collect_resource(0, 1),
-            8: lambda: self.collect_resource(0, -1),
-            9: lambda: self.collect_resource(1, 0),
-            10: lambda: self.collect_resource(-1, 0),
-        }
 
     def reset_agent(self):
         self.reset_energy_spent()
@@ -55,16 +41,27 @@ class Agent:
     def get_kg(self, kg: KG):
         self.kg = kg
 
-    def agent_action(self, action):
+    def agent_action(self, action: int) -> None:
         self.agent_step_count += 1
-        if action in self.movement_actions:
-            dx, dy = self.movement_actions[action]
+        action = ActionType(action)
+        if action in MOVEMENT_DELTAS:
+            dx, dy = MOVEMENT_DELTAS[action]
             self.move_agent(dx, dy)
-        elif action in self.other_actions:
-            self.other_actions[action]()
+        elif action in COLLECT_DELTAS:
+            dx, dy = COLLECT_DELTAS[action]
+            self.collect_resource(dx, dy)
+            self.energy_spent += self.action_energy_cost
+        elif action is ActionType.SCOUT:
+            self.scout()
+            self.energy_spent += self.action_energy_cost
+        elif action is ActionType.BUILD_PATH:
+            self.build_path()
+            self.energy_spent += self.action_energy_cost
+        elif action is ActionType.PLACE_ROCK:
+            self.place_rock()
             self.energy_spent += self.action_energy_cost
         else:
-            raise ValueError("Invalid action")
+            raise ValueError(f"Invalid action: {action}")
 
     def reset_energy_spent(self):
         self.energy_spent = 0
