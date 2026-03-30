@@ -10,7 +10,7 @@ from tsp_rl_kg.rl.simulation_manager import SimulationManager
 from tsp_rl_kg.rl.training.trainer import Trainer
 
 class AblationStudy:
-    def __init__(self, base_config, kg_completeness_values, converter, logger):
+    def __init__(self, base_config, kg_completeness_values, logger, converter=None):
         self.base_config = base_config
         self.converter = converter
         self.kg_completeness_values = kg_completeness_values

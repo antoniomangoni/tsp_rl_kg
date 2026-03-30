@@ -167,3 +167,6 @@ Pipfile.lock
 
 # Conda
 .conda/
+
+.github/
+docs/specs/

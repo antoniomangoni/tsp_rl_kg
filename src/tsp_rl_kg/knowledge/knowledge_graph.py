@@ -35,16 +35,10 @@ class KnowledgeGraph():
         # if plot:
         #     self.visualise_graph()
 
-    def create_node(self, coordinates, z_level, mask=0):
-        x, y, z_level, type_id, mask = self.create_node_features(coordinates, z_level, mask)
-        node_idx = self.graph_manager.create_idx(coordinates, z_level)
-        self.graph.x[node_idx] = [x, y, z_level, type_id, mask]
-        return node_idx
-        
-    def create_node_features(self, coor, z_level, mask) -> tuple:
-        """Create node features based on coordinates and z-level."""
+    def create_node_features(self, coor, z_level, mask):
+        """Create node features based on coordinates and z-level. Returns the embedding value."""
         x, y = coor
-        
+
         if z_level == self.terrain_z_level:
             if self.terrain_embedding_array is not None:
                 embedding = self.terrain_embedding_array[x, y]
@@ -66,7 +60,6 @@ class KnowledgeGraph():
         else:
             exit(f"Invalid z-level: {z_level}")
         return embedding
-        # return x, y, z_level, embedding, mask
 
     def init_graph_tensors(self):
         self.num_possible_nodes = self.environment.width * self.environment.height * 2 + 1  # 2 z-levels and a player node

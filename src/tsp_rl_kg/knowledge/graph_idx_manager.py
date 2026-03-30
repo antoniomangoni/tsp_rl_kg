@@ -22,8 +22,10 @@ class Graph_Manager:
     
     def create_edge_idx(self, node_idx1, node_idx2):
         if self.current_edge_idx >= self.max_edges:
-            print("Max edges reached.")
-            return
+            raise RuntimeError(
+                f"Max edges ({self.max_edges}) reached. Cannot create edge "
+                f"between nodes {node_idx1} and {node_idx2}."
+            )
         direct_edge_idx = self.current_edge_idx
         reverse_edge_idx = self.current_edge_idx + 1
         self.store_edge_indices(node_idx1, node_idx2, direct_edge_idx, reverse_edge_idx)

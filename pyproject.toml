@@ -27,7 +27,7 @@ dependencies = [
     "numpy>=2.1.1",
     "pandas>=2.2.2",
     "Pillow>=10.4.0",
-    "pygame>=2.5.2",
+    "pygame-ce>=2.5.2",
     "scipy>=1.14.1",
     "stable_baselines3>=2.3.2",
     "torch>=2.6.0",
@@ -39,6 +39,12 @@ tsp-rl-kg = "tsp_rl_kg.main:main"
 
 [tool.setuptools.package-data]
 tsp_rl_kg = ["assets/full_art/*.png", "assets/pixel_art/*.png"]
+
+[dependency-groups]
+dev = [
+    "black>=26.3.1",
+    "ruff>=0.15.8",
+]
 
 # Tool configurations for development
 [tool.black]
