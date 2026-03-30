@@ -255,15 +255,17 @@ class RewardCalculator:
             + self.config.route_improvement_reward
             + self.config.better_route_than_algo_reward
         )
-        normalized_reward = 100 * (reward - min_reward) / (max_reward - min_reward)
-        return max(0, min(normalized_reward, 100))
+        normalized_reward = (
+            self.config.normalisation_scale * (reward - min_reward) / (max_reward - min_reward)
+        )
+        return max(0, min(normalized_reward, self.config.normalisation_scale))
 
     def calculate_route_efficiency(
         self, agent_route_energy: float, algorithmic_best_energy: float
     ) -> float:
         if algorithmic_best_energy == 0:
             raise ValueError("Algorithmic best energy cannot be zero")
-        return (algorithmic_best_energy / agent_route_energy) * 100
+        return (algorithmic_best_energy / agent_route_energy) * self.config.normalisation_scale
 
     def calculate_relative_improvement(
         self, current_route_energy: float, algorithmic_best_energy: float
@@ -286,8 +288,7 @@ class RewardCalculator:
             (agent_route_energy - algorithmic_best_energy) / algorithmic_best_energy,
         )
 
-    @staticmethod
-    def interpret_efficiency(efficiency: float) -> str:
-        if efficiency == 100:
+    def interpret_efficiency(self, efficiency: float) -> str:
+        if efficiency == self.config.normalisation_scale:
             return "Matching algorithmic best"
-        return f"{100 - efficiency:.2f}% away from algorithmic best"
+        return f"{self.config.normalisation_scale - efficiency:.2f}% away from algorithmic best"

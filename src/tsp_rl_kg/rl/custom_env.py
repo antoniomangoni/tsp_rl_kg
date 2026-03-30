@@ -6,7 +6,13 @@ import pygame
 from gymnasium import spaces
 from torch_geometric.data import Data
 
-from tsp_rl_kg.config import GameManagerConfig, ModelArgs, RewardConfig, SimulationManagerConfig
+from tsp_rl_kg.config import (
+    EpisodeConfig,
+    GameManagerConfig,
+    ModelArgs,
+    RewardConfig,
+    SimulationManagerConfig,
+)
 from tsp_rl_kg.game_world.agent import Agent
 from tsp_rl_kg.rl.reward import RewardCalculator, manhattan_distance
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
@@ -20,6 +26,7 @@ class CustomEnv(gym.Env):
         model_args: ModelArgs | dict,
         converter=None,
         plot=False,
+        episode_config: EpisodeConfig | None = None,
     ):
         super(CustomEnv, self).__init__()
         self.logger = logging.getLogger(__name__)
@@ -59,10 +66,18 @@ class CustomEnv(gym.Env):
         self._reward_config = RewardConfig()
         self._reward_calculator: RewardCalculator | None = None  # created after first game set
 
+        # Episode limits
+        if episode_config is None:
+            episode_config = EpisodeConfig()
+        self._episode_config = episode_config
+
         self.agent_steps = 0
         self.current_reward = 0
         self.game_worlds_trained_in = 0
-        self.max_game_worlds_trained_in = min(100, self._sim_config.number_of_environments // 2)
+        self.max_game_worlds_trained_in = min(
+            self._episode_config.max_game_worlds_trained_in,
+            self._sim_config.number_of_environments // 2,
+        )
 
         self.num_actions = self._model_args.num_actions
         self.num_tiles = self._gm_config.num_tiles
@@ -126,11 +141,11 @@ class CustomEnv(gym.Env):
 
         self.action_space = spaces.Discrete(self.num_actions)
         self.step_count = 0
-        self.max_episode_steps = 2048 * 8  # Maximum number of steps per episode
+        self.max_episode_steps = self._episode_config.max_episode_steps
 
         # New attributes for progress tracking
         self.steps_without_progress = 0
-        self.max_steps_without_progress = 2048 * 4  # Adjust as needed
+        self.max_steps_without_progress = self._episode_config.max_steps_without_progress
         self.best_distance_to_unvisited = float("inf")
 
         self.episode_step = 0

@@ -1,11 +1,21 @@
-from tsp_rl_kg.game_world.environment import Environment
-from tsp_rl_kg.game_world.entities import Tree, MossyRock, SnowyRock, Outpost, WoodPath
-from tsp_rl_kg.game_world.terrains import DeepWater, Water
-from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph as KG
 import time
 
+from tsp_rl_kg.config import AgentConfig
+from tsp_rl_kg.game_world.entities import MossyRock, Outpost, SnowyRock, Tree, WoodPath
+from tsp_rl_kg.game_world.environment import Environment
+from tsp_rl_kg.game_world.terrains import DeepWater, Water
+from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph as KG
+
+
 class Agent:
-    def __init__(self, environment : Environment, vision_range : int):
+    def __init__(
+        self,
+        environment: Environment,
+        vision_range: int,
+        agent_config: AgentConfig | None = None,
+    ):
+        if agent_config is None:
+            agent_config = AgentConfig()
         self.environment = environment
         self.terrain_id_grid = self.environment.terrain_index_grid
         self.entity_id_grid = self.environment.entity_index_grid
@@ -13,18 +23,19 @@ class Agent:
         self.agent = self.environment.player
         self.agent_step_count = 0
 
-        self.resouce_max = 5
-        self.vision_range = vision_range 
+        self.resource_max = agent_config.resource_max
+        self.vision_range = vision_range
 
         self.energy_spent = 0
-        self.action_energy_cost = 3
+        self.action_energy_cost = agent_config.action_energy_cost
+        self._scout_vision_multiplier = agent_config.scout_vision_multiplier
 
         self.wood = 0
         self.stone = 0
         self.movement_actions = {
             0: (-1, 0),  # Left
-            1: (1, 0),   # Right
-            2: (0, 1),   # Up
+            1: (1, 0),  # Right
+            2: (0, 1),  # Up
             3: (0, -1),  # Down
         }
         self.other_actions = {
@@ -36,14 +47,14 @@ class Agent:
             9: lambda: self.collect_resource(1, 0),
             10: lambda: self.collect_resource(-1, 0),
         }
-    
+
     def reset_agent(self):
         self.reset_energy_spent()
         self.wood = 0
         self.stone = 0
         self.agent = self.environment.player
 
-    def get_kg(self, kg : KG):
+    def get_kg(self, kg: KG):
         self.kg = kg
 
     def agent_action(self, action):
@@ -56,7 +67,7 @@ class Agent:
             self.energy_spent += self.action_energy_cost
         else:
             raise ValueError("Invalid action")
-        
+
     def reset_energy_spent(self):
         self.energy_spent = 0
         self.agent_step_count = 0
@@ -67,12 +78,12 @@ class Agent:
         self.energy_spent += self.environment.terrain_object_grid[new_x, new_y].energy_requirement
 
     def scout(self):
-        """ Looking at the environment is a deliberate action. """
+        """Looking at the environment is a deliberate action."""
         """ Adding a terrain node automatically adds the corresponding entity node"""
 
         discovered_now = 0
-        vision = int(self.vision_range * 2)
-        
+        vision = int(self.vision_range * self._scout_vision_multiplier)
+
         for y in range(self.agent.grid_y - vision, self.agent.grid_y + vision + 1):
             for x in range(self.agent.grid_x - vision, self.agent.grid_x + vision + 1):
                 if self.environment.within_bounds(x, y):
@@ -85,9 +96,13 @@ class Agent:
     def build_path(self):
         if (self.agent.grid_x, self.agent.grid_y) in self.environment.outpost_locations:
             return
-        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
+        if isinstance(
+            self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water
+        ):
             return
-        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
+        if isinstance(
+            self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater
+        ):
             return
         if self.wood >= 1:
             self.wood -= 1
@@ -98,9 +113,13 @@ class Agent:
         if self.stone < 1:
             return
         place = -1
-        if isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater):
+        if isinstance(
+            self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], DeepWater
+        ):
             place = 0
-        elif isinstance(self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water):
+        elif isinstance(
+            self.environment.terrain_object_grid[self.agent.grid_x, self.agent.grid_y], Water
+        ):
             place = 1
         else:
             return
@@ -120,19 +139,20 @@ class Agent:
             return
         else:
             if isinstance(resource, Tree):
-                if self.wood >= self.resouce_max:
+                if self.wood >= self.resource_max:
                     return
                 self.wood += 1
             elif isinstance(resource, MossyRock):
-                if self.stone >= self.resouce_max:
+                if self.stone >= self.resource_max:
                     return
                 self.stone += 1
             elif isinstance(resource, SnowyRock):
-                if self.stone >= self.resouce_max:
+                if self.stone >= self.resource_max:
                     return
                 self.stone += 1
             self.environment.delete_entity(resource)
             self.kg.remove_entity_node(x, y)
+
 
 """
 These are not implemented as they do not fall within the scope of the project.

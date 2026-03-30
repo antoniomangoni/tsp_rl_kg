@@ -81,6 +81,23 @@ class CurriculumConfig:
 
 
 @dataclass
+class AgentConfig:
+    resource_max: int = 5
+    action_energy_cost: int = 3
+    scout_vision_multiplier: int = 2
+
+    def __post_init__(self) -> None:
+        if self.resource_max < 1:
+            raise ValueError(f"resource_max must be >= 1, got {self.resource_max}")
+        if self.action_energy_cost < 0:
+            raise ValueError(f"action_energy_cost must be >= 0, got {self.action_energy_cost}")
+        if self.scout_vision_multiplier < 1:
+            raise ValueError(
+                f"scout_vision_multiplier must be >= 1, got {self.scout_vision_multiplier}"
+            )
+
+
+@dataclass
 class RewardConfig:
     """All reward weights, penalties, and thresholds for the reward system."""
 
@@ -106,6 +123,56 @@ class RewardConfig:
     # Route improvement tracking
     max_not_improvement_routes: int = 5
 
+    # Normalisation
+    normalisation_scale: float = 100.0
+
+
+@dataclass
+class EpisodeConfig:
+    max_episode_steps: int = 2048 * 8
+    max_steps_without_progress: int = 2048 * 4
+    max_game_worlds_trained_in: int = 100
+
+    def __post_init__(self) -> None:
+        if self.max_episode_steps < 1:
+            raise ValueError(f"max_episode_steps must be >= 1, got {self.max_episode_steps}")
+        if self.max_steps_without_progress < 1:
+            raise ValueError(
+                f"max_steps_without_progress must be >= 1, got {self.max_steps_without_progress}"
+            )
+
+
+@dataclass
+class AgentModelConfig:
+    # VisionProcessor defaults
+    vision_num_conv_layers: int = 4
+    vision_conv_channels: list[int] = field(default_factory=lambda: [64, 128, 256, 512])
+    vision_fc_dims: list[int] = field(default_factory=lambda: [512])
+
+    # GraphProcessor defaults
+    graph_num_gat_layers: int = 3
+    graph_gat_heads: list[int] = field(default_factory=lambda: [4, 4, 4])
+    graph_fc_dims: list[int] = field(default_factory=lambda: [256])
+    gat_hidden_dim: int = 48
+
+    # Shared
+    features_dim: int = 192
+    dropout: float = 0.25
+
+    def to_vision_params(self) -> dict:
+        return {
+            "num_conv_layers": self.vision_num_conv_layers,
+            "conv_channels": self.vision_conv_channels,
+            "fc_dims": self.vision_fc_dims,
+        }
+
+    def to_graph_params(self) -> dict:
+        return {
+            "num_gat_layers": self.graph_num_gat_layers,
+            "gat_heads": self.graph_gat_heads,
+            "fc_dims": self.graph_fc_dims,
+        }
+
 
 @dataclass
 class TrainingConfig:
@@ -116,6 +183,8 @@ class TrainingConfig:
     model_args: ModelArgs = field(default_factory=ModelArgs)
     model_config: ModelConfig = field(default_factory=ModelConfig)
     curriculum: CurriculumConfig = field(default_factory=CurriculumConfig)
+    episode: EpisodeConfig = field(default_factory=EpisodeConfig)
+    agent_model: AgentModelConfig = field(default_factory=AgentModelConfig)
     total_timesteps: int = 100_000
     kg_completeness: float = 0.5
 

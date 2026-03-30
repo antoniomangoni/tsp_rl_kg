@@ -1,12 +1,15 @@
+import gymnasium as gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import GATConv, global_mean_pool
-from torch_geometric.data import Data
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-import gymnasium as gym
+from torch_geometric.data import Data
+from torch_geometric.nn import GATConv, global_mean_pool
+
+from tsp_rl_kg.config import AgentModelConfig
 
 torch_dtype = torch.float32
+
 
 class VisionProcessor(BaseFeaturesExtractor):
     """
@@ -19,7 +22,7 @@ class VisionProcessor(BaseFeaturesExtractor):
     num_conv_layers : int
         The number of convolutional layers in the model. This is set to 4 by default.
     conv_channels : list of int
-        A list containing the number of output channels for each convolutional layer. 
+        A list containing the number of output channels for each convolutional layer.
         The default is [32, 64, 128, 256], meaning the first layer has 32 channels, the second 64, and so on.
     fc_dims : list of int
         A list containing the sizes of the fully connected layers following the convolutional layers.
@@ -40,7 +43,7 @@ class VisionProcessor(BaseFeaturesExtractor):
         Defines the forward pass of the model, processing input image data through the convolutional layers
         followed by fully connected layers to produce a feature vector.
     """
-    
+
     def __init__(self, observation_space, vision_params, features_dim=96):
         """
         Initializes the VisionProcessor object.
@@ -56,29 +59,39 @@ class VisionProcessor(BaseFeaturesExtractor):
         super(VisionProcessor, self).__init__(observation_space, features_dim)
 
         # Set parameters for modularity and flexibility
-        self.num_conv_layers = vision_params.get("num_conv_layers", 4)  # Number of convolutional layers
-        self.conv_channels = vision_params.get("conv_channels", [64, 128, 256, 256])  # Number of output channels for each layer
-        self.fc_dims = vision_params.get("fc_dims",  [512])  # Dimensions of the fully connected layers
+        self.num_conv_layers = vision_params.get(
+            "num_conv_layers", 4
+        )  # Number of convolutional layers
+        self.conv_channels = vision_params.get(
+            "conv_channels", [64, 128, 256, 256]
+        )  # Number of output channels for each layer
+        self.fc_dims = vision_params.get(
+            "fc_dims", [512]
+        )  # Dimensions of the fully connected layers
 
         # Extract dimensions from the observation space
         channels, height, width = observation_space
-        
+
         # Build the convolutional layers
         conv_layers = []
         in_channels = 3
-        for out_channels in self.conv_channels[:self.num_conv_layers]:
+        for out_channels in self.conv_channels[: self.num_conv_layers]:
             conv_layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1))
             conv_layers.append(nn.BatchNorm2d(out_channels))
             conv_layers.append(nn.ReLU())
             in_channels = out_channels
-        
+
         # Add a flattening layer to the sequence
         conv_layers.append(nn.Flatten())
         self.cnn = nn.Sequential(*conv_layers)
-        
+
         # Calculate the total output size after the convolutional layers
-        total_conv_size = self.conv_channels[min(self.num_conv_layers, len(self.conv_channels)) - 1] * height * width
-        
+        total_conv_size = (
+            self.conv_channels[min(self.num_conv_layers, len(self.conv_channels)) - 1]
+            * height
+            * width
+        )
+
         # Build the fully connected layers
         fc_layers = []
         in_dim = total_conv_size
@@ -86,7 +99,7 @@ class VisionProcessor(BaseFeaturesExtractor):
             fc_layers.append(nn.Linear(in_dim, out_dim))
             fc_layers.append(nn.ReLU())
             in_dim = out_dim
-        
+
         # The final layer reduces the dimension to the desired features_dim
         fc_layers.append(nn.Linear(in_dim, features_dim))
         self.fc = nn.Sequential(*fc_layers)
@@ -143,8 +156,8 @@ class GraphProcessor(nn.Module):
         Defines the forward pass of the model, processing input node features through the GAT layers,
         followed by global mean pooling and fully connected layers to produce a feature vector.
     """
-    
-    def __init__(self, num_graph_node_features, graph_params, output_dim=96):
+
+    def __init__(self, num_graph_node_features, graph_params, output_dim=96, gat_hidden_dim=48):
         """
         Initializes the GraphProcessor object.
 
@@ -158,25 +171,30 @@ class GraphProcessor(nn.Module):
         super(GraphProcessor, self).__init__()
 
         # Set parameters for modularity and flexibility
-        self.num_gat_layers = graph_params.get("num_gat_layers", 3)  # Number of GAT layers 
-        self.gat_heads = graph_params.get("gat_heads", [4, 2, 2])  # Number of attention heads for each layer
-        self.fc_dims = graph_params.get("fc_dims", [192])  # Dimensions of the fully connected layers
-        
+        self.num_gat_layers = graph_params.get("num_gat_layers", 3)  # Number of GAT layers
+        self.gat_heads = graph_params.get(
+            "gat_heads", [4, 2, 2]
+        )  # Number of attention heads for each layer
+        self.fc_dims = graph_params.get(
+            "fc_dims", [192]
+        )  # Dimensions of the fully connected layers
+        self.gat_hidden_dim = gat_hidden_dim
+
         # Build the GAT layers
         gat_layers = []
         in_channels = num_graph_node_features
         for i in range(self.num_gat_layers):
-            out_channels = 48 * self.gat_heads[i]
-            gat_layers.append(GATConv(in_channels, 48, heads=self.gat_heads[i]))
+            out_channels = self.gat_hidden_dim * self.gat_heads[i]
+            gat_layers.append(GATConv(in_channels, self.gat_hidden_dim, heads=self.gat_heads[i]))
             # print(f"GAT layer {i}: in_channels={in_channels}, out_channels={out_channels}")
             in_channels = out_channels
 
         self.gat = nn.ModuleList(gat_layers)
-        
+
         self.fc = nn.Sequential(
             nn.Linear(in_channels, self.fc_dims[0]),
             nn.ReLU(),
-            nn.Linear(self.fc_dims[0], output_dim)
+            nn.Linear(self.fc_dims[0], output_dim),
         )
 
     def forward(self, x, edge_index, batch):
@@ -188,10 +206,10 @@ class GraphProcessor(nn.Module):
             # print(f"Before GAT layer {i}: x shape = {x.shape}")
             x = F.relu(gat_layer(x, edge_index))
             # print(f"After GAT layer {i}: x shape = {x.shape}")
-        
+
         x = global_mean_pool(x, batch)
         # print(f"After global_mean_pool: x shape = {x.shape}")
-        
+
         x = self.fc(x)
         # print(f"Final output shape: {x.shape}")
         return x
@@ -237,8 +255,13 @@ class AgentModel(BaseFeaturesExtractor):
     _initialize_weights(self):
         Initializes the weights of the convolutional and fully connected layers using Kaiming normalization.
     """
-    
-    def __init__(self, observation_space: gym.spaces.Dict, features_dim: int = 192):
+
+    def __init__(
+        self,
+        observation_space: gym.spaces.Dict,
+        features_dim: int = 192,
+        model_config: AgentModelConfig | None = None,
+    ):
         """
         Initializes the AgentModel object.
 
@@ -252,30 +275,43 @@ class AgentModel(BaseFeaturesExtractor):
             The dimensionality of the final output feature vector produced by the model. The default value is 192.
         """
         super().__init__(observation_space, features_dim=features_dim)
-        
+
+        # Load config defaults (or accept an external config)
+        if model_config is None:
+            model_config = AgentModelConfig()
+
         # Parameters for modularity and flexibility
-        self.vision_params = {'num_conv_layers': 4, 'conv_channels': [64, 128, 256, 512], 'fc_dims': [512]}
-        self.graph_params = {'num_gat_layers': 3, 'gat_heads': [4, 4, 4], 'fc_dims': [256]}
-        
+        self.vision_params = model_config.to_vision_params()
+        self.graph_params = model_config.to_graph_params()
+
         # Calculate the size of the first fully connected layer
-        first_fc_dim = self.vision_params['fc_dims'][-1] + self.graph_params['fc_dims'][-1]
-        
+        first_fc_dim = self.vision_params["fc_dims"][-1] + self.graph_params["fc_dims"][-1]
+
         # Set up the fully connected layers dimensions
         self.fc_dims = [first_fc_dim, first_fc_dim, first_fc_dim // 2, features_dim]
-        
+
         # Dropout probability
-        self.dropout_p = 0.25
-        
+        self.dropout_p = model_config.dropout
+
         # Initialize VisionProcessor and GraphProcessor with parameters
-        vision_shape = observation_space.spaces['vision'].shape
-        num_node_features = observation_space.spaces['node_features'].shape[1]
-        
-        self.vision_processor = VisionProcessor(vision_shape, vision_params=self.vision_params, features_dim=features_dim)
-        self.graph_processor = GraphProcessor(num_node_features, graph_params=self.graph_params, output_dim=features_dim)
-        
+        vision_shape = observation_space.spaces["vision"].shape
+        num_node_features = observation_space.spaces["node_features"].shape[1]
+
+        self.vision_processor = VisionProcessor(
+            vision_shape, vision_params=self.vision_params, features_dim=features_dim
+        )
+        self.graph_processor = GraphProcessor(
+            num_node_features,
+            graph_params=self.graph_params,
+            output_dim=features_dim,
+            gat_hidden_dim=model_config.gat_hidden_dim,
+        )
+
         # Combine the output sizes from both processors
-        combined_input_size = self.vision_processor.fc[-1].out_features + self.graph_processor.fc[-1].out_features
-        
+        combined_input_size = (
+            self.vision_processor.fc[-1].out_features + self.graph_processor.fc[-1].out_features
+        )
+
         # Define the fully connected layers based on the calculated dimensions
         fc_layers = []
         in_dim = combined_input_size
@@ -283,12 +319,12 @@ class AgentModel(BaseFeaturesExtractor):
             fc_layers.append(nn.Linear(in_dim, out_dim))
             fc_layers.append(nn.ReLU())
             in_dim = out_dim
-        
+
         # The final fully connected layer
         fc_layers.append(nn.Linear(in_dim, features_dim))
         self.fc = nn.Sequential(*fc_layers)
         self.dropout = nn.Dropout(p=self.dropout_p)
-        
+
         # Initialize the weights
         self._initialize_weights()
 
@@ -300,7 +336,7 @@ class AgentModel(BaseFeaturesExtractor):
         -----------
         observations : dict
             A dictionary containing 'vision' and 'node_features' keys. 'vision' should be a batch of images,
-            and 'node_features' should be the node feature matrix for the graph, along with 'edge_index' 
+            and 'node_features' should be the node feature matrix for the graph, along with 'edge_index'
             and optionally 'edge_attr' and 'batch'.
 
         Returns:
@@ -309,30 +345,32 @@ class AgentModel(BaseFeaturesExtractor):
             The output feature vector of size (batch_size, features_dim).
         """
         # Process the visual input through the VisionProcessor
-        vision_features = self.vision_processor(observations['vision'])
-        
+        vision_features = self.vision_processor(observations["vision"])
+
         # Handle batched graph data
-        batch_size = observations['node_features'].shape[0]
-        num_nodes = observations['node_features'].shape[1]
-        
+        batch_size = observations["node_features"].shape[0]
+        num_nodes = observations["node_features"].shape[1]
+
         # Reshape and process graph features
-        x = observations['node_features'].view(batch_size * num_nodes, -1).to(torch_dtype)
-        edge_index = observations['edge_index'].long()
-        edge_index = edge_index + (torch.arange(batch_size, device=edge_index.device) * num_nodes).view(-1, 1, 1)
+        x = observations["node_features"].view(batch_size * num_nodes, -1).to(torch_dtype)
+        edge_index = observations["edge_index"].long()
+        edge_index = edge_index + (
+            torch.arange(batch_size, device=edge_index.device) * num_nodes
+        ).view(-1, 1, 1)
         edge_index = edge_index.view(2, -1)
-        
+
         batch = torch.arange(batch_size, device=x.device).repeat_interleave(num_nodes)
-        
+
         # Process the graph input through the GraphProcessor
         graph_features = self.graph_processor(x, edge_index, batch)
-        
+
         # Combine vision and graph features
         combined = torch.cat((vision_features, graph_features), dim=1)
-        
+
         # Apply dropout and fully connected layers
         combined = self.dropout(combined)
         features = self.fc(combined)
-        
+
         return features
 
     def _initialize_weights(self):
@@ -345,13 +383,12 @@ class AgentModel(BaseFeaturesExtractor):
         """
         for m in self.modules():
             if isinstance(m, (nn.Conv2d, nn.Linear)):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
-
 
     def sanity_check(self, observations):
         with torch.no_grad():
@@ -359,5 +396,9 @@ class AgentModel(BaseFeaturesExtractor):
             print(f"Output shape: {output.shape}")
             print(f"Output mean: {output.mean().item():.4f}")
             print(f"Output std: {output.std().item():.4f}")
-            print(f"Vision features mean: {self.vision_processor(observations['vision']).mean().item():.4f}")
-            print(f"Graph features mean: {self.graph_processor(Data(x=observations['node_features'].to(torch_dtype), edge_index=observations['edge_index'].long(), edge_attr=observations['edge_attr'].to(torch_dtype), batch=torch.zeros(observations['node_features'].shape[0], dtype=torch.long))).mean().item():.4f}")
+            print(
+                f"Vision features mean: {self.vision_processor(observations['vision']).mean().item():.4f}"
+            )
+            print(
+                f"Graph features mean: {self.graph_processor(Data(x=observations['node_features'].to(torch_dtype), edge_index=observations['edge_index'].long(), edge_attr=observations['edge_attr'].to(torch_dtype), batch=torch.zeros(observations['node_features'].shape[0], dtype=torch.long))).mean().item():.4f}"
+            )
