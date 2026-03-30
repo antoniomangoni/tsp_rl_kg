@@ -16,7 +16,7 @@ from tsp_rl_kg.config import (
 # os.environ['PYGAME_DETECT_AVX2'] = '1'
 min_episodes_per_curriculum = 4
 base_config = TrainingConfig(
-    game_manager=GameManagerConfig(num_tiles=5, screen_size=20, vision_range=1),
+    game_manager=GameManagerConfig(num_tiles=5, screen_size=20, vision_range=1, headless=True),
     simulation_manager=SimulationManagerConfig(
         number_of_environments=3000,
         number_of_curricula=30,

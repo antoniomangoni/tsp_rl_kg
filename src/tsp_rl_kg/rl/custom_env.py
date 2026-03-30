@@ -400,10 +400,41 @@ class CustomEnv(gym.Env):
         return self.current_gm.renderer.surface.subsurface(surface_rect)
 
     def _get_vision(self):
+        if self.current_gm.headless:
+            return self._get_vision_headless()
         vision_surface = self.get_clamped_surface()
         vision_array = pygame.surfarray.array3d(vision_surface).astype(np.float16)
         vision_array = np.transpose(vision_array, (2, 0, 1))  # Change from (H, W, C) to (C, H, W)
         return vision_array
+
+    def _get_vision_headless(self):
+        """Build vision array from terrain colours without pygame surfaces."""
+        env = self.environment
+        agent_x = self.agent_controler.agent.grid_x
+        agent_y = self.agent_controler.agent.grid_y
+        vr = self.vision_range
+        ts = self.current_gm.tile_size
+        side = self.vision_pixel_side_size
+        view_tiles = 2 * vr + 1
+
+        # Clamp viewport origin to stay within map bounds (matches pygame clamp_ip)
+        view_x = max(0, min(agent_x - vr, env.width - view_tiles))
+        view_y = max(0, min(agent_y - vr, env.height - view_tiles))
+
+        vision = np.zeros((side, side, 3), dtype=np.uint8)
+
+        for dx in range(view_tiles):
+            for dy in range(view_tiles):
+                gx = view_x + dx
+                gy = view_y + dy
+                if 0 <= gx < env.width and 0 <= gy < env.height:
+                    terrain = env.terrain_object_grid[gx, gy]
+                    colour = terrain.colour if terrain.colour else (0, 0, 0)
+                    px = dx * ts
+                    py = dy * ts
+                    vision[px : px + ts, py : py + ts] = colour
+
+        return np.transpose(vision, (2, 0, 1)).astype(np.float16)
     
     def close(self):
         self.current_gm.end_game()

@@ -8,6 +8,7 @@ class GameManagerConfig:
     num_tiles: int = 32
     screen_size: int = 800
     vision_range: int = 2
+    headless: bool = False
 
     def __post_init__(self) -> None:
         if self.num_tiles < 1:

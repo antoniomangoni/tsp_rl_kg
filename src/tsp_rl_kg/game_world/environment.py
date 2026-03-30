@@ -2,22 +2,54 @@ import random
 import pygame
 import numpy as np
 
-from tsp_rl_kg.game_world.entities import Player, Outpost, WoodPath, Tree, MossyRock, SnowyRock
+from tsp_rl_kg.game_world.entities import Entity, Player, Outpost, WoodPath, Tree, MossyRock, SnowyRock
 from tsp_rl_kg.game_world.terrains import Terrain, DeepWater, Water, Plains, Hills, Mountains, Snow
 
+
+class _HeadlessEntityGroup:
+    """Drop-in replacement for pygame.sprite.LayeredUpdates in headless mode."""
+
+    def __init__(self) -> None:
+        self._items: list = []
+
+    def add(self, entity, **kwargs) -> None:
+        self._items.append(entity)
+
+    def remove(self, entity) -> None:
+        self._items.remove(entity)
+
+    def draw(self, surface) -> None:
+        pass
+
+
 class Environment:
-    def __init__(self, heightmap: np.ndarray, tile_size: int = 50, number_of_outposts: int = 3):
+    def __init__(
+        self,
+        heightmap: np.ndarray,
+        tile_size: int = 50,
+        number_of_outposts: int = 3,
+        headless: bool = False,
+    ):
+        self.headless = headless
+
+        # Propagate headless flag to Entity and Terrain classes
+        Entity._headless = headless
+        Terrain._headless = headless
+
         self.heightmap = heightmap
         self.terrain_index_grid = np.zeros_like(self.heightmap)
         self.entity_index_grid = np.zeros_like(self.heightmap)
         self.terrain_object_grid = np.zeros_like(self.heightmap, dtype=object)
-        
+
         self.tile_size = tile_size
         self.width, self.height = heightmap.shape
         self.number_of_outposts = number_of_outposts
-        self.outpost_locations = [] # List of (x, y) coordinates for each outpost, no need to use an array here
+        self.outpost_locations = []
 
-        self.entity_group = pygame.sprite.LayeredUpdates() # pygame.sprite.Group()
+        if headless:
+            self.entity_group = _HeadlessEntityGroup()
+        else:
+            self.entity_group = pygame.sprite.LayeredUpdates()
         self.terrain_definitions = {
             0: {'class': DeepWater, 'entity_prob': 0.4},
             1: {'class': Water, 'entity_prob': 0.2},

@@ -3,6 +3,8 @@ import pygame
 from tsp_rl_kg.game_world.entities import Tree, MossyRock, SnowyRock, Fish, WoodPath
 
 class Terrain:
+    _headless = False
+
     def __init__(self, x, y, tile_size, entity_prob):
         self.grid_x = x
         self.grid_y = y
@@ -20,6 +22,8 @@ class Terrain:
         self.entity_on_tile = None
 
     def create_image(self):
+        if self._headless:
+            return None
         image = pygame.Surface((self.tile_size, self.tile_size))
         image.fill(self.colour)
         return image

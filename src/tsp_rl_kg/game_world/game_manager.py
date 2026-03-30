@@ -42,6 +42,7 @@ class GameManager:
         self.running = True
         self.plot = plot
         self.converter = converter
+        self.headless = self._config.headless
         self.vision_range = self._config.vision_range
         self.initialize_components()
 
@@ -59,7 +60,9 @@ class GameManager:
             octaves=3, persistence=0.2, lacunarity=2.0
         )
         heightmap = heightmap_generator.generate()
-        self.environment = Environment(heightmap, self.tile_size, number_of_outposts=3)
+        self.environment = Environment(
+            heightmap, self.tile_size, number_of_outposts=3, headless=self.headless
+        )
 
         self.agent_controler = Agent(self.environment, self.vision_range)
         self.agent = self.agent_controler.agent
@@ -76,18 +79,23 @@ class GameManager:
         self.renderer.init_render()
 
     def rerender(self):
+        if self.headless:
+            return
         self.renderer.render_updated_tiles()
         # self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
         pygame.display.flip()
 
     def start_game(self, kg_completeness=0.5):
-        self.init_pygame()
+        if not self.headless:
+            self.init_pygame()
         self.init_knowledge_graph(kg_completeness)
-        self.initialise_rendering()
+        if not self.headless:
+            self.initialise_rendering()
 
     def end_game(self):
         self.running = False
-        pygame.quit()
+        if not self.headless:
+            pygame.quit()
 
 
     #####################################################################################
