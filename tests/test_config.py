@@ -7,13 +7,20 @@ import pytest
 from tsp_rl_kg.config import (
     AgentConfig,
     AgentModelConfig,
+    AlgorithmConfig,
+    AlgorithmName,
     CurriculumConfig,
     EpisodeConfig,
+    EvaluationConfig,
     GameManagerConfig,
     ModelConfig,
+    ReplayConfig,
     RewardConfig,
+    RLBackend,
+    SequenceConfig,
     SimulationManagerConfig,
     TrainingConfig,
+    WorldModelConfig,
 )
 
 # ---------------------------------------------------------------------------
@@ -191,6 +198,43 @@ class TestModelConfig:
         assert isinstance(d["gamma"], float)
 
 
+class TestAlgorithmConfig:
+    def test_defaults(self):
+        cfg = AlgorithmConfig()
+        assert cfg.backend == RLBackend.SB3
+        assert cfg.algorithm == AlgorithmName.PPO
+        assert cfg.policy_name == "MultiInputPolicy"
+        assert cfg.hyperparameters["n_steps"] == 4096
+
+    def test_from_legacy_model_config(self):
+        cfg = AlgorithmConfig.from_legacy_model_config(ModelConfig(n_steps=2048, gamma=0.99))
+        assert cfg.algorithm == AlgorithmName.PPO
+        assert cfg.hyperparameters["n_steps"] == 2048
+        assert cfg.hyperparameters["gamma"] == pytest.approx(0.99)
+
+
+class TestExtendedTrainingConfigs:
+    def test_evaluation_defaults(self):
+        cfg = EvaluationConfig()
+        assert cfg.eval_freq == 10_000
+        assert cfg.n_eval_episodes == 10
+
+    def test_replay_defaults(self):
+        cfg = ReplayConfig()
+        assert cfg.buffer_size == 100_000
+        assert cfg.train_freq == 1
+
+    def test_sequence_defaults(self):
+        cfg = SequenceConfig()
+        assert cfg.sequence_length == 16
+        assert cfg.batch_size == 32
+
+    def test_world_model_defaults(self):
+        cfg = WorldModelConfig()
+        assert cfg.enabled is False
+        assert cfg.latent_dim == 128
+
+
 # ---------------------------------------------------------------------------
 # TrainingConfig
 # ---------------------------------------------------------------------------
@@ -210,12 +254,35 @@ class TestTrainingConfig:
         assert cfg.simulation_manager.number_of_environments == 50
         assert cfg.model_args.num_actions == 11
         assert cfg.model_config.n_steps == 2048
+        assert cfg.algorithm.algorithm == AlgorithmName.PPO
+        assert cfg.algorithm.hyperparameters["n_steps"] == 2048
         assert cfg.total_timesteps == 50_000
 
     def test_from_dict_defaults(self):
         cfg = TrainingConfig.from_dict({})
         assert cfg.game_manager.num_tiles == 32
+        assert cfg.algorithm.algorithm == AlgorithmName.PPO
         assert cfg.total_timesteps == 100_000
+
+    def test_direct_constructor_syncs_algorithm_from_legacy_model_config(self):
+        cfg = TrainingConfig(model_config=ModelConfig(n_steps=1024, learning_rate=1e-3))
+        assert cfg.algorithm.algorithm == AlgorithmName.PPO
+        assert cfg.algorithm.hyperparameters["n_steps"] == 1024
+        assert cfg.algorithm.hyperparameters["learning_rate"] == pytest.approx(1e-3)
+
+    def test_from_dict_explicit_algorithm(self):
+        raw = {
+            "algorithm": {
+                "backend": "sb3",
+                "algorithm": "DQN",
+                "policy_name": "MultiInputPolicy",
+                "hyperparameters": {"learning_rate": 1e-3, "buffer_size": 5000},
+            }
+        }
+        cfg = TrainingConfig.from_dict(raw)
+        assert cfg.algorithm.backend == RLBackend.SB3
+        assert cfg.algorithm.algorithm == AlgorithmName.DQN
+        assert cfg.algorithm.hyperparameters["buffer_size"] == 5000
 
     def test_to_dict_roundtrip(self):
         cfg = TrainingConfig()
@@ -223,6 +290,11 @@ class TestTrainingConfig:
         assert isinstance(d, dict)
         assert "game_manager" in d
         assert "simulation_manager" in d
+        assert "algorithm" in d
+        assert "evaluation" in d
+        assert "replay" in d
+        assert "sequence" in d
+        assert "world_model" in d
         assert d["game_manager"]["num_tiles"] == 32
 
     def test_from_dict_invalid_nested_values(self):

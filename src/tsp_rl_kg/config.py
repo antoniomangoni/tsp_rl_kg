@@ -4,6 +4,30 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 
 
+class RLBackend(str, Enum):
+    SB3 = "sb3"
+    CUSTOM = "custom"
+
+    @classmethod
+    def from_value(cls, value: RLBackend | str) -> RLBackend:
+        if isinstance(value, cls):
+            return value
+        return cls(value.lower())
+
+
+class AlgorithmName(str, Enum):
+    PPO = "PPO"
+    DQN = "DQN"
+    A2C = "A2C"
+    SAC = "SAC"
+
+    @classmethod
+    def from_value(cls, value: AlgorithmName | str) -> AlgorithmName:
+        if isinstance(value, cls):
+            return value
+        return cls(value.upper())
+
+
 class RewardComponent(str, Enum):
     PROXIMITY = "proximity"
     CIRCULAR_PENALTY = "circular_penalty"
@@ -58,7 +82,7 @@ class ModelArgs:
 
 @dataclass
 class ModelConfig:
-    """PPO hyperparameters passed directly to stable-baselines3."""
+    """Legacy PPO hyperparameters kept for backward-compatible config parsing."""
 
     n_steps: int = 4096
     batch_size: int = 512
@@ -66,13 +90,108 @@ class ModelConfig:
     gamma: float = 0.995
 
     def to_dict(self) -> dict:
-        """Convert to dict for passing as **kwargs to PPO."""
+        """Convert to dict for use as default PPO backend hyperparameters."""
         return {
             "n_steps": self.n_steps,
             "batch_size": self.batch_size,
             "learning_rate": self.learning_rate,
             "gamma": self.gamma,
         }
+
+
+@dataclass
+class AlgorithmConfig:
+    """Backend and algorithm selection for the training stack."""
+
+    backend: RLBackend = RLBackend.SB3
+    algorithm: AlgorithmName = AlgorithmName.PPO
+    policy_name: str = "MultiInputPolicy"
+    verbose: int = 1
+    tensorboard_run_name: str | None = None
+    hyperparameters: dict[str, int | float | bool | str] = field(
+        default_factory=lambda: ModelConfig().to_dict()
+    )
+
+    def __post_init__(self) -> None:
+        self.backend = RLBackend.from_value(self.backend)
+        self.algorithm = AlgorithmName.from_value(self.algorithm)
+        self.hyperparameters = dict(self.hyperparameters)
+        if not self.policy_name:
+            raise ValueError("policy_name must be a non-empty string")
+        if self.verbose < 0:
+            raise ValueError(f"verbose must be >= 0, got {self.verbose}")
+
+    @classmethod
+    def from_legacy_model_config(
+        cls,
+        model_config: ModelConfig | dict | None = None,
+        *,
+        policy_name: str = "MultiInputPolicy",
+    ) -> AlgorithmConfig:
+        if model_config is None:
+            model_config = ModelConfig()
+        if isinstance(model_config, dict):
+            model_config = ModelConfig(**model_config)
+        return cls(
+            backend=RLBackend.SB3,
+            algorithm=AlgorithmName.PPO,
+            policy_name=policy_name,
+            hyperparameters=model_config.to_dict(),
+        )
+
+
+@dataclass
+class EvaluationConfig:
+    eval_freq: int = 10_000
+    n_eval_episodes: int = 10
+    deterministic: bool = True
+    render: bool = False
+
+    def __post_init__(self) -> None:
+        if self.eval_freq < 1:
+            raise ValueError(f"eval_freq must be >= 1, got {self.eval_freq}")
+        if self.n_eval_episodes < 1:
+            raise ValueError(f"n_eval_episodes must be >= 1, got {self.n_eval_episodes}")
+
+
+@dataclass
+class ReplayConfig:
+    buffer_size: int = 100_000
+    learning_starts: int = 1_000
+    train_freq: int = 1
+
+    def __post_init__(self) -> None:
+        if self.buffer_size < 1:
+            raise ValueError(f"buffer_size must be >= 1, got {self.buffer_size}")
+        if self.learning_starts < 0:
+            raise ValueError(f"learning_starts must be >= 0, got {self.learning_starts}")
+        if self.train_freq < 1:
+            raise ValueError(f"train_freq must be >= 1, got {self.train_freq}")
+
+
+@dataclass
+class SequenceConfig:
+    sequence_length: int = 16
+    batch_size: int = 32
+
+    def __post_init__(self) -> None:
+        if self.sequence_length < 1:
+            raise ValueError(f"sequence_length must be >= 1, got {self.sequence_length}")
+        if self.batch_size < 1:
+            raise ValueError(f"batch_size must be >= 1, got {self.batch_size}")
+
+
+@dataclass
+class WorldModelConfig:
+    enabled: bool = False
+    latent_dim: int = 128
+    imagination_horizon: int = 15
+
+    def __post_init__(self) -> None:
+        if self.latent_dim < 1:
+            raise ValueError(f"latent_dim must be >= 1, got {self.latent_dim}")
+        if self.imagination_horizon < 1:
+            raise ValueError(f"imagination_horizon must be >= 1, got {self.imagination_horizon}")
 
 
 @dataclass
@@ -209,6 +328,11 @@ class TrainingConfig:
     simulation_manager: SimulationManagerConfig = field(default_factory=SimulationManagerConfig)
     model_args: ModelArgs = field(default_factory=ModelArgs)
     model_config: ModelConfig = field(default_factory=ModelConfig)
+    algorithm: AlgorithmConfig = field(default_factory=AlgorithmConfig)
+    evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
+    replay: ReplayConfig = field(default_factory=ReplayConfig)
+    sequence: SequenceConfig = field(default_factory=SequenceConfig)
+    world_model: WorldModelConfig = field(default_factory=WorldModelConfig)
     curriculum: CurriculumConfig = field(default_factory=CurriculumConfig)
     episode: EpisodeConfig = field(default_factory=EpisodeConfig)
     agent_model: AgentModelConfig = field(default_factory=AgentModelConfig)
@@ -217,17 +341,97 @@ class TrainingConfig:
     kg_completeness: float = 0.5
     seeds: list[int] = field(default_factory=lambda: [42, 123, 456])
 
+    def __post_init__(self) -> None:
+        if isinstance(self.game_manager, dict):
+            self.game_manager = GameManagerConfig(**self.game_manager)
+        if isinstance(self.simulation_manager, dict):
+            self.simulation_manager = SimulationManagerConfig(**self.simulation_manager)
+        if isinstance(self.model_args, dict):
+            self.model_args = ModelArgs(**self.model_args)
+        if isinstance(self.model_config, dict):
+            self.model_config = ModelConfig(**self.model_config)
+        if isinstance(self.algorithm, dict):
+            self.algorithm = AlgorithmConfig(**self.algorithm)
+        if isinstance(self.evaluation, dict):
+            self.evaluation = EvaluationConfig(**self.evaluation)
+        if isinstance(self.replay, dict):
+            self.replay = ReplayConfig(**self.replay)
+        if isinstance(self.sequence, dict):
+            self.sequence = SequenceConfig(**self.sequence)
+        if isinstance(self.world_model, dict):
+            self.world_model = WorldModelConfig(**self.world_model)
+        if isinstance(self.curriculum, dict):
+            self.curriculum = CurriculumConfig(**self.curriculum)
+        if isinstance(self.episode, dict):
+            self.episode = EpisodeConfig(**self.episode)
+        if isinstance(self.agent_model, dict):
+            self.agent_model = AgentModelConfig(**self.agent_model)
+        if isinstance(self.ablation, dict):
+            self.ablation = AblationConfig(**self.ablation)
+
+        self._synchronise_algorithm_config()
+
+    def _synchronise_algorithm_config(self) -> None:
+        default_model_config = ModelConfig().to_dict()
+        default_algorithm = AlgorithmConfig()
+        current_model_config = self.model_config.to_dict()
+
+        if self.algorithm == default_algorithm and current_model_config != default_model_config:
+            self.algorithm = AlgorithmConfig.from_legacy_model_config(self.model_config)
+            return
+
+        if (
+            self.algorithm.backend == RLBackend.SB3
+            and self.algorithm.algorithm == AlgorithmName.PPO
+        ):
+            merged_hyperparameters = {**default_model_config, **self.algorithm.hyperparameters}
+            self.model_config = ModelConfig(**merged_hyperparameters)
+            self.algorithm.hyperparameters = self.model_config.to_dict()
+
     @staticmethod
     def from_dict(d: dict) -> TrainingConfig:
         """Construct from the legacy nested-dict format for backwards compatibility."""
+        game_manager_data = d.get("game_manager", d.get("game_manager_args", {}))
+        simulation_manager_data = d.get(
+            "simulation_manager",
+            d.get("simulation_manager_args", {}),
+        )
+        model_args_data = d.get("model_args", {})
+        model_config_data = d.get("model_config", {})
+        algorithm_data = d.get("algorithm", d.get("algorithm_config"))
+        evaluation_data = d.get("evaluation", d.get("evaluation_config", {}))
+        replay_data = d.get("replay", d.get("replay_config", {}))
+        sequence_data = d.get("sequence", d.get("sequence_config", {}))
+        world_model_data = d.get("world_model", d.get("world_model_config", {}))
+        curriculum_data = d.get("curriculum", d.get("curriculum_config", {}))
+        episode_data = d.get("episode", d.get("episode_config", {}))
+        agent_model_data = d.get("agent_model", d.get("agent_model_config", {}))
+        ablation_data = d.get("ablation", d.get("ablation_config", {}))
+
+        model_config = ModelConfig(**model_config_data)
+        algorithm = (
+            AlgorithmConfig(**algorithm_data)
+            if algorithm_data is not None
+            else AlgorithmConfig.from_legacy_model_config(model_config)
+        )
+
         return TrainingConfig(
-            game_manager=GameManagerConfig(**d.get("game_manager_args", {})),
-            simulation_manager=SimulationManagerConfig(**d.get("simulation_manager_args", {})),
-            model_args=ModelArgs(**d.get("model_args", {})),
-            model_config=ModelConfig(**d.get("model_config", {})),
-            curriculum=CurriculumConfig(**d.get("curriculum_config", {})),
+            game_manager=GameManagerConfig(**game_manager_data),
+            simulation_manager=SimulationManagerConfig(**simulation_manager_data),
+            model_args=ModelArgs(**model_args_data),
+            model_config=model_config,
+            algorithm=algorithm,
+            evaluation=EvaluationConfig(**evaluation_data),
+            replay=ReplayConfig(**replay_data),
+            sequence=SequenceConfig(**sequence_data),
+            world_model=WorldModelConfig(**world_model_data),
+            curriculum=CurriculumConfig(**curriculum_data),
+            episode=EpisodeConfig(**episode_data),
+            agent_model=AgentModelConfig(**agent_model_data),
+            ablation=AblationConfig(**ablation_data),
             total_timesteps=d.get("total_timesteps", 100_000),
             kg_completeness=d.get("kg_completeness", 0.5),
+            seeds=d.get("seeds", [42, 123, 456]),
         )
 
     def to_dict(self) -> dict:

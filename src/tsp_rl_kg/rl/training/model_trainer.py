@@ -5,7 +5,13 @@ import numpy as np
 from loguru import logger
 from stable_baselines3 import PPO
 
-from tsp_rl_kg.config import AgentModelConfig, ModelConfig
+from tsp_rl_kg.config import (
+    AgentModelConfig,
+    AlgorithmConfig,
+    AlgorithmName,
+    ModelConfig,
+    RLBackend,
+)
 from tsp_rl_kg.rl.agent_model import AgentModel
 from tsp_rl_kg.rl.training.callbacks import CurriculumCallback
 from tsp_rl_kg.rl.training.metrics import TrainingMetrics
@@ -17,18 +23,35 @@ class ModelTrainer:
         self.eval_env = eval_env
         self.device = device
         self.rl_model = None
+        self.algorithm_config = AlgorithmConfig()
         self.metrics = TrainingMetrics(env.action_space.n)
 
     def create_model(
-        self, model_config: ModelConfig | dict, agent_model_config: AgentModelConfig | None = None
+        self,
+        algorithm_config: AlgorithmConfig | ModelConfig | dict,
+        agent_model_config: AgentModelConfig | None = None,
     ):
-        if isinstance(model_config, dict):
-            model_config = ModelConfig(**model_config)
+        self.algorithm_config = self._normalise_algorithm_config(algorithm_config)
         if agent_model_config is None:
             agent_model_config = AgentModelConfig()
-        logger.info("Creating PPO model")
+        backend_label = (
+            f"{self.algorithm_config.backend.value}:{self.algorithm_config.algorithm.value}"
+        )
+
+        if self.algorithm_config.backend != RLBackend.SB3:
+            raise NotImplementedError(
+                f"Unsupported backend '{self.algorithm_config.backend.value}'. "
+                "Only the SB3 backend is wired so far."
+            )
+        if self.algorithm_config.algorithm != AlgorithmName.PPO:
+            raise NotImplementedError(
+                f"Unsupported algorithm '{self.algorithm_config.algorithm.value}'. "
+                "Only PPO is wired so far."
+            )
+
+        logger.info(f"Creating {backend_label} model")
         self.rl_model = PPO(
-            "MultiInputPolicy",
+            self.algorithm_config.policy_name,
             self.env,
             policy_kwargs={
                 "features_extractor_class": AgentModel,
@@ -37,11 +60,25 @@ class ModelTrainer:
                     "model_config": agent_model_config,
                 },
             },
-            **model_config.to_dict(),
+            **self.algorithm_config.hyperparameters,
             device=self.device,
-            verbose=1,
+            verbose=self.algorithm_config.verbose,
         )
-        logger.info("PPO model created successfully")
+        logger.info(f"{backend_label} model created successfully")
+
+    def _normalise_algorithm_config(
+        self,
+        algorithm_config: AlgorithmConfig | ModelConfig | dict,
+    ) -> AlgorithmConfig:
+        if isinstance(algorithm_config, AlgorithmConfig):
+            return algorithm_config
+        if isinstance(algorithm_config, ModelConfig):
+            return AlgorithmConfig.from_legacy_model_config(algorithm_config)
+        if {"backend", "algorithm", "policy_name", "hyperparameters"}.intersection(
+            algorithm_config.keys()
+        ):
+            return AlgorithmConfig(**algorithm_config)
+        return AlgorithmConfig.from_legacy_model_config(algorithm_config)
 
     def train(self, total_timesteps, eval_callback, timeout=3600):
         logger.info("Starting model training")
@@ -53,7 +90,10 @@ class ModelTrainer:
                 total_timesteps=total_timesteps,
                 callback=[eval_callback, curriculum_callback],
                 reset_num_timesteps=False,
-                tb_log_name="PPO",
+                tb_log_name=(
+                    self.algorithm_config.tensorboard_run_name
+                    or self.algorithm_config.algorithm.value
+                ),
                 progress_bar=True,
             )
         except Exception as e:

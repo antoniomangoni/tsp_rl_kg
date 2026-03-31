@@ -71,7 +71,7 @@ class Trainer:
         logger.info("Evaluation environment created successfully")
 
         self.model_trainer = ModelTrainer(self.env, self.eval_env, self.device)
-        self.model_trainer.create_model(config.model_config, config.agent_model)
+        self.model_trainer.create_model(config.algorithm, config.agent_model)
 
     def _flatten_mlflow_params(
         self,
