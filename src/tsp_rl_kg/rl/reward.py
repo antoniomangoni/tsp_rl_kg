@@ -181,13 +181,14 @@ class RewardCalculator:
         agent_energy_spent: float,
         algorithmic_best_energy: float,
         reset_energy_callback: callable,
-    ) -> tuple[float, bool]:
+    ) -> tuple[float, bool, bool]:
         """Compute the total reward for the current step.
 
-        Returns ``(normalised_reward, early_stop)``.
+        Returns ``(normalised_reward, early_stop, all_visited)``.
         """
         self.logger.info("Calculating reward...")
         early_stop = False
+        all_visited = False
 
         # Base penalties
         reward = self.step_penalty(terrain_energy)
@@ -204,22 +205,26 @@ class RewardCalculator:
 
             # All outposts visited → completion
             if len(self.outposts_visited) == len(self.outpost_coords):
-                print(f"Agent reached all outposts. Outposts visited: {self.outposts_visited}")
+                all_visited = True
+                self.logger.debug(
+                    "Agent reached all outposts. Outposts visited: %s",
+                    self.outposts_visited,
+                )
                 self.outposts_visited.clear()
-                assert (
-                    len(self.outposts_visited) == 0
-                ), f"Outposts visited not cleared: {self.outposts_visited}"
 
                 reward += self.completion_reward(episode_step)
-                print(
-                    f"Step: {episode_step}. All outposts visited. " f"Completion reward: {reward}"
+                self.logger.debug(
+                    "Step: %d. All outposts visited. Completion reward: %s",
+                    episode_step,
+                    reward,
                 )
 
                 reset_energy_callback()
 
-                print(
-                    f"Agent route energy: {agent_energy_spent}, "
-                    f"algorithmic best energy: {algorithmic_best_energy}"
+                self.logger.debug(
+                    "Agent route energy: %s, algorithmic best energy: %s",
+                    agent_energy_spent,
+                    algorithmic_best_energy,
                 )
 
                 improvement_reward, early_stop = self.route_improvement_reward(
@@ -241,24 +246,29 @@ class RewardCalculator:
         # Update path memory
         self.recent_path.append(agent_pos)
 
-        return self._normalize_reward(reward), early_stop
+        return self._normalize_reward(reward), early_stop, all_visited
 
     # ------------------------------------------------------------------
     # Normalisation & efficiency helpers
     # ------------------------------------------------------------------
 
     def _normalize_reward(self, reward: float) -> float:
-        min_reward = self.config.penalty_per_step * self.max_episode_steps
+        """Scale reward to [-1, 1] via min-max normalization."""
+        min_reward = (
+            self.config.penalty_per_step * self.max_episode_steps
+            + self.config.time_penalty_factor * self.max_episode_steps
+            + self.config.circular_behavior_penalty
+        )
         max_reward = (
             self.config.completion_reward
             + self.config.new_outpost_reward * len(self.outpost_coords)
             + self.config.route_improvement_reward
             + self.config.better_route_than_algo_reward
         )
-        normalized_reward = (
-            self.config.normalisation_scale * (reward - min_reward) / (max_reward - min_reward)
-        )
-        return max(0, min(normalized_reward, self.config.normalisation_scale))
+        if max_reward <= min_reward:
+            return 0.0
+        normalized = 2.0 * (reward - min_reward) / (max_reward - min_reward) - 1.0
+        return max(-1.0, min(normalized, 1.0))
 
     def calculate_route_efficiency(
         self, agent_route_energy: float, algorithmic_best_energy: float

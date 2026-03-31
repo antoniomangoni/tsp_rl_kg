@@ -189,13 +189,14 @@ class TestCalculateOrchestrator:
             reset_energy_callback=lambda: None,
         )
         assert isinstance(result, tuple)
-        assert len(result) == 2
-        reward, early_stop = result
+        assert len(result) == 3
+        reward, early_stop, all_visited = result
         assert isinstance(reward, float)
         assert isinstance(early_stop, bool)
+        assert isinstance(all_visited, bool)
 
     def test_reward_is_normalised(self, reward_calculator: RewardCalculator):
-        reward, _ = reward_calculator.calculate(
+        reward, _, _ = reward_calculator.calculate(
             agent_pos=(0, 0),
             terrain_energy=2.0,
             episode_step=10,
@@ -203,7 +204,53 @@ class TestCalculateOrchestrator:
             algorithmic_best_energy=40.0,
             reset_energy_callback=lambda: None,
         )
-        assert 0 <= reward <= reward_calculator.config.normalisation_scale
+        assert -1.0 <= reward <= 1.0
+
+    def test_step_penalty_produces_negative_normalised_reward(
+        self, reward_calculator: RewardCalculator
+    ):
+        """A bare step with no outpost discovery should yield a negative reward."""
+        reward, _, _ = reward_calculator.calculate(
+            agent_pos=(0, 0),
+            terrain_energy=2.0,
+            episode_step=10,
+            agent_energy_spent=50.0,
+            algorithmic_best_energy=40.0,
+            reset_energy_callback=lambda: None,
+        )
+        assert reward < 0
+
+    def test_all_visited_flag_on_completion(self, reward_calculator: RewardCalculator):
+        """When the agent visits all outposts, all_visited must be True."""
+        # Visit first two outposts manually
+        coords = reward_calculator.outpost_coords
+        for coord in coords[:-1]:
+            reward_calculator.outposts_visited.add(coord)
+
+        # Step onto the last outpost
+        _reward, _early_stop, all_visited = reward_calculator.calculate(
+            agent_pos=coords[-1],
+            terrain_energy=1.0,
+            episode_step=50,
+            agent_energy_spent=30.0,
+            algorithmic_best_energy=25.0,
+            reset_energy_callback=lambda: None,
+        )
+        assert all_visited is True
+        # outposts_visited should be cleared after completion
+        assert len(reward_calculator.outposts_visited) == 0
+
+    def test_all_visited_false_when_incomplete(self, reward_calculator: RewardCalculator):
+        """all_visited must be False when not all outposts are visited."""
+        _reward, _early_stop, all_visited = reward_calculator.calculate(
+            agent_pos=(0, 0),
+            terrain_energy=1.0,
+            episode_step=10,
+            agent_energy_spent=10.0,
+            algorithmic_best_energy=8.0,
+            reset_energy_callback=lambda: None,
+        )
+        assert all_visited is False
 
 
 # ---------------------------------------------------------------------------

@@ -56,7 +56,7 @@ class CurriculumCallback(BaseCallback):
             performance = metrics.get("performance", 0)
             game_manager_index = metrics.get("game_manager_index", 0)
             best_route_energy = metrics.get("best_route_energy", 0)
-            curriculum_step = metrics.get("curriculum_step", 0)
+            curriculum_level = metrics.get("curriculum_level", 0)
             target_route_energy = metrics.get("target_route_energy", 0)
             efficiency = metrics.get("best_efficiency", 0)
             improvement = metrics.get("improvement", 0)
@@ -67,7 +67,7 @@ class CurriculumCallback(BaseCallback):
                 performance,
                 game_manager_index,
                 best_route_energy,
-                curriculum_step,
+                curriculum_level,
                 target_route_energy,
                 efficiency,
                 improvement,
@@ -80,7 +80,15 @@ class CurriculumCallback(BaseCallback):
 
             # Check if curriculum should advance
             if unwrapped_env.simulation_manager.should_advance_curriculum():
-                unwrapped_env.simulation_manager.advance_curriculum()
+                new_index = unwrapped_env.simulation_manager.advance_curriculum()
+                if new_index < 0:
+                    self.custom_logger.info(
+                        "All curricula completed. Stopping training.",
+                        logger_name="training",
+                    )
+                    self.should_stop = True
+                    return False
+
                 self.custom_logger.info(
                     f"Advancing to curriculum level "
                     f"{unwrapped_env.simulation_manager.current_curriculum_index}",

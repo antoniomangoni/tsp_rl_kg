@@ -8,7 +8,7 @@ class TrainingMetrics:
         self.performances = []
         self.game_manager_indices = []
         self.best_route_energies = []
-        self.curriculum_steps = []
+        self.curriculum_levels = []
         self.target_route_energies = []
         self.efficiency = []
         self.improvement = []
@@ -22,7 +22,7 @@ class TrainingMetrics:
         performance,
         game_manager_index,
         best_route_energy,
-        curriculum_step,
+        curriculum_level,
         target_route_energy,
         efficiency,
         improvement,
@@ -33,7 +33,7 @@ class TrainingMetrics:
         self.performances.append(performance)
         self.game_manager_indices.append(game_manager_index)
         self.best_route_energies.append(best_route_energy)
-        self.curriculum_steps.append(curriculum_step)
+        self.curriculum_levels.append(curriculum_level)
         self.target_route_energies.append(target_route_energy)
         self.efficiency.append(efficiency)
         self.improvement.append(improvement)
@@ -57,7 +57,7 @@ class TrainingMetrics:
                 "Performance": self.performances,
                 "Game Manager Index": self.game_manager_indices,
                 "Best Route Energy": self.best_route_energies,
-                "Curriculum Step": self.curriculum_steps,
+                "Curriculum Level": self.curriculum_levels,
                 "Target Route Energy": self.target_route_energies,
                 "Efficiency": self.efficiency,
                 "Improvement": self.improvement,

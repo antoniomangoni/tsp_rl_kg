@@ -66,23 +66,22 @@ class VisionProcessor(BaseFeaturesExtractor):
 
         # Build the convolutional layers
         conv_layers = []
-        in_channels = 3
+        in_channels = channels
         for out_channels in self.conv_channels[: self.num_conv_layers]:
             conv_layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1))
             conv_layers.append(nn.BatchNorm2d(out_channels))
             conv_layers.append(nn.ReLU())
+            conv_layers.append(nn.MaxPool2d(2, 2))
             in_channels = out_channels
 
-        # Add a flattening layer to the sequence
+        # Adaptive pooling guarantees fixed spatial output regardless of input size
+        conv_layers.append(nn.AdaptiveAvgPool2d((4, 4)))
         conv_layers.append(nn.Flatten())
         self.cnn = nn.Sequential(*conv_layers)
 
-        # Calculate the total output size after the convolutional layers
-        total_conv_size = (
-            self.conv_channels[min(self.num_conv_layers, len(self.conv_channels)) - 1]
-            * height
-            * width
-        )
+        # Fixed output size: last_channels * 4 * 4
+        last_channels = self.conv_channels[min(self.num_conv_layers, len(self.conv_channels)) - 1]
+        total_conv_size = last_channels * 4 * 4
 
         # Build the fully connected layers
         fc_layers = []

@@ -138,7 +138,6 @@ class CustomEnv(gym.Env):
 
     def set_current_game_manager(self):
         self.logger.info(f"Setting current game manager to index {self.current_game_index}")
-        print(f"Current game index: {self.current_game_index}")
 
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
         projection = CompletenessProjection(self.kg_completeness, self.vision_range, self.num_tiles)
@@ -174,7 +173,9 @@ class CustomEnv(gym.Env):
             self.action_space.seed(seed)
 
         # Update the game manager
-        self.current_game_index += 1
+        self.current_game_index = self.simulation_manager.get_next_game_in_curriculum(
+            self.current_game_index
+        )
         if self.current_game_index >= self.simulation_manager.number_of_environments:
             self.early_stop = True
             self.logger.info("All environments completed. Ending simulation.")
@@ -191,13 +192,13 @@ class CustomEnv(gym.Env):
 
         return observation, {}  # Return observation and an empty info dict
 
-    def _calculate_reward(self) -> tuple[float, bool]:
+    def _calculate_reward(self) -> tuple[float, bool, bool]:
         agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
         terrain_energy = self.current_gm.target_manager.energy_req_grid[agent_pos]
         agent_energy_spent = self.agent_controler.energy_spent
         algorithmic_best_energy = self.current_gm.target_manager.target_route_energy
 
-        reward, early_stop = self._reward_calculator.calculate(
+        reward, early_stop, all_visited = self._reward_calculator.calculate(
             agent_pos=agent_pos,
             terrain_energy=terrain_energy,
             episode_step=self.episode_step,
@@ -205,7 +206,7 @@ class CustomEnv(gym.Env):
             algorithmic_best_energy=algorithmic_best_energy,
             reset_energy_callback=self.agent_controler.reset_energy_spent,
         )
-        return reward, early_stop
+        return reward, early_stop, all_visited
 
     def get_episode_performance(self):
         return self.total_reward
@@ -222,7 +223,7 @@ class CustomEnv(gym.Env):
         new_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
 
         self.current_gm.rerender()
-        reward, early_stop = self._calculate_reward()
+        reward, early_stop, all_visited = self._calculate_reward()
         if early_stop:
             self.early_stop = True
         self.total_reward += reward
@@ -232,18 +233,10 @@ class CustomEnv(gym.Env):
         truncated = self.episode_step >= self.max_episode_steps
 
         # Determine if the episode was successful (all outposts visited)
-        success = len(self._reward_calculator.outposts_visited) == len(self.outpost_coords)
+        success = all_visited
 
         if terminated or truncated:
             self.simulation_manager.add_episode_performance(self.total_reward, success)
-            if self.simulation_manager.should_advance_curriculum():
-                self.current_game_index = self.simulation_manager.advance_curriculum()
-                if self.current_game_index > self.simulation_manager.number_of_environments:
-                    self.logger.info("All curricula completed. Ending simulation.")
-                    self.early_stop = True
-                else:
-                    self.set_current_game_manager()
-                    self.reset(False)
 
         observation = self._get_observation()
         info = {
@@ -365,7 +358,7 @@ class CustomEnv(gym.Env):
             "performance": self.get_episode_performance(),
             "game_manager_index": self.current_game_index,
             "best_route_energy": rc.best_route_energy,
-            "curriculum_index": self.simulation_manager.current_curriculum_index,
+            "curriculum_level": self.simulation_manager.current_curriculum_index,
             "target_route_energy": self.current_gm.target_manager.target_route_energy,
             "best_efficiency": rc.best_efficiency,
             "improvement": rc.improvement,
