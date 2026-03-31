@@ -88,6 +88,7 @@ class CustomEnv(gym.Env):
         self.num_tiles = self._gm_config.num_tiles
         self.screen_size = self._gm_config.screen_size
         # self.kg_completeness = game_manager_args['kg_completeness']
+        self.kg_completeness = 0.5
         self.vision_range = self._gm_config.vision_range
 
         self.simulation_manager = SimulationManager(
@@ -166,7 +167,7 @@ class CustomEnv(gym.Env):
         print(f"Current game index: {self.current_game_index}")
 
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
-        self.current_gm.start_game()
+        self.current_gm.start_game(kg_completeness=self.kg_completeness)
         self.environment = self.current_gm.environment
         self.agent_controler: Agent = self.current_gm.agent_controler
         self.agent_controler.reset_agent()

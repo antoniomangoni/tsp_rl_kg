@@ -6,6 +6,20 @@ from torch_geometric.utils import k_hop_subgraph, to_networkx
 
 from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
 
+# ---------------------------------------------------------------------------
+# State ownership
+# ---------------------------------------------------------------------------
+# Environment is the single source of truth for terrain, entity, and player
+# state.  KnowledgeGraph holds *shared references* to the numpy arrays
+# (terrain_index_grid, entity_index_grid) — it may READ them but must NEVER
+# WRITE to them.  All mutations to the world go through Environment; KG
+# derives node features from the current array values on demand.
+#
+# Owned by KG: graph tensors, graph_manager, discovered_coordinates, distance
+# Shared refs (read-only): terrain_array, entity_array
+# Derived:     player_pos (property → environment.player.grid_x/grid_y)
+# ---------------------------------------------------------------------------
+
 
 class KnowledgeGraph:
     def __init__(self, environment, vision_range, completion=1.0, plot=False, converter=None):
@@ -13,17 +27,10 @@ class KnowledgeGraph:
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
         self.converter = converter
-        self.terrain_embedding_array = (
-            converter.convert_terrain_to_embeddings(self.terrain_array) if converter else None
-        )
-        self.entity_embedding_array = (
-            converter.convert_entity_to_embeddings(self.entity_array) if converter else None
-        )
 
-        self.player_pos = (self.environment.player.grid_x, self.environment.player.grid_y)
-        self.entity_array[self.player_pos] = 0  # Remove the player from the entity array
-
-        assert max(self.entity_array.flatten()) < 7, "Entity type exceeds the maximum value of 6"
+        assert (
+            max(v for idx, v in np.ndenumerate(self.entity_array) if idx != self.player_pos) < 7
+        ), "Entity type exceeds the maximum value of 6"
 
         self.graph_manager = Graph_Manager()
 
@@ -42,30 +49,32 @@ class KnowledgeGraph:
         # if plot:
         #     self.visualise_graph()
 
-    def create_node_features(self, coor, z_level, mask):
-        """Create node features based on coordinates and z-level. Returns the embedding value."""
-        x, y = coor
-
+    def _get_embedding(self, z_level, x, y):
+        """Derive the embedding for a node from the current array values."""
         if z_level == self.terrain_z_level:
-            if self.terrain_embedding_array is not None:
-                embedding = self.terrain_embedding_array[x, y]
-            else:
-                embedding = self.terrain_array[x, y]
+            raw = int(self.terrain_array[x, y])
+            if self.converter is not None:
+                return self.converter.terrain_embedding_lookup[raw]
+            return raw
         elif z_level == self.entity_z_level:
-            if self.entity_embedding_array is not None:
-                embedding = self.entity_embedding_array[x, y]
+            # Exclude the player entity from entity nodes
+            if (x, y) == self.player_pos:
+                raw = 0
             else:
-                embedding = self.entity_array[x, y]
-            # if embedding == 0:
-            #     mask = 0
+                raw = int(self.entity_array[x, y])
+            if self.converter is not None:
+                return self.converter.entity_embedding_lookup[raw]
+            return raw
         elif z_level == self.player_z_level:
             if self.converter is not None:
-                embedding = self.converter.agent_embedding
-            else:
-                embedding = 0  # Assuming player embedding is 0 and always visible
+                return self.converter.agent_embedding
+            return 0
         else:
-            exit(f"Invalid z-level: {z_level}")
-        return embedding
+            raise ValueError(f"Invalid z-level: {z_level}")
+
+    def create_node_features(self, coor, z_level, mask):
+        """Create node features based on coordinates and z-level. Returns the embedding value."""
+        return self._get_embedding(z_level, coor[0], coor[1])
 
     def init_graph_tensors(self):
         self.num_possible_nodes = (
@@ -114,19 +123,16 @@ class KnowledgeGraph:
         return activated_entities, deactivated_entities
 
     def verify_graph_integrity(self):
-        # Verify all nodes are initialized
-        assert torch.all(self.graph.x[:, 4] >= 0), "Some nodes are uninitialized."
+        # Verify all nodes are initialized (check first feature column; -1 means uninitialised)
+        assert torch.all(self.graph.x[:, 0] >= 0), "Some nodes are uninitialized."
 
         # Verify all edges are initialized
         assert torch.all(self.graph.edge_index >= 0), "Some edges are uninitialized."
         assert torch.all(self.graph.edge_attr[:, 1] >= 0), "Some edge attributes are uninitialized."
 
     def is_node_active(self, idx):
+        # TODO: G11 — replace with ProjectionPolicy-based visibility
         return True
-        if self.graph.x[idx][4] == 1:
-            return True
-        else:
-            return False
 
     def should_edge_be_active(self, node_idx1, node_idx2):
         if self.is_node_active(node_idx1) and self.is_node_active(node_idx2):
@@ -145,7 +151,6 @@ class KnowledgeGraph:
         return True
 
     def activate_node_and_maybe_its_edges(self, idx):
-        # self.set_node_mask_1(idx)
         # activate the nodes edges if the corresponding node is activated
         node_pairs = self.graph_manager.retrieve_edge_node_pairs_from_node(idx)
         for node_pair in node_pairs:
@@ -172,7 +177,6 @@ class KnowledgeGraph:
                     print(f"Edge {edge_idx_2} is not active")
 
     def deactivate_node_and_its_edges(self, node_idx):
-        # self.set_node_mask_0(node_idx)
         edge_indices = self.graph_manager.retrieve_edge_indices_from_node(node_idx)
         for edge_idx in edge_indices:
             self.set_edge_mask_0(edge_idx)
@@ -185,13 +189,6 @@ class KnowledgeGraph:
             else:
                 self.graph.x[idx] = torch.tensor(new_type, dtype=torch.int)
 
-    # # def set_node_mask_0(self, idx):
-    #     self.graph.x[idx][4] = 0
-
-    # # def set_node_mask_1(self, idx):
-    #     # x, y, z_level, type_id, mask
-    #     self.graph.x[idx][4] = 1
-
     def set_edge_mask_0(self, idx):
         self.graph.edge_attr[idx][1] = 0
 
@@ -199,44 +196,36 @@ class KnowledgeGraph:
         self.graph.edge_attr[idx][1] = 1
 
     def build_path_node(self, x, y):
-        assert self.entity_array[x, y] == 6, "Entity type is not 6"
         node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-        if self.entity_embedding_array is not None:
-            new_type = self.entity_embedding_array[x, y] = self.converter.path_embedding
-        else:
-            new_type = self.entity_array[x, y]
+        new_type = self._get_embedding(self.entity_z_level, x, y)
         self.set_new_node_type(node_idx, new_type)
         self.activate_node_and_maybe_its_edges(node_idx)
         self.check_entities_active()
 
     def elevate_terrain_node(self, x, y):
-        self.terrain_array[x, y] += 1
+        # Environment has already updated terrain_array; just re-derive the node feature.
         node_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
-        if self.terrain_embedding_array is not None:
-            new_type = self.terrain_embedding_array[x, y] = self.converter.terrain_embedding_lookup[
-                self.terrain_array[x, y]
-            ]
-        else:
-            new_type = self.terrain_array[x, y]
+        new_type = self._get_embedding(self.terrain_z_level, x, y)
         self.set_new_node_type(node_idx, new_type)
 
     def remove_entity_node(self, x, y):
-        self.entity_array[x, y] = 0
+        # Environment has already set entity_array[x, y] = 0; just re-derive.
         node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-        if self.entity_embedding_array is not None:
-            new_type = self.entity_embedding_array[x, y] = self.converter.empty_embedding
-        else:
-            new_type = self.entity_array[x, y]
+        new_type = self._get_embedding(self.entity_z_level, x, y)
         self.set_new_node_type(node_idx, new_type)
-        # deactivate the edges of the node
-        # self.deactivate_node_and_its_edges(node_idx)
+        self.deactivate_node_and_its_edges(node_idx)
+
+    @property
+    def player_pos(self):
+        return (self.environment.player.grid_x, self.environment.player.grid_y)
 
     def move_player_node(self, x, y):
-        self.player_pos = (x, y)
         self.discover_this_coordinate(x, y)
-        # change player node features
-        self.graph.x[self.graph_manager.player_idx][0] = x
-        self.graph.x[self.graph_manager.player_idx][1] = y
+        # Update player node position features (only when features have x/y columns)
+        player_idx = self.graph_manager.player_idx
+        if self.graph.x.shape[1] > 1:
+            self.graph.x[player_idx][0] = x
+            self.graph.x[player_idx][1] = y
         # recalculate edge distances to player
         self.recalculate_edge_distances_to_player()
 
@@ -377,7 +366,7 @@ class KnowledgeGraph:
     def get_manhattan_neighbours(self, coor):
         x, y = coor
         neighbours = []
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
             new_x, new_y = x + dx, y + dy
             if self.environment.within_bounds(new_x, new_y):
                 neighbours.append((new_x, new_y))
