@@ -1,4 +1,5 @@
 import csv
+import os
 import time
 from collections import deque
 
@@ -309,6 +310,13 @@ class SimulationManager:
         static_file_path="Writing/static_data.csv",
         game_data_file_path="Writing/game_data.csv",
     ):
+        static_dir = os.path.dirname(static_file_path)
+        game_data_dir = os.path.dirname(game_data_file_path)
+        if static_dir:
+            os.makedirs(static_dir, exist_ok=True)
+        if game_data_dir:
+            os.makedirs(game_data_dir, exist_ok=True)
+
         # Write static data to CSV
         with open(static_file_path, mode="w", newline="") as static_file:
             writer = csv.writer(static_file)

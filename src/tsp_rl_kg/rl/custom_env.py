@@ -94,6 +94,16 @@ class CustomEnv(gym.Env):
         # self.kg_completeness = game_manager_args['kg_completeness']
         self.kg_completeness = 0.5
         self.vision_range = self._gm_config.vision_range
+        self.step_count = 0
+        self.max_episode_steps = self._episode_config.max_episode_steps
+
+        # Progress tracking is initialised before the first game manager so reward setup
+        # can safely depend on episode limits.
+        self.steps_without_progress = 0
+        self.max_steps_without_progress = self._episode_config.max_steps_without_progress
+        self.best_distance_to_unvisited = float("inf")
+        self.episode_step = 0
+        self.total_reward = 0
 
         self.simulation_manager = SimulationManager(
             self._gm_config,
@@ -124,16 +134,6 @@ class CustomEnv(gym.Env):
         self.observation_space = self.encoder.observation_space()
 
         self.action_space = gym.spaces.Discrete(self.num_actions)
-        self.step_count = 0
-        self.max_episode_steps = self._episode_config.max_episode_steps
-
-        # New attributes for progress tracking
-        self.steps_without_progress = 0
-        self.max_steps_without_progress = self._episode_config.max_steps_without_progress
-        self.best_distance_to_unvisited = float("inf")
-
-        self.episode_step = 0
-        self.total_reward = 0
         logger.info("CustomEnv initialized successfully")
 
     def set_kg_completeness(self, completeness):

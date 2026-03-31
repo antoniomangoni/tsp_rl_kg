@@ -15,13 +15,14 @@ MAX_EDGES = 12
 NUM_NODE_FEATURES = 4
 NUM_EDGE_FEATURES = 2
 VISION_SHAPE = (3, 32, 32)
+SMALL_VISION_SHAPE = (3, 12, 12)
 BATCH_SIZE = 2
 
 
-def _make_observation_space() -> gym.spaces.Dict:
+def _make_observation_space(vision_shape: tuple[int, int, int] = VISION_SHAPE) -> gym.spaces.Dict:
     return gym.spaces.Dict(
         {
-            "vision": gym.spaces.Box(low=0.0, high=1.0, shape=VISION_SHAPE, dtype=np.float32),
+            "vision": gym.spaces.Box(low=0.0, high=1.0, shape=vision_shape, dtype=np.float32),
             "node_features": gym.spaces.Box(
                 low=-1.0,
                 high=1e4,
@@ -44,10 +45,12 @@ def _make_observation_space() -> gym.spaces.Dict:
     )
 
 
-def _make_observations() -> dict[str, torch.Tensor]:
+def _make_observations(
+    vision_shape: tuple[int, int, int] = VISION_SHAPE,
+) -> dict[str, torch.Tensor]:
     generator = torch.Generator().manual_seed(42)
     return {
-        "vision": torch.rand((BATCH_SIZE, *VISION_SHAPE), generator=generator),
+        "vision": torch.rand((BATCH_SIZE, *vision_shape), generator=generator),
         "node_features": torch.rand(
             (BATCH_SIZE, MAX_NODES, NUM_NODE_FEATURES),
             generator=generator,
@@ -76,6 +79,21 @@ def test_hybrid_encoder_core_output_shape():
 
     with torch.no_grad():
         output = encoder(_make_observations())
+
+    assert output.shape == (BATCH_SIZE, config.features_dim)
+
+
+def test_hybrid_encoder_supports_small_vision_inputs():
+    config = AgentModelConfig(features_dim=192)
+    encoder = HybridEncoder(
+        observation_space=_make_observation_space(SMALL_VISION_SHAPE),
+        features_dim=config.features_dim,
+        model_config=config,
+    )
+    encoder.eval()
+
+    with torch.no_grad():
+        output = encoder(_make_observations(SMALL_VISION_SHAPE))
 
     assert output.shape == (BATCH_SIZE, config.features_dim)
 

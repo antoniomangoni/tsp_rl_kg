@@ -13,7 +13,7 @@ This master thesis explores the integration of Knowledge Graphs (KGs) with Reinf
 - Custom game environment with procedurally generated terrain
 - Dynamic Knowledge Graph integration
 - Hybrid CNN-GAT model for processing visual and graph-based inputs
-- Proximal Policy Optimization (PPO) algorithm for agent training
+- Composable RL backend layer with SB3 PPO and DQN support today
 - Ablation study across different KG completeness levels
 
 ## Project Structure
@@ -33,41 +33,67 @@ Flow diagrams can be found in the `mermaid_diagrams` folder:
 
 To run the project without Reinforcement Learning:
 
-1. Navigate to `main.py`
-2. Choose between:
-   - Running one game world via a game manager
-   - Creating a simulation manager to generate multiple game managers sorted by route energy requirements
+1. Run a single interactive world:
+
+```bash
+uv run tsp-rl-kg play
+```
+
+2. Export a small batch of generated worlds:
+
+```bash
+uv run tsp-rl-kg simulate
+```
 
 ### RL Version
 
 To run the Reinforcement Learning training:
 
-1. Navigate to `training.py`
-2. Adjust the configuration parameters at the end of the script:
+1. For a quick config-driven training run through the shared trainer path:
+
+```bash
+uv run tsp-rl-kg train --algorithm PPO
+uv run tsp-rl-kg train --algorithm DQN
+```
+
+2. For the ablation study runner, edit `src/tsp_rl_kg/rl/training/run.py` and execute:
+
+```bash
+uv run python src/tsp_rl_kg/rl/training/run.py
+```
+
+3. The training stack is configured via `TrainingConfig.algorithm`, not just legacy PPO-only `model_config` values. A typical config now looks like:
 
 ```python
 min_episodes_per_curriculum = 4
 base_config = {
-    'model_args': {'num_actions': 11},
-    'simulation_manager_args': {
-        'number_of_environments': 3000,
-        'number_of_curricula': 30,
-        'min_episodes_per_curriculum': min_episodes_per_curriculum},
-    'game_manager_args': {'num_tiles': 5, 'screen_size': 20, 'vision_range': 1},
-    'model_config': {
-        'n_steps': 2048 * 2,
-        'batch_size': 512,
-        'learning_rate': 6e-4,
-        'gamma': 0.995
+    "model_args": {"num_actions": 11},
+    "game_manager": {"num_tiles": 5, "screen_size": 20, "vision_range": 1, "headless": True},
+    "simulation_manager": {
+        "number_of_environments": 3000,
+        "number_of_curricula": 30,
+        "min_episodes_per_curriculum": min_episodes_per_curriculum,
     },
-    'curriculum_config': {
-    'min_episodes_per_curriculum': min_episodes_per_curriculum,
-    'performance_threshold': 0.85,
+    "algorithm": {
+        "backend": "sb3",
+        "algorithm": "PPO",
+        "policy_name": "MultiInputPolicy",
+        "hyperparameters": {
+            "n_steps": 4096,
+            "batch_size": 512,
+            "learning_rate": 6e-4,
+            "gamma": 0.995,
+        },
     },
-    'total_timesteps': 100000
+    "curriculum": {
+        "min_episodes_per_curriculum": min_episodes_per_curriculum,
+        "performance_threshold": 0.85,
+    },
+    "total_timesteps": 100000,
 }
-kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
 ```
+
+The environment, knowledge-graph, and observation contracts stay stable; backend choice and algorithm cadence live in the training layer.
 
 ## Contributing
 

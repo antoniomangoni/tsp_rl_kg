@@ -33,7 +33,7 @@ class VisionEncoder(nn.Module):
             conv_layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1))
             conv_layers.append(nn.BatchNorm2d(out_channels))
             conv_layers.append(nn.ReLU())
-            conv_layers.append(nn.MaxPool2d(2, 2))
+            conv_layers.append(nn.MaxPool2d(2, 2, ceil_mode=True))
             in_channels = out_channels
 
         conv_layers.append(nn.AdaptiveAvgPool2d((4, 4)))

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import gymnasium as gym
 import numpy as np
+import pytest
 from stable_baselines3.common.monitor import Monitor
 
 from tsp_rl_kg.config import AgentModelConfig, AlgorithmConfig, AlgorithmName, EvaluationConfig
@@ -139,3 +140,23 @@ def test_model_trainer_uses_backend_artifact_name():
     )
 
     assert trainer.get_model_artifact_name("demo") == "sb3_dqn_custom_env_demo.zip"
+
+
+def test_model_trainer_propagates_backend_training_failures():
+    trainer = ModelTrainer(
+        env=DummyDictEnv(),
+        eval_env=DummyDictEnv(),
+        device="cpu",
+        evaluation_config=EvaluationConfig(eval_freq=2, n_eval_episodes=1),
+    )
+
+    class FailingBackend:
+        should_stop = False
+
+        def train(self, total_timesteps, output_dir=None):
+            raise RuntimeError("backend training failed")
+
+    trainer.backend = FailingBackend()
+
+    with pytest.raises(RuntimeError, match="backend training failed"):
+        trainer.train(total_timesteps=8, output_dir="results")

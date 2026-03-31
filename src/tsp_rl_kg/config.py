@@ -99,6 +99,43 @@ class ModelConfig:
         }
 
 
+def default_algorithm_hyperparameters(
+    algorithm: AlgorithmName | str = AlgorithmName.PPO,
+) -> dict[str, int | float | bool | str]:
+    """Return baseline hyperparameters for the selected algorithm."""
+
+    algorithm = AlgorithmName.from_value(algorithm)
+
+    if algorithm == AlgorithmName.PPO:
+        return ModelConfig().to_dict()
+    if algorithm == AlgorithmName.DQN:
+        return {
+            "learning_rate": 1e-4,
+            "buffer_size": 100_000,
+            "learning_starts": 1_000,
+            "batch_size": 64,
+            "train_freq": 4,
+            "gamma": 0.99,
+        }
+    if algorithm == AlgorithmName.A2C:
+        return {
+            "learning_rate": 7e-4,
+            "n_steps": 5,
+            "gamma": 0.99,
+        }
+    if algorithm == AlgorithmName.SAC:
+        return {
+            "learning_rate": 3e-4,
+            "buffer_size": 1_000_000,
+            "learning_starts": 100,
+            "batch_size": 256,
+            "train_freq": 1,
+            "gamma": 0.99,
+        }
+
+    raise NotImplementedError(f"No default hyperparameters defined for {algorithm.value}")
+
+
 @dataclass
 class AlgorithmConfig:
     """Backend and algorithm selection for the training stack."""
@@ -108,14 +145,14 @@ class AlgorithmConfig:
     policy_name: str = "MultiInputPolicy"
     verbose: int = 1
     tensorboard_run_name: str | None = None
-    hyperparameters: dict[str, int | float | bool | str] = field(
-        default_factory=lambda: ModelConfig().to_dict()
-    )
+    hyperparameters: dict[str, int | float | bool | str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.backend = RLBackend.from_value(self.backend)
         self.algorithm = AlgorithmName.from_value(self.algorithm)
-        self.hyperparameters = dict(self.hyperparameters)
+        defaults = default_algorithm_hyperparameters(self.algorithm)
+        raw_hyperparameters = self.hyperparameters or {}
+        self.hyperparameters = {**defaults, **dict(raw_hyperparameters)}
         if not self.policy_name:
             raise ValueError("policy_name must be a non-empty string")
         if self.verbose < 0:

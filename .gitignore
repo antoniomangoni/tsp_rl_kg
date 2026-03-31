@@ -2,7 +2,7 @@
 *.zip
 
 # ignore saved models
-ppo_custom*
+*_custom_env_*.zip
 
 # ignore results folder
 results

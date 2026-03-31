@@ -88,6 +88,7 @@ class ModelTrainer:
         except Exception as e:
             logger.error(f"An error occurred during training: {str(e)}")
             logger.error(traceback.format_exc())
+            raise
 
         if getattr(backend, "should_stop", False):
             logger.info("Training ended early due to early stop condition")

@@ -10,16 +10,16 @@ flowchart TD
         M["Vision Processor"]
         N["Graph Processor"]
   end
- subgraph subGraph2["Model Components"]
-        K["PPO Model"]
+ subgraph subGraph2["Training Components"]
+       K["RL Backend"]
         L["AgentModel"]
         AgentModel
   end
- subgraph subGraph3["PPO Model"]
-        R["Policy Network"]
-        S["Value Network"]
-        T["Experience Buffer"]
-        U["Advantage Computation"]
+ subgraph subGraph3["Backend Internals"]
+       R["Policy or Q Network"]
+       S["Value or Target Heads"]
+       T["Rollout or Replay Buffer"]
+       U["Return or TD Target Computation"]
         V["Optimization Process"]
         F["Agent"]
   end

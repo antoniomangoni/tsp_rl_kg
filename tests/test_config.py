@@ -206,6 +206,20 @@ class TestAlgorithmConfig:
         assert cfg.policy_name == "MultiInputPolicy"
         assert cfg.hyperparameters["n_steps"] == 4096
 
+    def test_non_ppo_defaults_follow_selected_algorithm(self):
+        cfg = AlgorithmConfig(algorithm=AlgorithmName.DQN)
+        assert cfg.algorithm == AlgorithmName.DQN
+        assert cfg.hyperparameters["buffer_size"] == 100_000
+        assert "n_steps" not in cfg.hyperparameters
+
+    def test_partial_hyperparameters_merge_algorithm_defaults(self):
+        cfg = AlgorithmConfig(
+            algorithm=AlgorithmName.DQN,
+            hyperparameters={"buffer_size": 5_000},
+        )
+        assert cfg.hyperparameters["buffer_size"] == 5_000
+        assert cfg.hyperparameters["learning_rate"] == pytest.approx(1e-4)
+
     def test_from_legacy_model_config(self):
         cfg = AlgorithmConfig.from_legacy_model_config(ModelConfig(n_steps=2048, gamma=0.99))
         assert cfg.algorithm == AlgorithmName.PPO

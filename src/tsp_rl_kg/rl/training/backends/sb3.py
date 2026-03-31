@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.util
 import traceback
 from typing import Any
 
@@ -47,6 +48,12 @@ class SB3TrainingBackend:
         self.name = (
             f"{self.algorithm_config.backend.value}_"
             f"{self.algorithm_config.algorithm.value.lower()}"
+        )
+
+    def _progress_bar_enabled(self) -> bool:
+        return (
+            importlib.util.find_spec("tqdm") is not None
+            and importlib.util.find_spec("rich") is not None
         )
 
     def _ensure_monitored_env(self, env):
@@ -110,7 +117,7 @@ class SB3TrainingBackend:
                     self.algorithm_config.tensorboard_run_name
                     or self.algorithm_config.algorithm.value
                 ),
-                progress_bar=True,
+                progress_bar=self._progress_bar_enabled(),
             )
         except Exception as error:
             logger.error(f"An error occurred during backend training: {error}")

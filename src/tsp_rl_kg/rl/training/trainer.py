@@ -17,11 +17,18 @@ from tsp_rl_kg.rl.training.model_trainer import ModelTrainer
 
 
 class Trainer:
-    def __init__(self, current_kg_completeness, ablation_study):
+    def __init__(
+        self,
+        current_kg_completeness,
+        *,
+        results_dir: str,
+        feature_encoder=None,
+    ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info(f"Using device: {self.device}")
         self.current_kg_completeness = current_kg_completeness
-        self.ablation_study = ablation_study
+        self.results_dir = results_dir
+        self.feature_encoder = feature_encoder
 
     def setup(self, config: TrainingConfig | dict, seed: int | None = None):
         if isinstance(config, dict):
@@ -44,7 +51,7 @@ class Trainer:
             config.game_manager,
             config.simulation_manager,
             config.model_args,
-            self.ablation_study.feature_encoder,
+            self.feature_encoder,
             ablation_config=config.ablation,
         )
 
@@ -115,7 +122,7 @@ class Trainer:
 
     def run(self, experiment_name):
         # Create a subdirectory for this experiment within the results directory
-        experiment_dir = os.path.join(self.ablation_study.results_dir, experiment_name)
+        experiment_dir = os.path.join(self.results_dir, experiment_name)
         os.makedirs(experiment_dir, exist_ok=True)
         self._log_run_context(experiment_name)
 

@@ -2,6 +2,7 @@ import copy
 import json
 import os
 import traceback
+from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from enum import Enum
 
@@ -9,7 +10,7 @@ import mlflow
 import numpy as np
 from loguru import logger
 
-from tsp_rl_kg.config import AblationConfig, TrainingConfig
+from tsp_rl_kg.config import AblationConfig, AlgorithmConfig, TrainingConfig
 from tsp_rl_kg.rl.training.trainer import Trainer
 
 
@@ -96,6 +97,80 @@ class AblationStudy:
         if metrics:
             mlflow.log_metrics(metrics)
 
+    def _to_plain_value(self, value):
+        if is_dataclass(value):
+            return self._to_plain_value(asdict(value))
+        if isinstance(value, Enum):
+            return value.value
+        if isinstance(value, list):
+            return [self._to_plain_value(item) for item in value]
+        if isinstance(value, dict):
+            return {key: self._to_plain_value(item) for key, item in value.items()}
+        return value
+
+    def _merge_nested_dicts(self, base: dict, overrides: dict) -> dict:
+        merged = copy.deepcopy(base)
+        for key, value in overrides.items():
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = self._merge_nested_dicts(merged[key], value)
+            else:
+                merged[key] = copy.deepcopy(value)
+        return merged
+
+    def _build_experiment_config(
+        self, experiment: dict
+    ) -> tuple[TrainingConfig, float, AblationConfig]:
+        kg_completeness = experiment.get("kg_completeness", self.base_config.kg_completeness)
+
+        raw_ablation = experiment.get("ablation", AblationConfig())
+        if isinstance(raw_ablation, AblationConfig):
+            ablation_config = raw_ablation
+        else:
+            ablation_config = AblationConfig(**raw_ablation)
+
+        config_overrides = self._to_plain_value(experiment.get("config_overrides", {}))
+
+        algorithm_override = experiment.get("algorithm")
+        if algorithm_override is not None:
+            plain_override = self._to_plain_value(algorithm_override)
+            target_backend = plain_override.get("backend", self.base_config.algorithm.backend)
+            target_algorithm = plain_override.get("algorithm", self.base_config.algorithm.algorithm)
+
+            if (
+                target_backend == self.base_config.algorithm.backend
+                and target_algorithm == self.base_config.algorithm.algorithm
+            ):
+                base_algorithm = self._to_plain_value(self.base_config.algorithm)
+            else:
+                base_algorithm = self._to_plain_value(
+                    AlgorithmConfig(
+                        backend=target_backend,
+                        algorithm=target_algorithm,
+                        policy_name=self.base_config.algorithm.policy_name,
+                        verbose=self.base_config.algorithm.verbose,
+                        tensorboard_run_name=self.base_config.algorithm.tensorboard_run_name,
+                    )
+                )
+
+            merged_algorithm = self._merge_nested_dicts(
+                base_algorithm,
+                plain_override,
+            )
+            config_overrides = self._merge_nested_dicts(
+                config_overrides,
+                {"algorithm": merged_algorithm},
+            )
+
+        config_overrides = self._merge_nested_dicts(
+            config_overrides,
+            {"ablation": self._to_plain_value(ablation_config)},
+        )
+
+        experiment_config = TrainingConfig.from_dict(
+            self._merge_nested_dicts(self.base_config.to_dict(), config_overrides)
+        )
+        return experiment_config, kg_completeness, ablation_config
+
     def run(self):
         logger.info("Starting Ablation Study")
         self._configure_mlflow()
@@ -112,10 +187,9 @@ class AblationStudy:
 
             for experiment in self.experiments:
                 experiment_name = experiment["name"]
-                kg_completeness = experiment.get(
-                    "kg_completeness", self.base_config.kg_completeness
+                experiment_config, kg_completeness, ablation_config = self._build_experiment_config(
+                    experiment
                 )
-                ablation_config = experiment.get("ablation", AblationConfig())
                 logger.info(f"Running experiment: {experiment_name}")
 
                 seed_results = []
@@ -124,9 +198,7 @@ class AblationStudy:
                     logger.info(f"Running {seed_name}")
 
                     try:
-                        # Build per-experiment config with ablation overrides
-                        experiment_config = copy.deepcopy(self.base_config)
-                        experiment_config.ablation = ablation_config
+                        seed_config = copy.deepcopy(experiment_config)
 
                         with mlflow.start_run(run_name=seed_name, nested=True):
                             self._log_mlflow_params(
@@ -134,6 +206,12 @@ class AblationStudy:
                                     "experiment.name": experiment_name,
                                     "experiment.seed": seed,
                                     "experiment.kg_completeness": kg_completeness,
+                                    "experiment.backend": seed_config.algorithm.backend,
+                                    "experiment.algorithm": seed_config.algorithm.algorithm,
+                                    "experiment.policy_name": seed_config.algorithm.policy_name,
+                                    "experiment.algorithm_hyperparameters": (
+                                        seed_config.algorithm.hyperparameters
+                                    ),
                                     "ablation.disable_vision": ablation_config.disable_vision,
                                     "ablation.disable_graph": ablation_config.disable_graph,
                                     "ablation.disable_curriculum": (
@@ -145,12 +223,16 @@ class AblationStudy:
                                 }
                             )
                             mlflow.log_dict(
-                                experiment_config.to_dict(),
+                                seed_config.to_dict(),
                                 f"configs/{seed_name}_config.json",
                             )
 
-                            trainer = Trainer(kg_completeness, ablation_study=self)
-                            trainer.setup(experiment_config, seed=seed)
+                            trainer = Trainer(
+                                kg_completeness,
+                                results_dir=self.results_dir,
+                                feature_encoder=self.feature_encoder,
+                            )
+                            trainer.setup(seed_config, seed=seed)
                             trainer.env_manager.set_kg_completeness(trainer.env, kg_completeness)
                             trainer.env_manager.set_kg_completeness(
                                 trainer.eval_env, kg_completeness
