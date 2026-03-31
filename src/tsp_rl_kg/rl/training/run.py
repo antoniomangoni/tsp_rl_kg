@@ -1,10 +1,12 @@
 import traceback
 
 from tsp_rl_kg.config import (
+    AblationConfig,
     CurriculumConfig,
     GameManagerConfig,
     ModelArgs,
     ModelConfig,
+    RewardComponent,
     SimulationManagerConfig,
     TrainingConfig,
 )
@@ -33,12 +35,38 @@ base_config = TrainingConfig(
         performance_threshold=0.85,
     ),
     total_timesteps=100000,
+    seeds=[42, 123, 456],
 )
 
 kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
 
+# Optional: define a custom experiment matrix for component ablation
+experiments = [
+    # KG completeness sweep
+    *[
+        {"name": f"kg_{kg}", "kg_completeness": kg, "ablation": AblationConfig()}
+        for kg in kg_completeness_values
+    ],
+    # Vision-only (graph disabled)
+    {"name": "vision_only", "kg_completeness": 0.5, "ablation": AblationConfig(disable_graph=True)},
+    # Graph-only (vision disabled)
+    {"name": "graph_only", "kg_completeness": 0.5, "ablation": AblationConfig(disable_vision=True)},
+    # No curriculum
+    {
+        "name": "no_curriculum",
+        "kg_completeness": 0.5,
+        "ablation": AblationConfig(disable_curriculum=True),
+    },
+    # No proximity reward
+    {
+        "name": "no_proximity",
+        "kg_completeness": 0.5,
+        "ablation": AblationConfig(disable_reward_components=[RewardComponent.PROXIMITY]),
+    },
+]
+
 logger = Logger("ablation_study.log")
-ablation_study = AblationStudy(base_config, kg_completeness_values, logger)
+ablation_study = AblationStudy(base_config, kg_completeness_values, logger, experiments=experiments)
 
 try:
     ablation_study.run()

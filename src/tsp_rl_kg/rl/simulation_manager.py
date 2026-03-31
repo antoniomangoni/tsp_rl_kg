@@ -23,6 +23,7 @@ class SimulationManager:
         min_episodes_per_curriculum: int = 1,
         plot: bool = False,
         feature_encoder=None,
+        game_managers: list[GameManager] | None = None,
     ):
         # Accept either a GameManagerConfig or a legacy dict
         if isinstance(game_manager_config, dict):
@@ -41,11 +42,16 @@ class SimulationManager:
             number_of_curricula = sim_config.number_of_curricula
             min_episodes_per_curriculum = sim_config.min_episodes_per_curriculum
 
-        self.number_of_environments = number_of_environments
         self.logger = logger
         self.feature_encoder = feature_encoder
-        self.game_managers = []
-        self.create_games(self.number_of_environments, plot)
+
+        if game_managers is not None:
+            self.game_managers = game_managers
+            self.number_of_environments = len(game_managers)
+        else:
+            self.number_of_environments = number_of_environments
+            self.game_managers = []
+            self.create_games(self.number_of_environments, plot)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula + 1)
         self.logger.info(

@@ -6,6 +6,7 @@ import pygame
 from torch_geometric.data import Data
 
 from tsp_rl_kg.config import (
+    AblationConfig,
     EpisodeConfig,
     GameManagerConfig,
     ModelArgs,
@@ -28,10 +29,14 @@ class CustomEnv(gym.Env):
         feature_encoder=None,
         plot=False,
         episode_config: EpisodeConfig | None = None,
+        game_managers: list | None = None,
+        ablation_config: AblationConfig | None = None,
     ):
         super(CustomEnv, self).__init__()
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing CustomEnv")
+
+        self._ablation_config = ablation_config if ablation_config is not None else AblationConfig()
 
         # Normalize to typed configs
         if isinstance(game_manager_args, dict):
@@ -97,6 +102,7 @@ class CustomEnv(gym.Env):
             sim_config=self._sim_config,
             plot=plot,
             feature_encoder=feature_encoder,
+            game_managers=game_managers,
         )
 
         self.current_game_index = self.simulation_manager.curriculum_indices[
@@ -154,6 +160,7 @@ class CustomEnv(gym.Env):
                 self._reward_config,
                 list(self.outpost_coords),
                 self.max_episode_steps,
+                disabled_components=list(self._ablation_config.disable_reward_components),
             )
         else:
             self._reward_calculator.reset_game(list(self.outpost_coords))
@@ -173,9 +180,14 @@ class CustomEnv(gym.Env):
             self.action_space.seed(seed)
 
         # Update the game manager
-        self.current_game_index = self.simulation_manager.get_next_game_in_curriculum(
-            self.current_game_index
-        )
+        if self._ablation_config.disable_curriculum:
+            self.current_game_index = np.random.randint(
+                0, self.simulation_manager.number_of_environments
+            )
+        else:
+            self.current_game_index = self.simulation_manager.get_next_game_in_curriculum(
+                self.current_game_index
+            )
         if self.current_game_index >= self.simulation_manager.number_of_environments:
             self.early_stop = True
             self.logger.info("All environments completed. Ending simulation.")

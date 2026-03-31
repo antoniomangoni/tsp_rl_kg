@@ -1,6 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from enum import Enum
+
+
+class RewardComponent(str, Enum):
+    PROXIMITY = "proximity"
+    CIRCULAR_PENALTY = "circular_penalty"
+    ROUTE_IMPROVEMENT = "route_improvement"
 
 
 @dataclass
@@ -159,6 +166,10 @@ class AgentModelConfig:
     features_dim: int = 192
     dropout: float = 0.25
 
+    # Ablation flags
+    disable_vision: bool = False
+    disable_graph: bool = False
+
     def to_vision_params(self) -> dict:
         return {
             "num_conv_layers": self.vision_num_conv_layers,
@@ -175,6 +186,22 @@ class AgentModelConfig:
 
 
 @dataclass
+class AblationConfig:
+    disable_vision: bool = False
+    disable_graph: bool = False
+    disable_reward_components: list[RewardComponent] = field(default_factory=list)
+    disable_curriculum: bool = False
+
+    def __post_init__(self) -> None:
+        if self.disable_vision and self.disable_graph:
+            raise ValueError("Cannot disable both vision and graph processors")
+        # Normalize strings to enum values
+        self.disable_reward_components = [
+            RewardComponent(c) if isinstance(c, str) else c for c in self.disable_reward_components
+        ]
+
+
+@dataclass
 class TrainingConfig:
     """Top-level config container aggregating all sub-configs."""
 
@@ -185,8 +212,10 @@ class TrainingConfig:
     curriculum: CurriculumConfig = field(default_factory=CurriculumConfig)
     episode: EpisodeConfig = field(default_factory=EpisodeConfig)
     agent_model: AgentModelConfig = field(default_factory=AgentModelConfig)
+    ablation: AblationConfig = field(default_factory=AblationConfig)
     total_timesteps: int = 100_000
     kg_completeness: float = 0.5
+    seeds: list[int] = field(default_factory=lambda: [42, 123, 456])
 
     @staticmethod
     def from_dict(d: dict) -> TrainingConfig:

@@ -1,7 +1,9 @@
 import cProfile
 import os
 import pstats
+import random
 
+import numpy as np
 import torch
 from stable_baselines3.common.callbacks import EvalCallback
 
@@ -13,22 +15,36 @@ from tsp_rl_kg.utils.logger import Logger
 
 
 class Trainer:
-    def __init__(self, current_kg_completeness, ablation_study):
-        self.logger = Logger("ablation_study.log")
+    def __init__(self, current_kg_completeness, ablation_study, logger=None):
+        self.logger = logger if logger is not None else Logger("ablation_study.log")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.logger.info(f"Using device: {self.device}")
         self.current_kg_completeness = current_kg_completeness
         self.ablation_study = ablation_study
 
-    def setup(self, config: TrainingConfig | dict):
+    def setup(self, config: TrainingConfig | dict, seed: int | None = None):
         if isinstance(config, dict):
             config = TrainingConfig.from_dict(config)
         self.config = config
+
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+            torch.manual_seed(seed)
+            if torch.cuda.is_available():
+                torch.cuda.manual_seed_all(seed)
+
+        # Propagate ablation flags to AgentModelConfig
+        agent_model_config = config.agent_model
+        agent_model_config.disable_vision = config.ablation.disable_vision
+        agent_model_config.disable_graph = config.ablation.disable_graph
+
         self.env_manager: EnvironmentManager = EnvironmentManager(
             config.game_manager,
             config.simulation_manager,
             config.model_args,
             self.ablation_study.feature_encoder,
+            ablation_config=config.ablation,
         )
 
         self.logger.info("Creating environment", logger_name="training")
@@ -42,7 +58,8 @@ class Trainer:
         self.logger.info("Environment created successfully", logger_name="training")
 
         self.logger.info("Creating evaluation environment", logger_name="eval")
-        self.eval_env: CustomEnv = self.env_manager.make_env()
+        train_game_managers = self.env.unwrapped.simulation_manager.game_managers
+        self.eval_env: CustomEnv = self.env_manager.make_eval_env(train_game_managers)
         self.eval_env.unwrapped.simulation_manager.min_episodes_per_curriculum = (
             config.curriculum.min_episodes_per_curriculum
         )
@@ -52,7 +69,7 @@ class Trainer:
         self.logger.info("Evaluation environment created successfully", logger_name="eval")
 
         self.model_trainer = ModelTrainer(self.env, self.eval_env, self.logger, self.device)
-        self.model_trainer.create_model(config.model_config)
+        self.model_trainer.create_model(config.model_config, config.agent_model)
 
     def run(self, experiment_name):
         # Create a subdirectory for this experiment within the results directory

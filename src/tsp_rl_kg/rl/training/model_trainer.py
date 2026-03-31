@@ -3,7 +3,7 @@ import traceback
 import numpy as np
 from stable_baselines3 import PPO
 
-from tsp_rl_kg.config import ModelConfig
+from tsp_rl_kg.config import AgentModelConfig, ModelConfig
 from tsp_rl_kg.rl.agent_model import AgentModel
 from tsp_rl_kg.rl.training.callbacks import CurriculumCallback
 from tsp_rl_kg.rl.training.metrics import TrainingMetrics
@@ -18,16 +18,23 @@ class ModelTrainer:
         self.rl_model = None
         self.metrics = TrainingMetrics(env.action_space.n)
 
-    def create_model(self, model_config: ModelConfig | dict):
+    def create_model(
+        self, model_config: ModelConfig | dict, agent_model_config: AgentModelConfig | None = None
+    ):
         if isinstance(model_config, dict):
             model_config = ModelConfig(**model_config)
+        if agent_model_config is None:
+            agent_model_config = AgentModelConfig()
         self.logger.info("Creating PPO model", logger_name="training")
         self.rl_model = PPO(
             "MultiInputPolicy",
             self.env,
             policy_kwargs={
                 "features_extractor_class": AgentModel,
-                "features_extractor_kwargs": {"features_dim": 64},
+                "features_extractor_kwargs": {
+                    "features_dim": agent_model_config.features_dim,
+                    "model_config": agent_model_config,
+                },
             },
             **model_config.to_dict(),
             device=self.device,

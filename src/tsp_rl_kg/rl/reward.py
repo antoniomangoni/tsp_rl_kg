@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from collections import deque
 
-from tsp_rl_kg.config import RewardConfig
+from tsp_rl_kg.config import RewardComponent, RewardConfig
 
 
 def manhattan_distance(pos1: tuple[int, int], pos2: tuple[int, int]) -> int:
@@ -23,11 +23,13 @@ class RewardCalculator:
         config: RewardConfig,
         outpost_coords: list[tuple[int, int]],
         max_episode_steps: int,
+        disabled_components: list[RewardComponent] | None = None,
     ) -> None:
         self.config = config
         self.outpost_coords = outpost_coords
         self.max_episode_steps = max_episode_steps
         self.logger = logging.getLogger(__name__)
+        self.disabled_components: set[RewardComponent] = set(disabled_components or [])
 
         # Episode-scoped state
         self.outposts_visited: set[tuple[int, int]] = set()
@@ -230,7 +232,8 @@ class RewardCalculator:
                 improvement_reward, early_stop = self.route_improvement_reward(
                     agent_energy_spent, algorithmic_best_energy
                 )
-                reward += improvement_reward
+                if RewardComponent.ROUTE_IMPROVEMENT not in self.disabled_components:
+                    reward += improvement_reward
 
                 self.logger.info(
                     f"Route Completed - Efficiency: {self.current_efficiency:.2f}, "
@@ -238,10 +241,12 @@ class RewardCalculator:
                 )
             else:
                 # Proximity shaping (only when not all outposts complete)
-                reward += self.proximity_reward(agent_pos)
+                if RewardComponent.PROXIMITY not in self.disabled_components:
+                    reward += self.proximity_reward(agent_pos)
 
         # Circular behaviour
-        reward += self.circular_behavior_penalty(agent_pos)
+        if RewardComponent.CIRCULAR_PENALTY not in self.disabled_components:
+            reward += self.circular_behavior_penalty(agent_pos)
 
         # Update path memory
         self.recent_path.append(agent_pos)

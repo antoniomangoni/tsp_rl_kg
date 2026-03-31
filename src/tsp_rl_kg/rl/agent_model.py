@@ -265,6 +265,9 @@ class AgentModel(BaseFeaturesExtractor):
         if model_config is None:
             model_config = AgentModelConfig()
 
+        self.disable_vision = model_config.disable_vision
+        self.disable_graph = model_config.disable_graph
+
         # Parameters for modularity and flexibility
         self.vision_params = model_config.to_vision_params()
         self.graph_params = model_config.to_graph_params()
@@ -335,6 +338,8 @@ class AgentModel(BaseFeaturesExtractor):
         """
         # Process the visual input through the VisionProcessor
         vision_features = self.vision_processor(observations["vision"])
+        if self.disable_vision:
+            vision_features = torch.zeros_like(vision_features)
 
         # Handle batched graph data
         batch_size = observations["node_features"].shape[0]
@@ -356,6 +361,8 @@ class AgentModel(BaseFeaturesExtractor):
 
         # Process the graph input through the GraphProcessor
         graph_features = self.graph_processor(x, edge_index, batch, edge_attr=edge_attr)
+        if self.disable_graph:
+            graph_features = torch.zeros_like(graph_features)
 
         # Combine vision and graph features
         combined = torch.cat((vision_features, graph_features), dim=1)
