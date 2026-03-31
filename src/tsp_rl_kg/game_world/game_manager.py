@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 import pygame
+from loguru import logger
 
 from tsp_rl_kg.config import GameManagerConfig
 from tsp_rl_kg.game_world.actions import ActionType
@@ -136,6 +137,6 @@ class GameManager:
             # exit()
 
         pygame.quit()
-        print("Game closed")
+        logger.info("Game closed")
         self.environment.print_environment()
         self.kg_class.visualise_graph()

@@ -1,6 +1,8 @@
 import functools
 import time
 
+from loguru import logger
+
 ENABLE_TIMING = False
 
 
@@ -10,9 +12,9 @@ def time_function(func):
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
-        print(
-            f"Function {func.__name__!r} in {func.__code__.co_filename.split('/')[-1]}"
-            f" executed in {end_time - start_time:.4f} seconds"
+        logger.debug(
+            f"Function {func.__name__!r} in {func.__code__.co_filename.split('/')[-1]} "
+            f"executed in {end_time - start_time:.4f} seconds"
         )
         return result
 

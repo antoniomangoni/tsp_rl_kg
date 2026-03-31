@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -42,14 +44,11 @@ class TrainingMetrics:
             self.action_counts[i].append(count)
 
     def save_to_csv(self, filename):
-        # replace any special characters and spaces in the filename with underscores
-        filename = filename.replace(" ", "_")
-        filename = filename.replace("-", "_")
-        filename = filename.replace(".", "_")
-        filename = "".join(e for e in filename if e.isalnum() or e == "_")
-        # if file ends with _csv replace it with .csv
-        if filename.endswith("_csv"):
-            filename = filename[:-4] + ".csv"
+        output_path = Path(filename)
+        safe_stem = output_path.stem.replace(" ", "_").replace("-", "_")
+        safe_stem = "".join(ch for ch in safe_stem if ch.isalnum() or ch == "_")
+        output_path = output_path.with_name(f"{safe_stem}.csv")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
         df = pd.DataFrame(
             {
@@ -70,4 +69,5 @@ class TrainingMetrics:
         for i in range(self.num_actions):
             df[f"Action_{i}"] = self.action_counts[i] / total_actions
 
-        df.to_csv(filename, index=False)
+        df.to_csv(output_path, index=False)
+        return str(output_path)

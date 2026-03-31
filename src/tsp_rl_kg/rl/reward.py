@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import logging
 from collections import deque
+
+from loguru import logger
 
 from tsp_rl_kg.config import RewardComponent, RewardConfig
 
@@ -28,7 +29,6 @@ class RewardCalculator:
         self.config = config
         self.outpost_coords = outpost_coords
         self.max_episode_steps = max_episode_steps
-        self.logger = logging.getLogger(__name__)
         self.disabled_components: set[RewardComponent] = set(disabled_components or [])
 
         # Episode-scoped state
@@ -104,7 +104,7 @@ class RewardCalculator:
         self.current_efficiency = self.calculate_route_efficiency(
             agent_route_energy, algorithmic_best_energy
         )
-        self.logger.info(
+        logger.info(
             f"Route Efficiency: {self.current_efficiency:.2f} "
             f"- {self.interpret_efficiency(self.current_efficiency)}"
         )
@@ -114,7 +114,7 @@ class RewardCalculator:
                 agent_route_energy, algorithmic_best_energy
             )
             self.gap = self.calculate_efficiency_gap(agent_route_energy, algorithmic_best_energy)
-            self.logger.info(
+            logger.info(
                 f"New best route found. Improvement: {self.improvement:.2f}, "
                 f"Gap: {self.gap:.2f}"
             )
@@ -151,23 +151,21 @@ class RewardCalculator:
                 * (self.previous_min_distance - current_min_distance)
                 / self.previous_min_distance
             )
-            self.logger.info(f"Agent moved closer to an outpost. Reward: {reward}")
+            logger.info(f"Agent moved closer to an outpost. Reward: {reward}")
         elif current_min_distance > self.previous_min_distance:
             reward = (
                 self.config.farther_from_outpost_penalty
                 * (current_min_distance - self.previous_min_distance)
                 / self.previous_min_distance
             )
-            self.logger.info(f"Agent moved away from outposts. Penalty: {reward}")
+            logger.info(f"Agent moved away from outposts. Penalty: {reward}")
 
         self.previous_min_distance = current_min_distance
         return reward
 
     def circular_behavior_penalty(self, agent_pos: tuple[int, int]) -> float:
         if agent_pos in self.recent_path:
-            self.logger.info(
-                f"Agent repeated a path. Penalty: {self.config.circular_behavior_penalty}"
-            )
+            logger.info(f"Agent repeated a path. Penalty: {self.config.circular_behavior_penalty}")
             return self.config.circular_behavior_penalty
         return 0.0
 
@@ -188,7 +186,7 @@ class RewardCalculator:
 
         Returns ``(normalised_reward, early_stop, all_visited)``.
         """
-        self.logger.info("Calculating reward...")
+        logger.info("Calculating reward...")
         early_stop = False
         all_visited = False
 
@@ -200,7 +198,7 @@ class RewardCalculator:
         if agent_pos in self.outpost_coords and agent_pos not in self.outposts_visited:
             self.outposts_visited.add(agent_pos)
             reward += self.outpost_discovery_reward()
-            self.logger.info(
+            logger.info(
                 f"Outposts visited: {len(self.outposts_visited)}/{len(self.outpost_coords)}"
             )
             self.recent_path.clear()
@@ -208,25 +206,21 @@ class RewardCalculator:
             # All outposts visited → completion
             if len(self.outposts_visited) == len(self.outpost_coords):
                 all_visited = True
-                self.logger.debug(
-                    "Agent reached all outposts. Outposts visited: %s",
-                    self.outposts_visited,
+                logger.debug(
+                    f"Agent reached all outposts. Outposts visited: {self.outposts_visited}"
                 )
                 self.outposts_visited.clear()
 
                 reward += self.completion_reward(episode_step)
-                self.logger.debug(
-                    "Step: %d. All outposts visited. Completion reward: %s",
-                    episode_step,
-                    reward,
+                logger.debug(
+                    f"Step: {episode_step}. All outposts visited. Completion reward: {reward}"
                 )
 
                 reset_energy_callback()
 
-                self.logger.debug(
-                    "Agent route energy: %s, algorithmic best energy: %s",
-                    agent_energy_spent,
-                    algorithmic_best_energy,
+                logger.debug(
+                    f"Agent route energy: {agent_energy_spent}, "
+                    f"algorithmic best energy: {algorithmic_best_energy}"
                 )
 
                 improvement_reward, early_stop = self.route_improvement_reward(
@@ -235,7 +229,7 @@ class RewardCalculator:
                 if RewardComponent.ROUTE_IMPROVEMENT not in self.disabled_components:
                     reward += improvement_reward
 
-                self.logger.info(
+                logger.info(
                     f"Route Completed - Efficiency: {self.current_efficiency:.2f}, "
                     f"Improvement: {self.improvement:.2f}, Gap: {self.gap:.2f}"
                 )

@@ -1,24 +1,26 @@
 import cProfile
+import json
 import os
 import pstats
 import random
+from enum import Enum
 
+import mlflow
 import numpy as np
 import torch
+from loguru import logger
 from stable_baselines3.common.callbacks import EvalCallback
 
 from tsp_rl_kg.config import TrainingConfig
 from tsp_rl_kg.rl.custom_env import CustomEnv
 from tsp_rl_kg.rl.training.environment_manager import EnvironmentManager
 from tsp_rl_kg.rl.training.model_trainer import ModelTrainer
-from tsp_rl_kg.utils.logger import Logger
 
 
 class Trainer:
-    def __init__(self, current_kg_completeness, ablation_study, logger=None):
-        self.logger = logger if logger is not None else Logger("ablation_study.log")
+    def __init__(self, current_kg_completeness, ablation_study):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.logger.info(f"Using device: {self.device}")
+        logger.info(f"Using device: {self.device}")
         self.current_kg_completeness = current_kg_completeness
         self.ablation_study = ablation_study
 
@@ -47,7 +49,7 @@ class Trainer:
             ablation_config=config.ablation,
         )
 
-        self.logger.info("Creating environment", logger_name="training")
+        logger.info("Creating environment")
         self.env: CustomEnv = self.env_manager.make_env()
         self.env.unwrapped.simulation_manager.min_episodes_per_curriculum = (
             config.curriculum.min_episodes_per_curriculum
@@ -55,9 +57,9 @@ class Trainer:
         self.env.unwrapped.simulation_manager.performance_threshold = (
             config.curriculum.performance_threshold
         )
-        self.logger.info("Environment created successfully", logger_name="training")
+        logger.info("Environment created successfully")
 
-        self.logger.info("Creating evaluation environment", logger_name="eval")
+        logger.info("Creating evaluation environment")
         train_game_managers = self.env.unwrapped.simulation_manager.game_managers
         self.eval_env: CustomEnv = self.env_manager.make_eval_env(train_game_managers)
         self.eval_env.unwrapped.simulation_manager.min_episodes_per_curriculum = (
@@ -66,15 +68,52 @@ class Trainer:
         self.eval_env.unwrapped.simulation_manager.performance_threshold = (
             config.curriculum.performance_threshold
         )
-        self.logger.info("Evaluation environment created successfully", logger_name="eval")
+        logger.info("Evaluation environment created successfully")
 
-        self.model_trainer = ModelTrainer(self.env, self.eval_env, self.logger, self.device)
+        self.model_trainer = ModelTrainer(self.env, self.eval_env, self.device)
         self.model_trainer.create_model(config.model_config, config.agent_model)
+
+    def _flatten_mlflow_params(
+        self,
+        prefix: str,
+        value,
+        output: dict[str, str | int | float | bool],
+    ):
+        if isinstance(value, dict):
+            for key, nested_value in value.items():
+                nested_prefix = f"{prefix}.{key}" if prefix else str(key)
+                self._flatten_mlflow_params(nested_prefix, nested_value, output)
+            return
+
+        if isinstance(value, Enum):
+            output[prefix] = value.value
+        elif isinstance(value, list):
+            output[prefix] = json.dumps(
+                [item.value if isinstance(item, Enum) else item for item in value],
+                sort_keys=True,
+            )
+        elif isinstance(value, (str, int, float, bool)):
+            output[prefix] = value
+        elif value is not None:
+            output[prefix] = str(value)
+
+    def _log_run_context(self, experiment_name: str) -> None:
+        if not mlflow.active_run():
+            return
+
+        params: dict[str, str | int | float | bool] = {
+            "training.device": str(self.device),
+            "training.experiment_name": experiment_name,
+        }
+        config_dict = self.config.to_dict() if hasattr(self.config, "to_dict") else self.config
+        self._flatten_mlflow_params("config", config_dict, params)
+        mlflow.log_params(params)
 
     def run(self, experiment_name):
         # Create a subdirectory for this experiment within the results directory
         experiment_dir = os.path.join(self.ablation_study.results_dir, experiment_name)
         os.makedirs(experiment_dir, exist_ok=True)
+        self._log_run_context(experiment_name)
 
         eval_callback = EvalCallback(
             self.eval_env,
@@ -94,31 +133,35 @@ class Trainer:
 
         # Save metrics
         metrics_file = os.path.join(experiment_dir, f"{experiment_name}_metrics.csv")
-        self.model_trainer.metrics.save_to_csv(metrics_file)
+        metrics_file = self.model_trainer.metrics.save_to_csv(metrics_file)
 
         profiler.disable()
-        stats = pstats.Stats(profiler).sort_stats("cumulative")
         stats_file = os.path.join(experiment_dir, "profile_stats.txt")
-        stats.dump_stats(stats_file)
-        self.logger.info(f"Profiling stats saved to {stats_file}")
+        with open(stats_file, "w", encoding="utf-8") as stats_stream:
+            pstats.Stats(profiler, stream=stats_stream).sort_stats("cumulative").print_stats()
+        logger.info(f"Profiling stats saved to {stats_file}")
 
-        model_path = os.path.join(experiment_dir, f"ppo_custom_env_{experiment_name}")
-        self.model_trainer.save_model(model_path)
+        model_path = os.path.join(experiment_dir, f"ppo_custom_env_{experiment_name}.zip")
+        model_path = self.model_trainer.save_model(model_path)
         mean_reward, std_reward = self.model_trainer.evaluate_model(self.eval_env)
 
-        self.logger.info("Closing environments", logger_name="training")
+        if mlflow.active_run():
+            mlflow.log_artifacts(experiment_dir, artifact_path="training_outputs")
+
+        logger.info("Closing environments")
         self.env_manager.set_kg_completeness(self.env, self.current_kg_completeness)
         self.env.close()
         self.env_manager.set_kg_completeness(self.eval_env, self.current_kg_completeness)
         self.eval_env.close()
-        self.logger.info("Environments closed successfully", logger_name="training")
+        logger.info("Environments closed successfully")
 
-        self.logger.info("Training and evaluation completed.")
+        logger.info("Training and evaluation completed.")
 
         return {
             "mean_reward": mean_reward,
             "std_reward": std_reward,
             "config": self.config.to_dict() if hasattr(self.config, "to_dict") else self.config,
+            "metrics_file": metrics_file,
             "model_path": model_path,
             "stats_file": stats_file,
         }

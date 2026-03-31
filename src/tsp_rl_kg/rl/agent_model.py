@@ -2,6 +2,7 @@ import gymnasium as gym
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from loguru import logger
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from torch_geometric.data import Data
 from torch_geometric.nn import GATConv, global_mean_pool
@@ -392,11 +393,11 @@ class AgentModel(BaseFeaturesExtractor):
     def sanity_check(self, observations):
         with torch.no_grad():
             output = self.forward(observations)
-            print(f"Output shape: {output.shape}")
-            print(f"Output mean: {output.mean().item():.4f}")
-            print(f"Output std: {output.std().item():.4f}")
+            logger.info(f"Output shape: {output.shape}")
+            logger.info(f"Output mean: {output.mean().item():.4f}")
+            logger.info(f"Output std: {output.std().item():.4f}")
             vision_mean = self.vision_processor(observations["vision"]).mean().item()
-            print(f"Vision features mean: {vision_mean:.4f}")
+            logger.info(f"Vision features mean: {vision_mean:.4f}")
             graph_data = Data(
                 x=observations["node_features"].to(torch_dtype),
                 edge_index=observations["edge_index"].long(),
@@ -407,4 +408,4 @@ class AgentModel(BaseFeaturesExtractor):
                 ),
             )
             graph_mean = self.graph_processor(graph_data).mean().item()
-            print(f"Graph features mean: {graph_mean:.4f}")
+            logger.info(f"Graph features mean: {graph_mean:.4f}")

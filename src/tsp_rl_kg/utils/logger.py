@@ -1,51 +1,95 @@
+"""Logging configuration using Loguru.
+
+Call ``configure_logging()`` once at programme entry to set up sinks.
+Every module simply does ``from loguru import logger`` to emit logs.
+An ``InterceptHandler`` bridges stdlib ``logging`` so that SB3, PyTorch,
+and other libraries are routed through Loguru automatically.
+"""
+
+from __future__ import annotations
+
 import logging
-import warnings
+import sys
+
+from loguru import logger
 
 
-class Logger:
-    def __init__(self, base_log_file="training.log"):
-        self.loggers = {}
-        self.base_log_file = base_log_file
-        self._setup_logger("main", base_log_file)
-        self._setup_logger("training", "training.log")
-        self._setup_logger("eval", "eval.log")
+class InterceptHandler(logging.Handler):
+    """stdlib logging handler that forwards records to Loguru."""
 
-        warnings.filterwarnings("always")
+    def emit(self, record: logging.LogRecord) -> None:
+        # Find the Loguru level that matches the stdlib level.
+        try:
+            level: str | int = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
 
-    def _setup_logger(self, name, log_file):
-        logger = logging.getLogger(name)
-        logger.setLevel(logging.INFO)
+        # Find caller from where the logged message originated.
+        frame, depth = logging.currentframe(), 2
+        while frame and frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
 
-        # File handler
-        file_handler = logging.FileHandler(log_file)
-        file_handler.setLevel(logging.INFO)
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
-        # Console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
 
-        # Formatter
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
+def configure_logging(
+    log_dir: str = "logs",
+    level: str = "INFO",
+    *,
+    json_output: bool = False,
+) -> None:
+    """Set up Loguru sinks and intercept stdlib logging.
 
-        # Add handlers to logger
-        logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
+    Parameters
+    ----------
+    log_dir:
+        Directory for log files. A ``{time}`` placeholder is included in
+        the file name so each run gets its own file.
+    level:
+        Minimum log level for all sinks.
+    json_output:
+        If ``True`` an additional JSON-formatted file sink is created.
+    """
+    import os
 
-        self.loggers[name] = logger
+    os.makedirs(log_dir, exist_ok=True)
 
-    def get_logger(self, name):
-        if name not in self.loggers:
-            log_file = f"{name}_{self.base_log_file}"
-            self._setup_logger(name, log_file)
-        return self.loggers[name]
+    # Remove default Loguru sink so we control everything.
+    logger.remove()
 
-    def info(self, message, logger_name="main"):
-        self.get_logger(logger_name).info(message)
+    # Console — coloured, human-readable
+    logger.add(
+        sys.stderr,
+        level=level,
+        format=(
+            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+            "<level>{level: <8}</level> | "
+            "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+            "<level>{message}</level>"
+        ),
+        colorize=True,
+    )
 
-    def warning(self, message, logger_name="main"):
-        self.get_logger(logger_name).warning(message)
+    # File — rotated at 10 MB, kept for 7 days
+    logger.add(
+        os.path.join(log_dir, "tsp_rl_kg_{time}.log"),
+        level=level,
+        rotation="10 MB",
+        retention="7 days",
+        format=(
+            "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | " "{name}:{function}:{line} - {message}"
+        ),
+    )
 
-    def error(self, message, logger_name="main"):
-        self.get_logger(logger_name).error(message)
+    if json_output:
+        logger.add(
+            os.path.join(log_dir, "tsp_rl_kg_{time}.json"),
+            level=level,
+            rotation="10 MB",
+            retention="7 days",
+            serialize=True,
+        )
+
+    # Intercept stdlib logging (SB3, PyTorch, Gymnasium, etc.)
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)

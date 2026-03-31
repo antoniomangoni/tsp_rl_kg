@@ -1,15 +1,13 @@
 import csv
-import logging
 import time
 from collections import deque
 
 import matplotlib.pyplot as plt
 import numpy as np
+from loguru import logger
 
 from tsp_rl_kg.config import GameManagerConfig, SimulationManagerConfig
 from tsp_rl_kg.game_world.game_manager import GameManager
-
-logger = logging.getLogger(__name__)
 
 
 class SimulationManager:
@@ -54,9 +52,7 @@ class SimulationManager:
             self.create_games(self.number_of_environments, plot)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
         self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula + 1)
-        self.logger.info(
-            "Curriculum indices: %s, Step size: %s", self.curriculum_indices, step_size
-        )
+        self.logger.info(f"Curriculum indices: {self.curriculum_indices}, Step size: {step_size}")
         self.step_size = round(step_size, 2)
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
 
@@ -110,10 +106,8 @@ class SimulationManager:
     def get_next_game_manager(self):
         self.logger.debug(
             "Getting next game manager. "
-            "Current curriculum index: %s, "
-            "Current curriculum episodes: %s",
-            self.current_curriculum_index,
-            self.current_curriculum_episodes,
+            f"Current curriculum index: {self.current_curriculum_index}, "
+            f"Current curriculum episodes: {self.current_curriculum_episodes}"
         )
         next_index = self.curriculum_indices[self.current_curriculum_index + 1]
         if next_index < self.number_of_environments:
@@ -216,12 +210,12 @@ class SimulationManager:
         return self.curriculum_indices[self.current_curriculum_index]
 
     def print_energy_routes(self):
-        self.logger.info("Number of environments: %d", len(self.game_managers))
+        self.logger.info(f"Number of environments: {len(self.game_managers)}")
         self.logger.info(
-            "Minimum energy route: %s", self.game_managers[0].target_manager.target_route_energy
+            f"Minimum energy route: {self.game_managers[0].target_manager.target_route_energy}"
         )
         self.logger.info(
-            "Maximum energy route: %s", self.game_managers[-1].target_manager.target_route_energy
+            f"Maximum energy route: {self.game_managers[-1].target_manager.target_route_energy}"
         )
 
     def plot_curriculum(

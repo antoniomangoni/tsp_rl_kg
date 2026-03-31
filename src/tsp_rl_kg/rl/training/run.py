@@ -1,5 +1,7 @@
 import traceback
 
+from loguru import logger
+
 from tsp_rl_kg.config import (
     AblationConfig,
     CurriculumConfig,
@@ -11,7 +13,7 @@ from tsp_rl_kg.config import (
     TrainingConfig,
 )
 from tsp_rl_kg.rl.training.ablation_study import AblationStudy
-from tsp_rl_kg.utils.logger import Logger
+from tsp_rl_kg.utils.logger import configure_logging
 
 # Uncomment for windows
 # os.environ['PYGAME_DETECT_AVX2'] = '1'
@@ -65,8 +67,9 @@ experiments = [
     },
 ]
 
-logger = Logger("ablation_study.log")
-ablation_study = AblationStudy(base_config, kg_completeness_values, logger, experiments=experiments)
+configure_logging(log_dir="logs", level="INFO")
+
+ablation_study = AblationStudy(base_config, kg_completeness_values, experiments=experiments)
 
 try:
     ablation_study.run()

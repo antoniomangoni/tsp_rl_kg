@@ -1,5 +1,7 @@
+import mlflow
 import numpy as np
 import torch.nn as nn
+from loguru import logger
 from stable_baselines3.common.callbacks import BaseCallback
 from torch_geometric.nn import GATConv
 
@@ -10,14 +12,12 @@ class CurriculumCallback(BaseCallback):
     def __init__(
         self,
         eval_env,
-        custom_logger,
         metrics: TrainingMetrics,
         print_weight_stats_freq=1000,
         verbose=0,
     ):
         super(CurriculumCallback, self).__init__(verbose)
         self.eval_env = eval_env
-        self.custom_logger = custom_logger
         self.metrics = metrics
         self.should_stop = False
         self.print_weight_stats_freq = print_weight_stats_freq
@@ -35,7 +35,7 @@ class CurriculumCallback(BaseCallback):
             self.action_counts[actions] += 1
 
         if self.n_calls % self.model.n_steps == 0:
-            self.custom_logger.info(f"Step {self.n_calls}", logger_name="training")
+            logger.info(f"Step {self.n_calls}")
 
             env = (
                 self.training_env.envs[0]
@@ -45,9 +45,7 @@ class CurriculumCallback(BaseCallback):
             unwrapped_env = env.unwrapped  # Get the unwrapped environment
 
             if unwrapped_env.early_stop:
-                self.custom_logger.info(
-                    "Early stop condition met. Stopping training.", logger_name="training"
-                )
+                logger.info("Early stop condition met. Stopping training.")
                 self.should_stop = True
                 return False
 
@@ -75,6 +73,21 @@ class CurriculumCallback(BaseCallback):
                 self.action_counts,
             )
 
+            if mlflow.active_run():
+                mlflow.log_metrics(
+                    {
+                        "training.performance": performance,
+                        "training.game_manager_index": game_manager_index,
+                        "training.best_route_energy": best_route_energy,
+                        "training.curriculum_level": curriculum_level,
+                        "training.target_route_energy": target_route_energy,
+                        "training.best_efficiency": efficiency,
+                        "training.improvement": improvement,
+                        "training.gap": gap,
+                    },
+                    step=self.n_calls,
+                )
+
             # Reset action counts
             self.action_counts = np.zeros(self.metrics.num_actions, dtype=int)
 
@@ -82,17 +95,13 @@ class CurriculumCallback(BaseCallback):
             if unwrapped_env.simulation_manager.should_advance_curriculum():
                 new_index = unwrapped_env.simulation_manager.advance_curriculum()
                 if new_index < 0:
-                    self.custom_logger.info(
-                        "All curricula completed. Stopping training.",
-                        logger_name="training",
-                    )
+                    logger.info("All curricula completed. Stopping training.")
                     self.should_stop = True
                     return False
 
-                self.custom_logger.info(
+                logger.info(
                     f"Advancing to curriculum level "
-                    f"{unwrapped_env.simulation_manager.current_curriculum_index}",
-                    logger_name="training",
+                    f"{unwrapped_env.simulation_manager.current_curriculum_index}"
                 )
 
                 # Reset both training and eval environments
@@ -106,7 +115,7 @@ class CurriculumCallback(BaseCallback):
         return True
 
     def print_weight_statistics(self):
-        self.custom_logger.info("Weight Statistics:", logger_name="training")
+        logger.info("Weight Statistics:")
         agent_model = self.model.policy.features_extractor
 
         # Vision Processor
@@ -129,15 +138,13 @@ class CurriculumCallback(BaseCallback):
         if hasattr(layer, "weight"):
             weights = layer.weight.data
             weight_stats = self.compute_stats(weights)
-            self.custom_logger.info(
-                f"{layer_name} weights - {weight_stats}", logger_name="training"
-            )
+            logger.info(f"{layer_name} weights - {weight_stats}")
             # print(f"{layer_name} weights - {weight_stats}")
 
         if hasattr(layer, "bias") and layer.bias is not None:
             bias = layer.bias.data
             bias_stats = self.compute_stats(bias)
-            self.custom_logger.info(f"{layer_name} bias - {bias_stats}", logger_name="training")
+            logger.info(f"{layer_name} bias - {bias_stats}")
             # print(f"{layer_name} bias - {bias_stats}")
 
     def compute_stats(self, tensor):

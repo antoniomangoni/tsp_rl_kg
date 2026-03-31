@@ -6,6 +6,7 @@ ppo_custom*
 
 # ignore results folder
 results
+mlruns/
 
 # Ignore all files in any directory named 'plot'
 **/*plot*/

@@ -1,12 +1,15 @@
 import numpy as np
+from loguru import logger
 from stable_baselines3 import PPO
 
 from tsp_rl_kg.config import GameManagerConfig, ModelArgs, SimulationManagerConfig
 from tsp_rl_kg.game_world.game_manager import GameManager
 from tsp_rl_kg.rl.custom_env import CustomEnv
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
+from tsp_rl_kg.utils.logger import configure_logging
 
 if __name__ == "__main__":
+    configure_logging(log_dir="logs", level="INFO")
 
     model_args = ModelArgs(num_actions=11)
 
@@ -64,14 +67,20 @@ if __name__ == "__main__":
         )
 
         for i, game_manager in enumerate(simulation_manager.game_managers):
-            print(game_manager.environment.terrain_index_grid)
-            print(game_manager.environment.entity_index_grid)
+            logger.info(
+                f"Terrain index grid for environment {i}:\n"
+                f"{game_manager.environment.terrain_index_grid}"
+            )
+            logger.info(
+                f"Entity index grid for environment {i}:\n"
+                f"{game_manager.environment.entity_index_grid}"
+            )
 
             # Assign each grid to the appropriate slice
             game_world_array[i, 0] = game_manager.environment.terrain_index_grid
             game_world_array[i, 1] = game_manager.environment.entity_index_grid
 
-        print(game_world_array)
+        logger.info(f"Combined game world array:\n{game_world_array}")
 
         unique_terrain_objects = np.unique(game_world_array[:, 0])
 

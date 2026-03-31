@@ -2,6 +2,7 @@ import random
 
 import numpy as np
 import pygame
+from loguru import logger
 
 from tsp_rl_kg.game_world.entities import (
     BaseEntity,
@@ -332,10 +333,8 @@ class Environment:
         return self.terrain_index_grid, self.entity_index_grid
 
     def print_environment(self):
-        print("Terrain Index Grid:")
-        print(self.terrain_index_grid)
-        print("Entity Index Grid:")
-        print(self.entity_index_grid)
+        logger.info(f"Terrain Index Grid:\n{self.terrain_index_grid}")
+        logger.info(f"Entity Index Grid:\n{self.entity_index_grid}")
         # number_of_fish = 0
         number_of_trees = 0
         number_of_mossy_rocks = 0
@@ -360,10 +359,10 @@ class Environment:
             elif isinstance(entity, SnowyRock):
                 number_of_snowy_rocks += 1
 
-        print(f"Players: {number_of_players}")
-        print(f"Outposts: {number_of_outposts}")
-        print(f"Wood Paths: {number_of_wood_paths}")
+        logger.info(f"Players: {number_of_players}")
+        logger.info(f"Outposts: {number_of_outposts}")
+        logger.info(f"Wood Paths: {number_of_wood_paths}")
         # print(f"Fish: {number_of_fish}")
-        print(f"Trees: {number_of_trees}")
-        print(f"Mossy Rocks: {number_of_mossy_rocks}")
-        print(f"Snowy Rocks: {number_of_snowy_rocks}")
+        logger.info(f"Trees: {number_of_trees}")
+        logger.info(f"Mossy Rocks: {number_of_mossy_rocks}")
+        logger.info(f"Snowy Rocks: {number_of_snowy_rocks}")

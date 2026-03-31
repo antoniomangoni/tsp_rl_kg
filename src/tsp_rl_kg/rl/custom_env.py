@@ -1,8 +1,7 @@
-import logging
-
 import gymnasium as gym
 import numpy as np
 import pygame
+from loguru import logger
 from torch_geometric.data import Data
 
 from tsp_rl_kg.config import (
@@ -33,8 +32,7 @@ class CustomEnv(gym.Env):
         ablation_config: AblationConfig | None = None,
     ):
         super(CustomEnv, self).__init__()
-        self.logger = logging.getLogger(__name__)
-        self.logger.info("Initializing CustomEnv")
+        logger.info("Initializing CustomEnv")
 
         self._ablation_config = ablation_config if ablation_config is not None else AblationConfig()
 
@@ -51,7 +49,7 @@ class CustomEnv(gym.Env):
             self._gm_config = game_manager_args
 
         if not self._gm_config.headless:
-            self.logger.warning(
+            logger.warning(
                 "CustomEnv created with headless=False — training will require a display server."
             )
 
@@ -136,14 +134,14 @@ class CustomEnv(gym.Env):
 
         self.episode_step = 0
         self.total_reward = 0
-        self.logger.info("CustomEnv initialized successfully")
+        logger.info("CustomEnv initialized successfully")
 
     def set_kg_completeness(self, completeness):
-        self.logger.info(f"Setting KG completeness to {completeness} using SimulationManager")
+        logger.info(f"Setting KG completeness to {completeness} using SimulationManager")
         self.kg_completeness = completeness
 
     def set_current_game_manager(self):
-        self.logger.info(f"Setting current game manager to index {self.current_game_index}")
+        logger.info(f"Setting current game manager to index {self.current_game_index}")
 
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
         projection = CompletenessProjection(self.kg_completeness, self.vision_range, self.num_tiles)
@@ -164,10 +162,10 @@ class CustomEnv(gym.Env):
             )
         else:
             self._reward_calculator.reset_game(list(self.outpost_coords))
-        self.logger.info("Current game manager set successfully")
+        logger.info("Current game manager set successfully")
 
     def reset(self, seed=None, options=None):
-        self.logger.info("Resetting environment")
+        logger.info("Resetting environment")
         self.episode_step = 0
         self.total_reward = 0
         self.early_stop = False
@@ -190,7 +188,7 @@ class CustomEnv(gym.Env):
             )
         if self.current_game_index >= self.simulation_manager.number_of_environments:
             self.early_stop = True
-            self.logger.info("All environments completed. Ending simulation.")
+            logger.info("All environments completed. Ending simulation.")
             return self._get_observation(), {}
         self.set_current_game_manager()
 
@@ -260,7 +258,7 @@ class CustomEnv(gym.Env):
             "total_reward": self.total_reward,
         }
 
-        self.logger.debug(
+        logger.debug(
             f"Step complete. Reward: {reward}, "
             f"Total Reward: {self.total_reward}, "
             f"Terminated: {terminated}, "
@@ -270,7 +268,7 @@ class CustomEnv(gym.Env):
         if terminated or truncated:
             visited = len(self._reward_calculator.outposts_visited)
             total = len(self.outpost_coords)
-            self.logger.info(
+            logger.info(
                 f"Episode ended. Total steps: {self.episode_step}, "
                 f"Total reward: {self.total_reward}, "
                 f"Outposts visited: {visited}/{total}"
@@ -281,7 +279,7 @@ class CustomEnv(gym.Env):
     def _check_termination(self):
         # Check if all outposts are visited
         if self.early_stop:
-            self.logger.info("Early stop condition reached. Terminating episode.")
+            logger.info("Early stop condition reached. Terminating episode.")
             return True
 
         # Check for no progress
@@ -299,7 +297,7 @@ class CustomEnv(gym.Env):
                 self.steps_without_progress += 1
 
             if self.steps_without_progress >= self.max_steps_without_progress:
-                self.logger.info(
+                logger.info(
                     f"No progress made for "
                     f"{self.max_steps_without_progress} steps. "
                     f"Terminating episode."
@@ -309,10 +307,10 @@ class CustomEnv(gym.Env):
         return False
 
     def _get_observation(self):
-        self.logger.debug("Getting observation")
+        logger.debug("Getting observation")
         vision = self._get_vision()
         subgraph: Data = self.current_gm.kg_class.get_subgraph()
-        self.logger.debug("Observation retrieved")
+        logger.debug("Observation retrieved")
         return self.encoder.encode(subgraph, vision)
 
     def get_clamped_surface(self):
