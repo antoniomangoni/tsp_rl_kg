@@ -1,10 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Protocol, TypedDict, runtime_checkable
+from dataclasses import dataclass
+from typing import Any, Protocol, Sequence, TypedDict, runtime_checkable
 
 ObservationDict = dict[str, Any]
-MetricValue = str | int | float | bool
+MetricValue = str | int | float | bool | list[int] | list[float]
 MetricsDict = dict[str, MetricValue]
+
+
+@dataclass(frozen=True)
+class CurriculumDecision:
+    continue_training: bool = True
+    should_reset_environments: bool = False
+    should_stop: bool = False
 
 
 class Transition(TypedDict):
@@ -46,7 +54,12 @@ class Evaluator(Protocol):
 
 @runtime_checkable
 class CurriculumController(Protocol):
-    def on_episode_end(self, env: Any) -> tuple[bool, bool]: ...
+    def on_step(
+        self,
+        step: int,
+        env: Any,
+        action_counts: Sequence[int],
+    ) -> CurriculumDecision: ...
 
 
 @runtime_checkable

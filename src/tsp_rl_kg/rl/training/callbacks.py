@@ -1,31 +1,31 @@
 from typing import Any
 
-import mlflow
 import numpy as np
 import torch.nn as nn
 from loguru import logger
 from stable_baselines3.common.callbacks import BaseCallback
 from torch_geometric.nn import GATConv
 
-from tsp_rl_kg.rl.training.metrics import TrainingMetrics
+from tsp_rl_kg.rl.training.backends.base import CurriculumController
 
 
 class CurriculumCallback(BaseCallback):
     def __init__(
         self,
         eval_env,
-        metrics: TrainingMetrics,
+        controller: CurriculumController,
+        num_actions: int,
         step_interval=1,
         print_weight_stats_freq=1000,
         verbose=0,
     ):
         super(CurriculumCallback, self).__init__(verbose)
         self.eval_env = eval_env
-        self.metrics = metrics
+        self.controller = controller
         self.should_stop = False
         self.step_interval = max(1, step_interval)
         self.print_weight_stats_freq = print_weight_stats_freq
-        self.action_counts = np.zeros(metrics.num_actions, dtype=int)
+        self.action_counts = np.zeros(num_actions, dtype=int)
         self.num_envs = getattr(
             eval_env.unwrapped, "num_envs", 1
         )  # Use unwrapped to access num_envs
@@ -34,83 +34,32 @@ class CurriculumCallback(BaseCallback):
         # Update action counts based on the actions taken
         actions = self.locals["actions"]
         if isinstance(actions, np.ndarray):
-            self.action_counts += np.bincount(actions, minlength=self.metrics.num_actions)
+            self.action_counts += np.bincount(actions, minlength=len(self.action_counts))
         else:
             self.action_counts[actions] += 1
 
         if self.n_calls % self.step_interval == 0:
             logger.info(f"Step {self.n_calls}")
 
-            env: Any = (
-                self.training_env.envs[0]
-                if hasattr(self.training_env, "envs")
-                else self.training_env
-            )
+            training_env: Any = self.training_env
+            env: Any = training_env.envs[0] if hasattr(training_env, "envs") else training_env
             unwrapped_env: Any = env.unwrapped
 
-            if unwrapped_env.early_stop:
-                logger.info("Early stop condition met. Stopping training.")
-                self.should_stop = True
-                return False
-
-            metrics = unwrapped_env.get_metrics()
-
-            performance = metrics.get("performance", 0)
-            game_manager_index = metrics.get("game_manager_index", 0)
-            best_route_energy = metrics.get("best_route_energy", 0)
-            curriculum_level = metrics.get("curriculum_level", 0)
-            target_route_energy = metrics.get("target_route_energy", 0)
-            efficiency = metrics.get("best_efficiency", 0)
-            improvement = metrics.get("improvement", 0)
-            gap = metrics.get("gap", 0)
-
-            self.metrics.add_metric(
+            decision = self.controller.on_step(
                 self.n_calls,
-                performance,
-                game_manager_index,
-                best_route_energy,
-                curriculum_level,
-                target_route_energy,
-                efficiency,
-                improvement,
-                gap,
-                self.action_counts,
+                unwrapped_env,
+                self.action_counts.tolist(),
             )
 
-            if mlflow.active_run():
-                mlflow.log_metrics(
-                    {
-                        "training.performance": performance,
-                        "training.game_manager_index": game_manager_index,
-                        "training.best_route_energy": best_route_energy,
-                        "training.curriculum_level": curriculum_level,
-                        "training.target_route_energy": target_route_energy,
-                        "training.best_efficiency": efficiency,
-                        "training.improvement": improvement,
-                        "training.gap": gap,
-                    },
-                    step=self.n_calls,
-                )
+            self.action_counts = np.zeros(len(self.action_counts), dtype=int)
 
-            # Reset action counts
-            self.action_counts = np.zeros(self.metrics.num_actions, dtype=int)
-
-            # Check if curriculum should advance
-            if unwrapped_env.simulation_manager.should_advance_curriculum():
-                new_index = unwrapped_env.simulation_manager.advance_curriculum()
-                if new_index < 0:
-                    logger.info("All curricula completed. Stopping training.")
-                    self.should_stop = True
-                    return False
-
-                logger.info(
-                    f"Advancing to curriculum level "
-                    f"{unwrapped_env.simulation_manager.current_curriculum_index}"
-                )
-
-                # Reset both training and eval environments
+            if decision.should_reset_environments:
                 self.training_env.reset()
                 self.eval_env.reset()
+
+            if decision.should_stop:
+                self.should_stop = True
+                return False
 
             if self.n_calls % self.print_weight_stats_freq == 0:
                 self.print_weight_statistics()

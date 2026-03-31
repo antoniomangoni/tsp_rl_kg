@@ -1,5 +1,6 @@
 from tsp_rl_kg.rl.training.backends.base import (
     CurriculumController,
+    CurriculumDecision,
     Evaluator,
     MetricsSink,
     SequenceSampler,
@@ -7,14 +8,13 @@ from tsp_rl_kg.rl.training.backends.base import (
     TrajectoryStore,
     Transition,
 )
-from tsp_rl_kg.rl.training.backends.sb3 import SB3TrainingBackend
 
 __all__ = [
+    "CurriculumDecision",
     "CurriculumController",
     "Evaluator",
     "MetricsSink",
     "SequenceSampler",
-    "SB3TrainingBackend",
     "TrainingBackend",
     "TrajectoryStore",
     "Transition",

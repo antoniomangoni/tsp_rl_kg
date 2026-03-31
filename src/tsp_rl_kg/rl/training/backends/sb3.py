@@ -13,6 +13,7 @@ from tsp_rl_kg.config import AgentModelConfig, AlgorithmConfig, AlgorithmName, E
 from tsp_rl_kg.rl.agent_model import AgentModel
 from tsp_rl_kg.rl.training.backends.base import MetricsDict
 from tsp_rl_kg.rl.training.callbacks import CurriculumCallback
+from tsp_rl_kg.rl.training.curriculum import CurriculumService
 from tsp_rl_kg.rl.training.metrics import TrainingMetrics
 
 SB3_ALGORITHMS = {
@@ -79,9 +80,11 @@ class SB3TrainingBackend:
         if self.model is None:
             raise RuntimeError("SB3 backend model has not been built")
 
+        curriculum_controller = CurriculumService(metrics_sink=self.metrics)
         curriculum_callback = CurriculumCallback(
             self.eval_env,
-            self.metrics,
+            curriculum_controller,
+            num_actions=self.metrics.num_actions,
             step_interval=self._callback_interval(),
         )
         callbacks: list[Any] = [curriculum_callback]

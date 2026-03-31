@@ -1,7 +1,5 @@
 import traceback
 
-import mlflow
-import numpy as np
 from loguru import logger
 
 from tsp_rl_kg.config import (
@@ -11,7 +9,9 @@ from tsp_rl_kg.config import (
     ModelConfig,
     RLBackend,
 )
-from tsp_rl_kg.rl.training.backends import SB3TrainingBackend, TrainingBackend
+from tsp_rl_kg.rl.training.backends.base import TrainingBackend
+from tsp_rl_kg.rl.training.backends.sb3 import SB3TrainingBackend
+from tsp_rl_kg.rl.training.evaluation import EpisodeEvaluator
 from tsp_rl_kg.rl.training.metrics import TrainingMetrics
 
 
@@ -23,6 +23,7 @@ class ModelTrainer:
         self.backend: TrainingBackend | None = None
         self.algorithm_config = AlgorithmConfig()
         self.evaluation_config = evaluation_config or EvaluationConfig()
+        self.evaluator = EpisodeEvaluator()
         self.metrics = TrainingMetrics(env.action_space.n)
 
     def create_model(
@@ -131,28 +132,5 @@ class ModelTrainer:
     def evaluate_model(self, eval_env, n_eval_episodes=10):
         logger.info("Starting final model evaluation")
         backend = self._require_backend()
-
-        episode_rewards = []
-        for _ in range(n_eval_episodes):
-            obs, _ = eval_env.reset()
-            done = False
-            episode_reward = 0
-            while not done:
-                action, _ = backend.predict(obs, deterministic=True)
-                obs, reward, terminated, truncated, _ = eval_env.step(action)
-                episode_reward += reward
-                done = terminated or truncated
-            episode_rewards.append(episode_reward)
-
-        mean_reward = np.mean(episode_rewards)
-        std_reward = np.std(episode_rewards)
-
-        logger.info(f"Final evaluation: Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
-        if mlflow.active_run():
-            mlflow.log_metrics(
-                {
-                    "evaluation.mean_reward": float(mean_reward),
-                    "evaluation.std_reward": float(std_reward),
-                }
-            )
-        return mean_reward, std_reward
+        metrics = self.evaluator.evaluate(backend, eval_env, n_eval_episodes)
+        return float(metrics["mean_reward"]), float(metrics["std_reward"])
