@@ -68,7 +68,11 @@ class Graph_Manager:
         d_idx = self.player_edge_direct_idx
         r_idx = self.player_edge_reverse_idx
         # Remove old entries
-        to_remove = [k for k in self.nodeTuples_edgeIdx_dict if player_idx in k and k != (player_idx, player_idx)]
+        to_remove = [
+            k
+            for k in self.nodeTuples_edgeIdx_dict
+            if player_idx in k and k != (player_idx, player_idx)
+        ]
         for old_key in to_remove:
             if self.nodeTuples_edgeIdx_dict[old_key] in (d_idx, r_idx):
                 del self.nodeTuples_edgeIdx_dict[old_key]

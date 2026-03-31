@@ -77,7 +77,9 @@ class SimulationManager:
 
     def create_games(self, number_of_games, plot):
         for _ in range(number_of_games):
-            game_manager = GameManager(config=self._gm_config, plot=plot, feature_encoder=self.feature_encoder)
+            game_manager = GameManager(
+                config=self._gm_config, plot=plot, feature_encoder=self.feature_encoder
+            )
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 

@@ -128,8 +128,9 @@ class DefaultGridConstitution:
         # --- single player→terrain edge ---
         player_terrain_idx = gm.get_node_idx(player_pos, self.TERRAIN_Z)
         d_idx, r_idx = gm.create_edge_idx(gm.player_idx, player_terrain_idx)
-        graph.edge_index[:, d_idx] = torch.tensor([gm.player_idx, player_terrain_idx], dtype=torch.int)
-        graph.edge_index[:, r_idx] = torch.tensor([player_terrain_idx, gm.player_idx], dtype=torch.int)
+        pi, ti = gm.player_idx, player_terrain_idx
+        graph.edge_index[:, d_idx] = torch.tensor([pi, ti], dtype=torch.int)
+        graph.edge_index[:, r_idx] = torch.tensor([ti, pi], dtype=torch.int)
         attr = feature_encoder.encode_edge(0, EDGE_PLAYER_TERRAIN)
         graph.edge_attr[d_idx] = attr
         graph.edge_attr[r_idx] = attr

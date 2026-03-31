@@ -9,7 +9,11 @@ from tsp_rl_kg.rl.training.trainer import Trainer
 
 class AblationStudy:
     def __init__(
-        self, base_config: TrainingConfig | dict, kg_completeness_values, logger, feature_encoder=None
+        self,
+        base_config: TrainingConfig | dict,
+        kg_completeness_values,
+        logger,
+        feature_encoder=None,
     ):
         if isinstance(base_config, dict):
             base_config = TrainingConfig.from_dict(base_config)

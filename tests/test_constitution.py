@@ -76,7 +76,7 @@ class TestDefaultGridConstitution:
         graph, _gm = DefaultGridConstitution().build(env, player_pos, env.discovered_grid)
 
         assert torch.all(graph.edge_index >= 0)
-        assert torch.all(graph.edge_attr[:, 1] >= 0)
+        assert torch.all(graph.edge_attr[:, 0] >= 0)
 
     def test_graph_manager_player_idx_set(self, headless_environment: Environment):
         env = headless_environment

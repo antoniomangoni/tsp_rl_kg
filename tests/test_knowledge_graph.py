@@ -99,7 +99,7 @@ class TestKnowledgeGraphInit:
 
 class TestKnowledgeGraphDiscovery:
     def test_discover_coordinate(self, headless_environment: Environment):
-        kg = KnowledgeGraph(
+        KnowledgeGraph(
             environment=headless_environment,
             vision_range=1,
             completion=0.1,  # Small initial discovery
@@ -108,7 +108,6 @@ class TestKnowledgeGraphDiscovery:
         x, y = headless_environment.width - 1, headless_environment.height - 1
         headless_environment.discovered_grid[x, y] = False  # Force undiscovered
         headless_environment.discover_coordinate(x, y)
-        kg.activate_discovered_coordinate(x, y)
         assert headless_environment.discovered_grid[x, y]
 
     def test_discover_already_discovered_returns_false(self, headless_environment: Environment):

@@ -52,7 +52,9 @@ class KnowledgeGraph:
         self.distance = self.projection.distance
         # Discovery state lives on Environment; initialise from here since KG knows the distance.
         # When distance is None (e.g. FullGraphProjection), discover the entire grid.
-        discovery_radius = self.distance if self.distance is not None else self.terrain_array.shape[0]
+        discovery_radius = (
+            self.distance if self.distance is not None else self.terrain_array.shape[0]
+        )
         self.environment.init_discovered_area(self.player_pos, discovery_radius)
 
         self.terrain_z_level = 0
@@ -86,72 +88,16 @@ class KnowledgeGraph:
         else:
             raise ValueError(f"Invalid z-level: {z_level}")
 
-    def is_node_active(self, idx):
-        # TODO: G11 — replace with ProjectionPolicy-based visibility
-        return True
-
-    def should_edge_be_active(self, node_idx1, node_idx2):
-        if self.is_node_active(node_idx1) and self.is_node_active(node_idx2):
-            return True
-
-    def activate_discovered_coordinate(self, x, y):
-        """Activate graph nodes/edges for a coordinate that Environment has marked discovered."""
-        terrain_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
-        self.activate_node_and_maybe_its_edges(terrain_idx)
-        if self.entity_array[x, y] > 1:
-            self.activate_node_and_maybe_its_edges(
-                self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-            )
-
-    def activate_node_and_maybe_its_edges(self, idx):
-        # activate the nodes edges if the corresponding node is activated
-        node_pairs = self.graph_manager.retrieve_edge_node_pairs_from_node(idx)
-        for node_pair in node_pairs:
-            node_idx1, node_idx2 = node_pair
-            if self.should_edge_be_active(node_idx1, node_idx2):
-                self.activate_edge(node_idx1, node_idx2)
-
-    def activate_edge(self, node_idx1, node_idx2):
-        direct_edge_idx, reverse_edge_idx = self.graph_manager.retrieve_edge_indices(
-            node_idx1, node_idx2
-        )
-        self.set_edge_mask_1(direct_edge_idx)
-        self.set_edge_mask_1(reverse_edge_idx)
-
-    def check_edges_active_of_node(self, idx):
-        print(f"Checking edges of node {idx}")
-        for edge in self.graph_manager.nodeTuples_edgeIdx_dict:
-            if idx in edge:
-                print(f"Edge {edge} is connected to node {idx}")
-                edge_idx_1, edge_idx_2 = self.graph_manager.retrieve_edge_indices(edge[0], edge[1])
-                if self.graph.edge_attr[edge_idx_1][1] == 0:
-                    print(f"Edge {edge_idx_1} is not active")
-                if self.graph.edge_attr[edge_idx_2][1] == 0:
-                    print(f"Edge {edge_idx_2} is not active")
-
-    def deactivate_node_and_its_edges(self, node_idx):
-        edge_indices = self.graph_manager.retrieve_edge_indices_from_node(node_idx)
-        for edge_idx in edge_indices:
-            self.set_edge_mask_0(edge_idx)
-
     def set_new_node_type(self, idx, new_type):
         if isinstance(new_type, torch.Tensor):
             self.graph.x[idx] = new_type
         else:
             self.graph.x[idx] = torch.tensor(new_type, dtype=torch.float)
 
-    def set_edge_mask_0(self, idx):
-        self.graph.edge_attr[idx][1] = 0
-
-    def set_edge_mask_1(self, idx):
-        self.graph.edge_attr[idx][1] = 1
-
     def build_path_node(self, x, y):
         node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
         new_type = self._get_embedding(self.entity_z_level, x, y)
         self.set_new_node_type(node_idx, new_type)
-        self.activate_node_and_maybe_its_edges(node_idx)
-        self.check_entities_active()
 
     def elevate_terrain_node(self, x, y):
         # Environment has already updated terrain_array; just re-derive the node feature.
@@ -164,7 +110,6 @@ class KnowledgeGraph:
         node_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
         new_type = self._get_embedding(self.entity_z_level, x, y)
         self.set_new_node_type(node_idx, new_type)
-        self.deactivate_node_and_its_edges(node_idx)
 
     @property
     def player_pos(self):
@@ -172,7 +117,6 @@ class KnowledgeGraph:
 
     def move_player_node(self, x, y):
         self.environment.discover_coordinate(x, y)
-        self.activate_discovered_coordinate(x, y)
         # Update player node position features (only when features have x/y columns)
         player_idx = self.graph_manager.player_idx
         if self.graph.x.shape[1] > 1:
@@ -194,6 +138,8 @@ class KnowledgeGraph:
         self.graph.edge_attr[r_idx] = attr
         # Update bookkeeping in graph_manager
         self.graph_manager.rewire_player_edge(new_terrain_idx)
+
+    # Construction methods (create_node, add_nodes, create_edge, add_edge_to_graph,
     # create_terrain_edges, add_entity_edges, compute_total_possible_edges,
     # init_graph_tensors, complete_graph, verify_graph_integrity) moved to
     # DefaultGridConstitution.build().
@@ -212,30 +158,6 @@ class KnowledgeGraph:
             if self.environment.within_bounds(new_x, new_y):
                 neighbours.append((new_x, new_y))
         return neighbours
-
-    def check_entities_active(self):
-        flag = False
-        for y in range(self.environment.height):
-            for x in range(self.environment.width):
-                if not self.environment.discovered_grid[x, y]:
-                    continue
-                if self.entity_array[x, y] > 1:
-                    entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-                    if not self.is_node_active(entity_idx):
-                        print(f"Entity node {entity_idx} at position {(x, y)} is not active")
-                        flag = True
-
-        if flag:
-            print(self.entity_array)
-
-    def check_path_nodes(self):
-        for node_idx in range(self.graph.x.shape[0]):
-            if self.graph.x[node_idx][3] == 6:
-                if self.is_node_active(node_idx):
-                    print(f"Path node {node_idx} is active")
-                    self.check_edges_active_of_node(node_idx)
-                else:
-                    print(f"Path node {node_idx} is not active")
 
     def visualise_graph(self, node_size=100, edge_color="tab:gray", show_ticks=True):
         # self.check_path_nodes()

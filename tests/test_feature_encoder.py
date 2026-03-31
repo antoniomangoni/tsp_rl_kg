@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import torch
-
 from tsp_rl_kg.graph.feature_encoder import (
     EDGE_ADJACENCY,
     EDGE_ENTITY_TERRAIN,

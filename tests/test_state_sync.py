@@ -91,28 +91,14 @@ class TestKgCompletenessPropagation:
 
 
 # ===========================================================================
-# BUG-3: is_node_active dead code
+# BUG-3: is_node_active dead code — removed in G12
 # ===========================================================================
 
 
-class TestIsNodeActive:
-    def test_returns_true_unconditionally(self, kg: KnowledgeGraph):
-        """is_node_active should return True for every node index."""
-        for idx in range(kg.num_possible_nodes):
-            assert kg.is_node_active(idx) is True
-
-    def test_no_unreachable_code(self):
-        """is_node_active should have no code after the return statement."""
-        import inspect
-
-        source = inspect.getsource(KnowledgeGraph.is_node_active)
-        lines = [
-            ln.strip()
-            for ln in source.splitlines()
-            if ln.strip() and not ln.strip().startswith("#")
-        ]
-        # After 'def ...' and 'return True' there should be nothing else
-        assert lines[-1] == "return True"
+class TestIsNodeActiveRemoved:
+    def test_is_node_active_removed(self):
+        """is_node_active was removed as part of G12 mask cleanup."""
+        assert not hasattr(KnowledgeGraph, "is_node_active")
 
 
 # ===========================================================================
@@ -151,11 +137,11 @@ class TestPlayerPositionDerived:
 # ===========================================================================
 
 
-class TestRemovedEntityEdgesDeactivated:
-    def test_edges_deactivated_after_removal(
+class TestRemovedEntityNodeResets:
+    def test_node_features_reset_after_removal(
         self, headless_environment: Environment, kg: KnowledgeGraph
     ):
-        """After remove_entity_node, all edges to that node must have mask=0."""
+        """After remove_entity_node, the node features should reflect entity_array=0."""
         coord = _find_entity_coord(headless_environment, ENTITY_ID_TREE)
         if coord is None:
             pytest.skip("No Tree entity in test environment")
@@ -171,11 +157,8 @@ class TestRemovedEntityEdgesDeactivated:
         kg.remove_entity_node(x, y)
 
         entity_node_idx = kg.graph_manager.get_node_idx((x, y), kg.entity_z_level)
-        edge_indices = kg.graph_manager.retrieve_edge_indices_from_node(entity_node_idx)
-        for edge_idx in edge_indices:
-            assert (
-                kg.graph.edge_attr[edge_idx][1].item() == 0
-            ), f"Edge {edge_idx} still active after entity removal at ({x}, {y})"
+        # After removal, entity_array[x, y] == 0, so node feature should be encoded as 0
+        assert kg.graph.x[entity_node_idx][0].item() == 0.0
 
 
 # ===========================================================================
@@ -259,3 +242,19 @@ class TestNoDeadMaskingCode:
         """set_node_mask_0 / set_node_mask_1 should not exist."""
         assert not hasattr(KnowledgeGraph, "set_node_mask_0")
         assert not hasattr(KnowledgeGraph, "set_node_mask_1")
+
+    def test_no_edge_mask_methods(self):
+        """All edge-mask-toggling methods should be removed in G12."""
+        for name in (
+            "set_edge_mask_0",
+            "set_edge_mask_1",
+            "activate_edge",
+            "deactivate_node_and_its_edges",
+            "activate_node_and_maybe_its_edges",
+            "should_edge_be_active",
+            "check_edges_active_of_node",
+            "activate_discovered_coordinate",
+            "check_entities_active",
+            "check_path_nodes",
+        ):
+            assert not hasattr(KnowledgeGraph, name), f"{name} should be removed"

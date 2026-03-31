@@ -84,7 +84,6 @@ class Agent:
                 if self.environment.within_bounds(x, y):
                     newly_discovered = self.environment.discover_coordinate(x, y)
                     if newly_discovered:
-                        self.kg.activate_discovered_coordinate(x, y)
                         discovered_now += 1
 
         return discovered_now
