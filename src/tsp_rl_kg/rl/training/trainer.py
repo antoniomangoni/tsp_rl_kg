@@ -9,7 +9,6 @@ import mlflow
 import numpy as np
 import torch
 from loguru import logger
-from stable_baselines3.common.callbacks import EvalCallback
 
 from tsp_rl_kg.config import TrainingConfig
 from tsp_rl_kg.rl.custom_env import CustomEnv
@@ -70,7 +69,12 @@ class Trainer:
         )
         logger.info("Evaluation environment created successfully")
 
-        self.model_trainer = ModelTrainer(self.env, self.eval_env, self.device)
+        self.model_trainer = ModelTrainer(
+            self.env,
+            self.eval_env,
+            self.device,
+            evaluation_config=config.evaluation,
+        )
         self.model_trainer.create_model(config.algorithm, config.agent_model)
 
     def _flatten_mlflow_params(
@@ -115,20 +119,13 @@ class Trainer:
         os.makedirs(experiment_dir, exist_ok=True)
         self._log_run_context(experiment_name)
 
-        eval_callback = EvalCallback(
-            self.eval_env,
-            best_model_save_path=experiment_dir,
-            log_path=experiment_dir,
-            eval_freq=10000,
-            deterministic=True,
-            render=False,
-        )
-
         profiler = cProfile.Profile()
         profiler.enable()
 
         self.model_trainer.train(
-            total_timesteps=self.config.total_timesteps, eval_callback=eval_callback, timeout=3600
+            total_timesteps=self.config.total_timesteps,
+            output_dir=experiment_dir,
+            timeout=3600,
         )
 
         # Save metrics
@@ -141,9 +138,15 @@ class Trainer:
             pstats.Stats(profiler, stream=stats_stream).sort_stats("cumulative").print_stats()
         logger.info(f"Profiling stats saved to {stats_file}")
 
-        model_path = os.path.join(experiment_dir, f"ppo_custom_env_{experiment_name}.zip")
+        model_path = os.path.join(
+            experiment_dir,
+            self.model_trainer.get_model_artifact_name(experiment_name),
+        )
         model_path = self.model_trainer.save_model(model_path)
-        mean_reward, std_reward = self.model_trainer.evaluate_model(self.eval_env)
+        mean_reward, std_reward = self.model_trainer.evaluate_model(
+            self.eval_env,
+            n_eval_episodes=self.config.evaluation.n_eval_episodes,
+        )
 
         if mlflow.active_run():
             mlflow.log_artifacts(experiment_dir, artifact_path="training_outputs")

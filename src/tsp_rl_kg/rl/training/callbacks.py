@@ -1,3 +1,5 @@
+from typing import Any
+
 import mlflow
 import numpy as np
 import torch.nn as nn
@@ -13,6 +15,7 @@ class CurriculumCallback(BaseCallback):
         self,
         eval_env,
         metrics: TrainingMetrics,
+        step_interval=1,
         print_weight_stats_freq=1000,
         verbose=0,
     ):
@@ -20,6 +23,7 @@ class CurriculumCallback(BaseCallback):
         self.eval_env = eval_env
         self.metrics = metrics
         self.should_stop = False
+        self.step_interval = max(1, step_interval)
         self.print_weight_stats_freq = print_weight_stats_freq
         self.action_counts = np.zeros(metrics.num_actions, dtype=int)
         self.num_envs = getattr(
@@ -34,15 +38,15 @@ class CurriculumCallback(BaseCallback):
         else:
             self.action_counts[actions] += 1
 
-        if self.n_calls % self.model.n_steps == 0:
+        if self.n_calls % self.step_interval == 0:
             logger.info(f"Step {self.n_calls}")
 
-            env = (
+            env: Any = (
                 self.training_env.envs[0]
                 if hasattr(self.training_env, "envs")
                 else self.training_env
             )
-            unwrapped_env = env.unwrapped  # Get the unwrapped environment
+            unwrapped_env: Any = env.unwrapped
 
             if unwrapped_env.early_stop:
                 logger.info("Early stop condition met. Stopping training.")

@@ -1,7 +1,5 @@
 import copy
 
-from stable_baselines3.common.monitor import Monitor
-
 from tsp_rl_kg.config import AblationConfig, GameManagerConfig, ModelArgs, SimulationManagerConfig
 from tsp_rl_kg.rl.custom_env import CustomEnv
 
@@ -22,7 +20,7 @@ class EnvironmentManager:
         self.ablation_config = ablation_config if ablation_config is not None else AblationConfig()
 
     def make_env(self):
-        env = CustomEnv(
+        return CustomEnv(
             self.game_manager_config,
             self.simulation_manager_config,
             self.model_args,
@@ -30,11 +28,10 @@ class EnvironmentManager:
             plot=False,
             ablation_config=self.ablation_config,
         )
-        return Monitor(env)
 
     def make_eval_env(self, train_game_managers):
         eval_game_managers = copy.deepcopy(train_game_managers)
-        env = CustomEnv(
+        return CustomEnv(
             self.game_manager_config,
             self.simulation_manager_config,
             self.model_args,
@@ -43,7 +40,6 @@ class EnvironmentManager:
             game_managers=eval_game_managers,
             ablation_config=self.ablation_config,
         )
-        return Monitor(env)
 
     def set_kg_completeness(self, env, completeness):
         # Access the unwrapped environment to set KG completeness
