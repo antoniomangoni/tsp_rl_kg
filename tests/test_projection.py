@@ -140,24 +140,18 @@ def test_full_graph_projection_distance_is_none():
 class TestFullGraphProjectionIntegration:
     def test_returns_all_nodes(self, headless_environment: Environment):
         proj = FullGraphProjection()
-        kg = KnowledgeGraph(
-            environment=headless_environment, vision_range=1, projection=proj
-        )
+        kg = KnowledgeGraph(environment=headless_environment, vision_range=1, projection=proj)
         subgraph = kg.get_subgraph()
         assert subgraph.num_nodes == kg.graph.num_nodes
 
     def test_returns_all_edges(self, headless_environment: Environment):
         proj = FullGraphProjection()
-        kg = KnowledgeGraph(
-            environment=headless_environment, vision_range=1, projection=proj
-        )
+        kg = KnowledgeGraph(environment=headless_environment, vision_range=1, projection=proj)
         subgraph = kg.get_subgraph()
         assert subgraph.num_edges == kg.graph.num_edges
 
     def test_preserves_edge_attr(self, headless_environment: Environment):
         proj = FullGraphProjection()
-        kg = KnowledgeGraph(
-            environment=headless_environment, vision_range=1, projection=proj
-        )
+        kg = KnowledgeGraph(environment=headless_environment, vision_range=1, projection=proj)
         subgraph = kg.get_subgraph()
         assert subgraph.edge_attr.shape == kg.graph.edge_attr.shape

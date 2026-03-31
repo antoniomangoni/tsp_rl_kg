@@ -114,9 +114,7 @@ class DefaultGridConstitution:
                     _add_edge(cur, (x, y), right, (x + 1, y), distance=1, edge_type=EDGE_ADJACENCY)
                 if y < h - 1:
                     bottom = gm.get_node_idx((x, y + 1), self.TERRAIN_Z)
-                    _add_edge(
-                        cur, (x, y), bottom, (x, y + 1), distance=1, edge_type=EDGE_ADJACENCY
-                    )
+                    _add_edge(cur, (x, y), bottom, (x, y + 1), distance=1, edge_type=EDGE_ADJACENCY)
 
         # --- entity→terrain edges ---
         for x in range(w):
