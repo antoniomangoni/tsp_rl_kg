@@ -35,6 +35,21 @@ class KHopProjection:
         )
 
 
+class FullGraphProjection:
+    """Return the entire graph unfiltered — useful as a testing baseline."""
+
+    @property
+    def distance(self) -> None:
+        return None
+
+    def project(self, graph: Data, edge_index: torch.Tensor, player_node_idx: int) -> Data:
+        return Data(
+            x=graph.x,
+            edge_index=graph.edge_index,
+            edge_attr=graph.edge_attr,
+        )
+
+
 class CompletenessProjection:
     """Compute a k-hop distance from a completeness fraction and delegate to KHopProjection."""
 

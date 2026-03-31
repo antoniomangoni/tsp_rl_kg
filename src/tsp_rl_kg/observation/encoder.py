@@ -25,38 +25,28 @@ class PaddedPyGObservationEncoder:
         num_node_features: int,
         num_edge_features: int,
         vision_shape: tuple[int, int, int],
-        converter=None,
     ):
         self._max_nodes = max_nodes
         self._max_edges = max_edges
         self._num_node_features = num_node_features
         self._num_edge_features = num_edge_features
         self._vision_shape = vision_shape
-        self._converter = converter
 
     def observation_space(self) -> gym.spaces.Dict:
         vision_space = spaces.Box(low=0, high=255, shape=self._vision_shape, dtype=np.float16)
 
-        if self._converter is None:
-            node_feature_space = spaces.Box(
-                low=0,
-                high=7,
-                shape=(self._max_nodes, self._num_node_features),
-                dtype=np.uint8,
-            )
-        else:
-            node_feature_space = spaces.Box(
-                low=-1.0,
-                high=1.0,
-                shape=(self._max_nodes, self._converter.embedding_dim),
-                dtype=np.float64,
-            )
+        node_feature_space = spaces.Box(
+            low=-1.0,
+            high=1e4,
+            shape=(self._max_nodes, self._num_node_features),
+            dtype=np.float16,
+        )
 
         edge_attr_space = spaces.Box(
-            low=0,
-            high=self._max_edges - 1,
+            low=-1.0,
+            high=1e4,
             shape=(self._max_edges, self._num_edge_features),
-            dtype=np.uint8,
+            dtype=np.float16,
         )
         edge_index_space = spaces.Box(
             low=0,

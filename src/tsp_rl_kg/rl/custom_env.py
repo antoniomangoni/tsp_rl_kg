@@ -25,7 +25,7 @@ class CustomEnv(gym.Env):
         game_manager_args: GameManagerConfig | dict,
         simulation_manager_args: SimulationManagerConfig | dict,
         model_args: ModelArgs | dict,
-        converter=None,
+        feature_encoder=None,
         plot=False,
         episode_config: EpisodeConfig | None = None,
     ):
@@ -96,7 +96,7 @@ class CustomEnv(gym.Env):
             self._gm_config,
             sim_config=self._sim_config,
             plot=plot,
-            converter=converter,
+            feature_encoder=feature_encoder,
         )
 
         self.current_game_index = self.simulation_manager.curriculum_indices[
@@ -116,7 +116,6 @@ class CustomEnv(gym.Env):
             num_node_features=self.kg.graph.num_node_features,
             num_edge_features=self.kg.graph.num_edge_features,
             vision_shape=vision_shape,
-            converter=converter,
         )
         self.observation_space = self.encoder.observation_space()
 

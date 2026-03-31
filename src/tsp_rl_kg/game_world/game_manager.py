@@ -19,7 +19,7 @@ class GameManager:
         self,
         config: GameManagerConfig | None = None,
         plot: bool = False,
-        converter=None,
+        feature_encoder=None,
         # Legacy positional args — prefer config
         num_tiles: int | None = None,
         screen_size: int | None = None,
@@ -43,7 +43,7 @@ class GameManager:
         self.renderer = None
         self.running = True
         self.plot = plot
-        self.converter = converter
+        self.feature_encoder = feature_encoder
         self.headless = self._config.headless
         self.vision_range = self._config.vision_range
         self.initialize_components()
@@ -78,7 +78,7 @@ class GameManager:
             self.environment,
             self.vision_range,
             plot=self.plot,
-            converter=self.converter,
+            feature_encoder=self.feature_encoder,
             projection=projection,
         )
         self.agent_controler.get_kg(self.kg_class)

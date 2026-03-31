@@ -28,7 +28,7 @@ class Trainer:
             config.game_manager,
             config.simulation_manager,
             config.model_args,
-            self.ablation_study.converter,
+            self.ablation_study.feature_encoder,
         )
 
         self.logger.info("Creating environment", logger_name="training")

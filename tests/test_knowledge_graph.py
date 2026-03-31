@@ -151,6 +151,7 @@ class TestKnowledgeGraphEdges:
         # Every adjacent terrain pair should have edges
         w, h = headless_environment.width, headless_environment.height
         expected_terrain_edges = 2 * (w * (h - 1) + h * (w - 1))
-        # Terrain edges are created in the graph; total edges also include entity edges
-        entity_edges = w * h * 4
-        assert kg.num_possible_edges == expected_terrain_edges + entity_edges
+        # Terrain edges are created in the graph; total edges also include entity + player edges
+        entity_edges = w * h * 2
+        player_edges = 2
+        assert kg.num_possible_edges == expected_terrain_edges + entity_edges + player_edges

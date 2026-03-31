@@ -5,6 +5,7 @@ from __future__ import annotations
 from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.graph.projection import (
     CompletenessProjection,
+    FullGraphProjection,
     KHopProjection,
     ProjectionPolicy,
 )
@@ -52,10 +53,20 @@ class TestCompletenessProjectionDistance:
 
 class TestProjectionIntegration:
     def test_full_projection_returns_all_nodes(self, headless_environment: Environment):
+        """With completion=1.0 and sufficient hops, all nodes should be returned.
+
+        After the topology simplification (player connects to one terrain node,
+        not all entities), the k-hop distance needs to be large enough to cover
+        the entire grid via terrain adjacency.  We use an explicit KHopProjection
+        with distance equal to the grid perimeter to guarantee full coverage.
+        """
+        from tsp_rl_kg.graph.projection import KHopProjection
+
+        w = headless_environment.width
         kg = KnowledgeGraph(
             environment=headless_environment,
             vision_range=1,
-            completion=1.0,
+            projection=KHopProjection(distance=w * 2),
         )
         subgraph = kg.get_subgraph()
         assert subgraph.num_nodes == kg.graph.num_nodes
@@ -111,3 +122,42 @@ class TestProjectionIntegration:
         assert kg.distance == 1
         subgraph = kg.get_subgraph()
         assert subgraph.num_nodes > 0
+
+
+# ---------------------------------------------------------------------------
+# FullGraphProjection
+# ---------------------------------------------------------------------------
+
+
+def test_full_graph_projection_protocol_conformance():
+    assert isinstance(FullGraphProjection(), ProjectionPolicy)
+
+
+def test_full_graph_projection_distance_is_none():
+    assert FullGraphProjection().distance is None
+
+
+class TestFullGraphProjectionIntegration:
+    def test_returns_all_nodes(self, headless_environment: Environment):
+        proj = FullGraphProjection()
+        kg = KnowledgeGraph(
+            environment=headless_environment, vision_range=1, projection=proj
+        )
+        subgraph = kg.get_subgraph()
+        assert subgraph.num_nodes == kg.graph.num_nodes
+
+    def test_returns_all_edges(self, headless_environment: Environment):
+        proj = FullGraphProjection()
+        kg = KnowledgeGraph(
+            environment=headless_environment, vision_range=1, projection=proj
+        )
+        subgraph = kg.get_subgraph()
+        assert subgraph.num_edges == kg.graph.num_edges
+
+    def test_preserves_edge_attr(self, headless_environment: Environment):
+        proj = FullGraphProjection()
+        kg = KnowledgeGraph(
+            environment=headless_environment, vision_range=1, projection=proj
+        )
+        subgraph = kg.get_subgraph()
+        assert subgraph.edge_attr.shape == kg.graph.edge_attr.shape

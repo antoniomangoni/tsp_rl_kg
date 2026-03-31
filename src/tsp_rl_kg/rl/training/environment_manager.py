@@ -10,19 +10,19 @@ class EnvironmentManager:
         game_manager_config: GameManagerConfig | dict,
         simulation_manager_config: SimulationManagerConfig | dict,
         model_args: ModelArgs | dict,
-        converter,
+        feature_encoder,
     ):
         self.game_manager_config = game_manager_config
         self.simulation_manager_config = simulation_manager_config
         self.model_args = model_args
-        self.converter = converter
+        self.feature_encoder = feature_encoder
 
     def make_env(self):
         env = CustomEnv(
             self.game_manager_config,
             self.simulation_manager_config,
             self.model_args,
-            self.converter,
+            self.feature_encoder,
             plot=False,
         )
         return Monitor(env)

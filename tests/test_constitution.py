@@ -55,8 +55,9 @@ class TestDefaultGridConstitution:
         graph, _gm = DefaultGridConstitution().build(env, player_pos, env.discovered_grid)
 
         terrain_edges = 2 * (w * (h - 1) + h * (w - 1))
-        entity_edges = w * h * 4
-        assert graph.num_edges == terrain_edges + entity_edges
+        entity_edges = w * h * 2
+        player_edges = 2
+        assert graph.num_edges == terrain_edges + entity_edges + player_edges
 
     def test_all_nodes_initialized(self, headless_environment: Environment):
         env = headless_environment

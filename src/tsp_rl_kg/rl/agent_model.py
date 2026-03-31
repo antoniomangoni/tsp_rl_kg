@@ -150,6 +150,7 @@ class GraphProcessor(nn.Module):
         graph_params,
         output_dim=96,
         gat_hidden_dim=48,
+        num_edge_features=0,
     ):
         """
         Initialize the GraphProcessor.
@@ -161,6 +162,9 @@ class GraphProcessor(nn.Module):
         output_dim : int, optional
             Dimensionality of the output feature vector.
             Default: 96.
+        num_edge_features : int, optional
+            Number of features per edge (passed as edge_dim to GATConv).
+            Default: 0 (no edge features).
         """
         super(GraphProcessor, self).__init__()
 
@@ -177,10 +181,17 @@ class GraphProcessor(nn.Module):
         # Build the GAT layers
         gat_layers = []
         in_channels = num_graph_node_features
+        edge_dim = num_edge_features if num_edge_features > 0 else None
         for i in range(self.num_gat_layers):
             out_channels = self.gat_hidden_dim * self.gat_heads[i]
-            gat_layers.append(GATConv(in_channels, self.gat_hidden_dim, heads=self.gat_heads[i]))
-            # print(f"GAT layer {i}: in_channels={in_channels}, out_channels={out_channels}")
+            gat_layers.append(
+                GATConv(
+                    in_channels,
+                    self.gat_hidden_dim,
+                    heads=self.gat_heads[i],
+                    edge_dim=edge_dim,
+                )
+            )
             in_channels = out_channels
 
         self.gat = nn.ModuleList(gat_layers)
@@ -191,15 +202,10 @@ class GraphProcessor(nn.Module):
             nn.Linear(self.fc_dims[0], output_dim),
         )
 
-    def forward(self, x, edge_index, batch):
-        # print(f"Input x shape: {x.shape}")
-        # print(f"Input edge_index shape: {edge_index.shape}")
-        # print(f"Input batch shape: {batch.shape}")
+    def forward(self, x, edge_index, batch, edge_attr=None):
 
         for _i, gat_layer in enumerate(self.gat):
-            # print(f"Before GAT layer {i}: x shape = {x.shape}")
-            x = F.relu(gat_layer(x, edge_index))
-            # print(f"After GAT layer {i}: x shape = {x.shape}")
+            x = F.relu(gat_layer(x, edge_index, edge_attr=edge_attr))
 
         x = global_mean_pool(x, batch)
         # print(f"After global_mean_pool: x shape = {x.shape}")
@@ -276,6 +282,7 @@ class AgentModel(BaseFeaturesExtractor):
         # Initialize VisionProcessor and GraphProcessor with parameters
         vision_shape = observation_space.spaces["vision"].shape
         num_node_features = observation_space.spaces["node_features"].shape[1]
+        num_edge_features = observation_space.spaces["edge_attr"].shape[1]
 
         self.vision_processor = VisionProcessor(
             vision_shape, vision_params=self.vision_params, features_dim=features_dim
@@ -285,6 +292,7 @@ class AgentModel(BaseFeaturesExtractor):
             graph_params=self.graph_params,
             output_dim=features_dim,
             gat_hidden_dim=model_config.gat_hidden_dim,
+            num_edge_features=num_edge_features,
         )
 
         # Combine the output sizes from both processors
@@ -341,10 +349,14 @@ class AgentModel(BaseFeaturesExtractor):
         ).view(-1, 1, 1)
         edge_index = edge_index.view(2, -1)
 
+        # Extract and reshape edge_attr
+        num_edges = observations["edge_attr"].shape[1]
+        edge_attr = observations["edge_attr"].reshape(batch_size * num_edges, -1).to(torch_dtype)
+
         batch = torch.arange(batch_size, device=x.device).repeat_interleave(num_nodes)
 
         # Process the graph input through the GraphProcessor
-        graph_features = self.graph_processor(x, edge_index, batch)
+        graph_features = self.graph_processor(x, edge_index, batch, edge_attr=edge_attr)
 
         # Combine vision and graph features
         combined = torch.cat((vision_features, graph_features), dim=1)

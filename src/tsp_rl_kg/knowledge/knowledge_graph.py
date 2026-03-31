@@ -4,6 +4,7 @@ import torch
 from torch_geometric.utils import to_networkx
 
 from tsp_rl_kg.graph.constitution import DefaultGridConstitution, GraphConstitution
+from tsp_rl_kg.graph.feature_encoder import EDGE_PLAYER_TERRAIN, FeatureEncoder, RawIntEncoder
 from tsp_rl_kg.graph.projection import CompletenessProjection, ProjectionPolicy
 
 # ---------------------------------------------------------------------------
@@ -28,14 +29,14 @@ class KnowledgeGraph:
         vision_range,
         completion=1.0,
         plot=False,
-        converter=None,
+        feature_encoder: FeatureEncoder | None = None,
         projection: ProjectionPolicy | None = None,
         constitution: GraphConstitution | None = None,
     ):
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
-        self.converter = converter
+        self.feature_encoder = feature_encoder if feature_encoder is not None else RawIntEncoder()
 
         assert (
             max(v for idx, v in np.ndenumerate(self.entity_array) if idx != self.player_pos) < 7
@@ -50,7 +51,9 @@ class KnowledgeGraph:
             )
         self.distance = self.projection.distance
         # Discovery state lives on Environment; initialise from here since KG knows the distance.
-        self.environment.init_discovered_area(self.player_pos, self.distance)
+        # When distance is None (e.g. FullGraphProjection), discover the entire grid.
+        discovery_radius = self.distance if self.distance is not None else self.terrain_array.shape[0]
+        self.environment.init_discovered_area(self.player_pos, discovery_radius)
 
         self.terrain_z_level = 0
         self.entity_z_level = 1
@@ -61,7 +64,7 @@ class KnowledgeGraph:
             constitution = DefaultGridConstitution()
         self.constitution = constitution
         self.graph, self.graph_manager = self.constitution.build(
-            environment, self.player_pos, environment.discovered_grid, converter
+            environment, self.player_pos, environment.discovered_grid, self.feature_encoder
         )
         self.num_possible_nodes = self.graph.num_nodes
         self.num_possible_edges = self.graph.num_edges
@@ -70,22 +73,16 @@ class KnowledgeGraph:
         """Derive the embedding for a node from the current array values."""
         if z_level == self.terrain_z_level:
             raw = int(self.terrain_array[x, y])
-            if self.converter is not None:
-                return self.converter.terrain_embedding_lookup[raw]
-            return raw
+            return self.feature_encoder.encode_terrain(raw)
         elif z_level == self.entity_z_level:
             # Exclude the player entity from entity nodes
             if (x, y) == self.player_pos:
                 raw = 0
             else:
                 raw = int(self.entity_array[x, y])
-            if self.converter is not None:
-                return self.converter.entity_embedding_lookup[raw]
-            return raw
+            return self.feature_encoder.encode_entity(raw)
         elif z_level == self.player_z_level:
-            if self.converter is not None:
-                return self.converter.agent_embedding
-            return 0
+            return self.feature_encoder.encode_player()
         else:
             raise ValueError(f"Invalid z-level: {z_level}")
 
@@ -138,12 +135,10 @@ class KnowledgeGraph:
             self.set_edge_mask_0(edge_idx)
 
     def set_new_node_type(self, idx, new_type):
-        # Convert to correct tensor type if needed
-        if not isinstance(new_type, torch.Tensor):
-            if self.converter:
-                self.graph.x[idx] = torch.tensor(new_type, dtype=torch.float64)
-            else:
-                self.graph.x[idx] = torch.tensor(new_type, dtype=torch.int)
+        if isinstance(new_type, torch.Tensor):
+            self.graph.x[idx] = new_type
+        else:
+            self.graph.x[idx] = torch.tensor(new_type, dtype=torch.float)
 
     def set_edge_mask_0(self, idx):
         self.graph.edge_attr[idx][1] = 0
@@ -183,37 +178,22 @@ class KnowledgeGraph:
         if self.graph.x.shape[1] > 1:
             self.graph.x[player_idx][0] = x
             self.graph.x[player_idx][1] = y
-        # recalculate edge distances to player
-        self.recalculate_edge_distances_to_player()
-
-    def recalculate_edge_distances_to_player(self):
-        height, width = self.entity_array.shape
-        for x in range(width):
-            for y in range(height):
-                if not self.environment.discovered_grid[x, y]:
-                    continue
-                if self.entity_array[x, y] > 1:
-                    entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-                    if entity_idx is not None and self.is_node_active(entity_idx):
-                        player_idx = self.graph_manager.player_idx
-                        entity_pos = (x, y)
-                        player_pos = self.player_pos
-                        distance = self.get_cartesian_distance(entity_pos, player_pos)
-                        edge_indices = self.graph_manager.retrieve_edge_indices(
-                            entity_idx, player_idx
-                        )
-                        if edge_indices:
-                            edge_idx_1, edge_idx_2 = edge_indices
-                            self.graph.edge_attr[edge_idx_1][0] = distance
-                            self.graph.edge_attr[edge_idx_2][0] = distance
-                        else:
-                            print(
-                                f"No edge indices found for nodes" f" {entity_idx} and {player_idx}"
-                            )
-                    else:
-                        print(f"Entity node {entity_idx} at " f"{(x, y)} not active/found")
-
-    # Construction methods (create_node, add_nodes, create_edge, add_edge_to_graph,
+        # Re-wire the single player→terrain edge to the new terrain node
+        new_terrain_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
+        d_idx = self.graph_manager.player_edge_direct_idx
+        r_idx = self.graph_manager.player_edge_reverse_idx
+        self.graph.edge_index[:, d_idx] = torch.tensor(
+            [player_idx, new_terrain_idx], dtype=torch.int
+        )
+        self.graph.edge_index[:, r_idx] = torch.tensor(
+            [new_terrain_idx, player_idx], dtype=torch.int
+        )
+        # Distance is 0 (player is on this terrain node)
+        attr = self.feature_encoder.encode_edge(0, EDGE_PLAYER_TERRAIN)
+        self.graph.edge_attr[d_idx] = attr
+        self.graph.edge_attr[r_idx] = attr
+        # Update bookkeeping in graph_manager
+        self.graph_manager.rewire_player_edge(new_terrain_idx)
     # create_terrain_edges, add_entity_edges, compute_total_possible_edges,
     # init_graph_tensors, complete_graph, verify_graph_integrity) moved to
     # DefaultGridConstitution.build().

@@ -1,6 +1,8 @@
 class Graph_Manager:
     def __init__(self):
         self.player_idx = None
+        self.player_edge_direct_idx: int | None = None
+        self.player_edge_reverse_idx: int | None = None
         self.node_idx = 0
         self.nodeIdx_id_dict = {}
         self.nodeId_idx_dict = {}
@@ -59,3 +61,16 @@ class Graph_Manager:
 
     def set_max_edges(self, n):
         self.max_edges = n
+
+    def rewire_player_edge(self, new_terrain_idx: int) -> None:
+        """Update the bookkeeping when the player→terrain edge is re-wired."""
+        player_idx = self.player_idx
+        d_idx = self.player_edge_direct_idx
+        r_idx = self.player_edge_reverse_idx
+        # Remove old entries
+        to_remove = [k for k in self.nodeTuples_edgeIdx_dict if player_idx in k and k != (player_idx, player_idx)]
+        for old_key in to_remove:
+            if self.nodeTuples_edgeIdx_dict[old_key] in (d_idx, r_idx):
+                del self.nodeTuples_edgeIdx_dict[old_key]
+        # Store new entries
+        self.store_edge_indices(player_idx, new_terrain_idx, d_idx, r_idx)

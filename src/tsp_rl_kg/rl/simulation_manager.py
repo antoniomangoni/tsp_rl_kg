@@ -22,7 +22,7 @@ class SimulationManager:
         number_of_curricula: int = 10,
         min_episodes_per_curriculum: int = 1,
         plot: bool = False,
-        converter=None,
+        feature_encoder=None,
     ):
         # Accept either a GameManagerConfig or a legacy dict
         if isinstance(game_manager_config, dict):
@@ -43,7 +43,7 @@ class SimulationManager:
 
         self.number_of_environments = number_of_environments
         self.logger = logger
-        self.converter = converter
+        self.feature_encoder = feature_encoder
         self.game_managers = []
         self.create_games(self.number_of_environments, plot)
         number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
@@ -77,7 +77,7 @@ class SimulationManager:
 
     def create_games(self, number_of_games, plot):
         for _ in range(number_of_games):
-            game_manager = GameManager(config=self._gm_config, plot=plot, converter=self.converter)
+            game_manager = GameManager(config=self._gm_config, plot=plot, feature_encoder=self.feature_encoder)
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
 
