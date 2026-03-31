@@ -3,10 +3,14 @@ from tsp_rl_kg.rl.training.backends.base import (
     CurriculumDecision,
     Evaluator,
     MetricsSink,
+    ModelUpdateScheduler,
+    SequenceBatch,
     SequenceSampler,
     TrainingBackend,
     TrajectoryStore,
     Transition,
+    TransitionCollectionStats,
+    TransitionCollector,
 )
 
 __all__ = [
@@ -14,8 +18,12 @@ __all__ = [
     "CurriculumController",
     "Evaluator",
     "MetricsSink",
+    "ModelUpdateScheduler",
+    "SequenceBatch",
     "SequenceSampler",
     "TrainingBackend",
+    "TransitionCollector",
+    "TransitionCollectionStats",
     "TrajectoryStore",
     "Transition",
 ]

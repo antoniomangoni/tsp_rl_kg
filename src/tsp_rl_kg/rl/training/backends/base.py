@@ -27,6 +27,21 @@ class Transition(TypedDict):
     step_id: int
 
 
+@dataclass(frozen=True)
+class SequenceBatch:
+    sequences: tuple[tuple[Transition, ...], ...]
+    episode_ids: tuple[int, ...]
+    start_step_ids: tuple[int, ...]
+    sequence_length: int
+
+
+@dataclass(frozen=True)
+class TransitionCollectionStats:
+    collected_steps: int
+    completed_episodes: int
+    last_episode_id: int
+
+
 @runtime_checkable
 class TrainingBackend(Protocol):
     name: str
@@ -73,7 +88,32 @@ class TrajectoryStore(Protocol):
 
     def finish_episode(self, episode_id: int) -> None: ...
 
+    def get_episode(self, episode_id: int) -> list[Transition]: ...
+
+    def get_completed_episode_ids(self) -> list[int]: ...
+
 
 @runtime_checkable
 class SequenceSampler(Protocol):
-    def sample(self, batch_size: int, sequence_length: int): ...
+    def sample(self, batch_size: int, sequence_length: int) -> SequenceBatch: ...
+
+
+@runtime_checkable
+class TransitionCollector(Protocol):
+    def collect(
+        self,
+        backend: TrainingBackend,
+        env: Any,
+        store: TrajectoryStore,
+        max_steps: int,
+        *,
+        deterministic: bool = False,
+        start_episode_id: int = 0,
+    ) -> TransitionCollectionStats: ...
+
+
+@runtime_checkable
+class ModelUpdateScheduler(Protocol):
+    def should_update(self, total_steps: int, completed_episodes: int) -> bool: ...
+
+    def record_update(self, total_steps: int, completed_episodes: int) -> None: ...
