@@ -75,7 +75,6 @@ class SimulationManager:
         # Sanity Check
         self.print_energy_routes()
 
-        # print(f"Curriculum step size: ~{self.step_size} energy units")
         if plot:
             self.create_plots(energy_values, self.curriculum_indices)
 

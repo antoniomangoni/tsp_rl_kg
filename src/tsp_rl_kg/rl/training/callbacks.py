@@ -108,7 +108,6 @@ class CurriculumCallback(BaseCallback):
                 self.training_env.reset()
                 self.eval_env.reset()
 
-            # Print weight statistics
             if self.n_calls % self.print_weight_stats_freq == 0:
                 self.print_weight_statistics()
 
@@ -139,13 +138,11 @@ class CurriculumCallback(BaseCallback):
             weights = layer.weight.data
             weight_stats = self.compute_stats(weights)
             logger.info(f"{layer_name} weights - {weight_stats}")
-            # print(f"{layer_name} weights - {weight_stats}")
 
         if hasattr(layer, "bias") and layer.bias is not None:
             bias = layer.bias.data
             bias_stats = self.compute_stats(bias)
             logger.info(f"{layer_name} bias - {bias_stats}")
-            # print(f"{layer_name} bias - {bias_stats}")
 
     def compute_stats(self, tensor):
         return {

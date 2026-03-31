@@ -208,10 +208,8 @@ class GraphProcessor(nn.Module):
             x = F.relu(gat_layer(x, edge_index, edge_attr=edge_attr))
 
         x = global_mean_pool(x, batch)
-        # print(f"After global_mean_pool: x shape = {x.shape}")
 
         x = self.fc(x)
-        # print(f"Final output shape: {x.shape}")
         return x
 
 

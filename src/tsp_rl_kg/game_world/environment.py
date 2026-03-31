@@ -95,8 +95,6 @@ class Environment:
         self.environment_changed_flag = False
         self.changed_tiles_list = []
 
-        # print(f"entity index grid{self.entity_index_grid}")
-
     def get_random_zero_coordinate(self):
         zero_coords = np.argwhere(self.entity_index_grid == 0)
         if zero_coords.size == 0:
@@ -362,7 +360,6 @@ class Environment:
         logger.info(f"Players: {number_of_players}")
         logger.info(f"Outposts: {number_of_outposts}")
         logger.info(f"Wood Paths: {number_of_wood_paths}")
-        # print(f"Fish: {number_of_fish}")
         logger.info(f"Trees: {number_of_trees}")
         logger.info(f"Mossy Rocks: {number_of_mossy_rocks}")
         logger.info(f"Snowy Rocks: {number_of_snowy_rocks}")
