@@ -82,8 +82,9 @@ class Agent:
         for y in range(self.agent.grid_y - vision, self.agent.grid_y + vision + 1):
             for x in range(self.agent.grid_x - vision, self.agent.grid_x + vision + 1):
                 if self.environment.within_bounds(x, y):
-                    boo = self.kg.discover_this_coordinate(x, y)
-                    if boo:
+                    newly_discovered = self.environment.discover_coordinate(x, y)
+                    if newly_discovered:
+                        self.kg.activate_discovered_coordinate(x, y)
                         discovered_now += 1
 
         return discovered_now

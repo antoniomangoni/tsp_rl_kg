@@ -3,7 +3,6 @@ import logging
 import gymnasium as gym
 import numpy as np
 import pygame
-from gymnasium import spaces
 from torch_geometric.data import Data
 
 from tsp_rl_kg.config import (
@@ -14,6 +13,8 @@ from tsp_rl_kg.config import (
     SimulationManagerConfig,
 )
 from tsp_rl_kg.game_world.agent import Agent
+from tsp_rl_kg.graph.projection import CompletenessProjection
+from tsp_rl_kg.observation.encoder import PaddedPyGObservationEncoder
 from tsp_rl_kg.rl.reward import RewardCalculator, manhattan_distance
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
 
@@ -108,44 +109,18 @@ class CustomEnv(gym.Env):
 
         self.vision_pixel_side_size = (2 * self.vision_range + 1) * self.current_gm.tile_size
         vision_shape = (3, self.vision_pixel_side_size, self.vision_pixel_side_size)
-        vision_space = spaces.Box(low=0, high=255, shape=vision_shape, dtype=np.float16)
 
-        # Flatten graph data into fixed-size arrays
-        if converter is None:
-            node_feature_space = spaces.Box(
-                low=0,
-                high=7,
-                shape=(self.max_nodes, self.kg.graph.num_node_features),
-                dtype=np.uint8,
-            )
-        else:
-            node_feature_space = spaces.Box(
-                low=-1.0,
-                high=1.0,
-                shape=(self.max_nodes, converter.embedding_dim),
-                dtype=np.float64,
-            )
-
-        edge_attr_space = spaces.Box(
-            low=0,
-            high=self.max_edges - 1,
-            shape=(self.max_edges, self.kg.graph.num_edge_features),
-            dtype=np.uint8,
+        self.encoder = PaddedPyGObservationEncoder(
+            max_nodes=self.max_nodes,
+            max_edges=self.max_edges,
+            num_node_features=self.kg.graph.num_node_features,
+            num_edge_features=self.kg.graph.num_edge_features,
+            vision_shape=vision_shape,
+            converter=converter,
         )
-        edge_index_space = spaces.Box(
-            low=0, high=self.max_nodes - 1, shape=(2, self.max_edges), dtype=np.int64
-        )
+        self.observation_space = self.encoder.observation_space()
 
-        self.observation_space = spaces.Dict(
-            {
-                "vision": vision_space,
-                "node_features": node_feature_space,
-                "edge_attr": edge_attr_space,
-                "edge_index": edge_index_space,
-            }
-        )
-
-        self.action_space = spaces.Discrete(self.num_actions)
+        self.action_space = gym.spaces.Discrete(self.num_actions)
         self.step_count = 0
         self.max_episode_steps = self._episode_config.max_episode_steps
 
@@ -167,7 +142,8 @@ class CustomEnv(gym.Env):
         print(f"Current game index: {self.current_game_index}")
 
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
-        self.current_gm.start_game(kg_completeness=self.kg_completeness)
+        projection = CompletenessProjection(self.kg_completeness, self.vision_range, self.num_tiles)
+        self.current_gm.start_game(projection=projection)
         self.environment = self.current_gm.environment
         self.agent_controler: Agent = self.current_gm.agent_controler
         self.agent_controler.reset_agent()
@@ -331,25 +307,9 @@ class CustomEnv(gym.Env):
     def _get_observation(self):
         self.logger.debug("Getting observation")
         vision = self._get_vision()
-        graph: Data = self.current_gm.kg_class.get_subgraph()
-
-        # Ensure correct shapes
-        node_features = np.zeros((self.max_nodes, graph.num_node_features), dtype=np.float16)
-        node_features[: graph.num_nodes, :] = graph.x.numpy()
-
-        edge_attr = np.zeros((self.max_edges, graph.num_edge_features), dtype=np.float16)
-        edge_attr[: graph.num_edges, :] = graph.edge_attr.numpy()
-
-        edge_index = np.zeros((2, self.max_edges), dtype=np.int64)
-        edge_index[:, : graph.num_edges] = graph.edge_index.numpy()
-
+        subgraph: Data = self.current_gm.kg_class.get_subgraph()
         self.logger.debug("Observation retrieved")
-        return {
-            "vision": vision.astype(np.float16) / 255.0,  # Normalize to [0, 1]
-            "node_features": node_features,
-            "edge_attr": edge_attr,
-            "edge_index": edge_index,
-        }
+        return self.encoder.encode(subgraph, vision)
 
     def get_clamped_surface(self):
         x = (self.agent_controler.agent.grid_x - self.vision_range) * self.current_gm.tile_size

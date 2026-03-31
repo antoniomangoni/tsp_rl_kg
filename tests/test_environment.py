@@ -164,3 +164,41 @@ class TestHeadlessMode:
 
         assert Entity._headless is True
         assert Terrain._headless is True
+
+
+# ---------------------------------------------------------------------------
+# discovered_grid
+# ---------------------------------------------------------------------------
+
+
+class TestDiscoveredGrid:
+    def test_initialized_false(self, headless_environment: Environment):
+        assert headless_environment.discovered_grid.shape == (
+            headless_environment.width,
+            headless_environment.height,
+        )
+        assert not headless_environment.discovered_grid.any()
+
+    def test_discover_coordinate_returns_true_once(self, headless_environment: Environment):
+        assert headless_environment.discover_coordinate(0, 0) is True
+        assert headless_environment.discover_coordinate(0, 0) is False
+
+    def test_discover_coordinate_marks_grid(self, headless_environment: Environment):
+        headless_environment.discover_coordinate(1, 2)
+        assert headless_environment.discovered_grid[1, 2]
+
+    def test_init_discovered_area_marks_bounded_region(self, headless_environment: Environment):
+        center = (2, 2)
+        radius = 1
+        headless_environment.init_discovered_area(center, radius)
+        # All tiles within radius should be discovered
+        for x in range(1, 4):
+            for y in range(1, 4):
+                assert headless_environment.discovered_grid[x, y], f"({x},{y}) not discovered"
+        # Corner (0,0) is outside radius — should NOT be discovered
+        assert not headless_environment.discovered_grid[0, 0]
+
+    def test_init_discovered_area_clips_to_bounds(self, headless_environment: Environment):
+        """Radius extending beyond grid edges should not raise."""
+        headless_environment.init_discovered_area((0, 0), 10)
+        assert headless_environment.discovered_grid.all()

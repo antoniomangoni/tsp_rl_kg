@@ -89,6 +89,8 @@ class Environment:
 
         self.player = self.init_player()
 
+        self.discovered_grid = np.zeros((self.width, self.height), dtype=bool)
+
         self.environment_changed_flag = False
         self.changed_tiles_list = []
 
@@ -265,6 +267,21 @@ class Environment:
 
     def within_bounds(self, x, y):
         return 0 <= x < self.width and 0 <= y < self.height
+
+    def discover_coordinate(self, x: int, y: int) -> bool:
+        """Mark a tile as discovered. Returns True if it was newly discovered."""
+        if self.discovered_grid[x, y]:
+            return False
+        self.discovered_grid[x, y] = True
+        return True
+
+    def init_discovered_area(self, center: tuple[int, int], radius: int) -> None:
+        """Mark all tiles within *radius* of *center* as discovered."""
+        cx, cy = center
+        for x in range(cx - radius, cx + radius + 1):
+            for y in range(cy - radius, cy + radius + 1):
+                if self.within_bounds(x, y):
+                    self.discovered_grid[x, y] = True
 
     def environment_changed(self, old_x, old_y, new_x, new_y):
         self.environment_changed_flag = True

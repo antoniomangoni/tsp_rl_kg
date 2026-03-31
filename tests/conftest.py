@@ -14,7 +14,7 @@ from tsp_rl_kg.config import (
     RewardConfig,
 )
 from tsp_rl_kg.game_world.environment import Environment
-from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
+from tsp_rl_kg.graph.graph_idx_manager import Graph_Manager
 from tsp_rl_kg.rl.reward import RewardCalculator
 
 # ---------------------------------------------------------------------------

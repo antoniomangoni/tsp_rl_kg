@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch_geometric.data import Data
-from torch_geometric.utils import k_hop_subgraph, to_networkx
+from torch_geometric.utils import to_networkx
 
-from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
+from tsp_rl_kg.graph.constitution import DefaultGridConstitution, GraphConstitution
+from tsp_rl_kg.graph.projection import CompletenessProjection, ProjectionPolicy
 
 # ---------------------------------------------------------------------------
 # State ownership
@@ -15,14 +15,23 @@ from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
 # WRITE to them.  All mutations to the world go through Environment; KG
 # derives node features from the current array values on demand.
 #
-# Owned by KG: graph tensors, graph_manager, discovered_coordinates, distance
-# Shared refs (read-only): terrain_array, entity_array
+# Owned by KG: graph tensors, graph_manager, distance
+# Shared refs (read-only): terrain_array, entity_array, discovered_grid
 # Derived:     player_pos (property → environment.player.grid_x/grid_y)
 # ---------------------------------------------------------------------------
 
 
 class KnowledgeGraph:
-    def __init__(self, environment, vision_range, completion=1.0, plot=False, converter=None):
+    def __init__(
+        self,
+        environment,
+        vision_range,
+        completion=1.0,
+        plot=False,
+        converter=None,
+        projection: ProjectionPolicy | None = None,
+        constitution: GraphConstitution | None = None,
+    ):
         self.environment = environment
         self.terrain_array = environment.terrain_index_grid
         self.entity_array = environment.entity_index_grid
@@ -32,22 +41,30 @@ class KnowledgeGraph:
             max(v for idx, v in np.ndenumerate(self.entity_array) if idx != self.player_pos) < 7
         ), "Entity type exceeds the maximum value of 6"
 
-        self.graph_manager = Graph_Manager()
-
         self.vision_range = vision_range
-        self.distance = self.get_graph_distance(
-            completion
-        )  # Graph distance, in terms of edges, from the player node
-        self.discovered_coordinates = self.calculate_discovered_coordinates()
+        if projection is not None:
+            self.projection = projection
+        else:
+            self.projection = CompletenessProjection(
+                completion, vision_range, self.terrain_array.shape[0]
+            )
+        self.distance = self.projection.distance
+        # Discovery state lives on Environment; initialise from here since KG knows the distance.
+        self.environment.init_discovered_area(self.player_pos, self.distance)
 
         self.terrain_z_level = 0
         self.entity_z_level = 1
         self.player_z_level = 2
 
-        self.init_graph_tensors()
-        self.complete_graph()
-        # if plot:
-        #     self.visualise_graph()
+        # Delegate graph construction to constitution
+        if constitution is None:
+            constitution = DefaultGridConstitution()
+        self.constitution = constitution
+        self.graph, self.graph_manager = self.constitution.build(
+            environment, self.player_pos, environment.discovered_grid, converter
+        )
+        self.num_possible_nodes = self.graph.num_nodes
+        self.num_possible_edges = self.graph.num_edges
 
     def _get_embedding(self, z_level, x, y):
         """Derive the embedding for a node from the current array values."""
@@ -72,64 +89,6 @@ class KnowledgeGraph:
         else:
             raise ValueError(f"Invalid z-level: {z_level}")
 
-    def create_node_features(self, coor, z_level, mask):
-        """Create node features based on coordinates and z-level. Returns the embedding value."""
-        return self._get_embedding(z_level, coor[0], coor[1])
-
-    def init_graph_tensors(self):
-        self.num_possible_nodes = (
-            self.environment.width * self.environment.height * 2 + 1
-        )  # 2 z-levels and a player node
-        self.graph_manager.set_max_nodes(self.num_possible_nodes)
-        self.num_possible_edges, _, _ = self.compute_total_possible_edges()
-        self.graph_manager.set_max_edges(self.num_possible_edges)
-        edge_attr_size = 2  # distance, mask
-        # feature_size = 5 # x, y, z_level, type_id, mask
-        if self.converter:
-            feature_size = self.converter.embedding_dim
-            _x = torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.float64)
-        else:
-            feature_size = 1
-            _x = torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.int)
-
-        self.graph = Data(
-            x=torch.full((self.num_possible_nodes, feature_size), -1, dtype=torch.int),
-            edge_index=torch.full((2, self.num_possible_edges), -1, dtype=torch.int),
-            edge_attr=torch.full((self.num_possible_edges, edge_attr_size), -1, dtype=torch.int),
-        )
-        # Preallocated tensors for updates
-        self.single_node_feature = torch.empty((feature_size), dtype=torch.int)
-        self.single_edge_feature = torch.empty((edge_attr_size), dtype=torch.int)
-
-    def complete_graph(self):
-        self.add_nodes()
-        self.create_terrain_edges()
-        self.add_entity_edges()
-        self.verify_graph_integrity()
-
-    def count_entity_nodes(self):
-        activated_entities = 0
-        deactivated_entities = 0
-        for node in self.graph.x:
-            if node[2] == self.entity_z_level:
-                if node[4] == 1:
-                    activated_entities += 1
-                else:
-                    deactivated_entities += 1
-        print(f"Activated: {activated_entities}, " f"Deactivated: {deactivated_entities}")
-        assert (
-            activated_entities + deactivated_entities == self.entity_array.size
-        ), "Entity nodes do not match the entity array"
-        return activated_entities, deactivated_entities
-
-    def verify_graph_integrity(self):
-        # Verify all nodes are initialized (check first feature column; -1 means uninitialised)
-        assert torch.all(self.graph.x[:, 0] >= 0), "Some nodes are uninitialized."
-
-        # Verify all edges are initialized
-        assert torch.all(self.graph.edge_index >= 0), "Some edges are uninitialized."
-        assert torch.all(self.graph.edge_attr[:, 1] >= 0), "Some edge attributes are uninitialized."
-
     def is_node_active(self, idx):
         # TODO: G11 — replace with ProjectionPolicy-based visibility
         return True
@@ -138,17 +97,14 @@ class KnowledgeGraph:
         if self.is_node_active(node_idx1) and self.is_node_active(node_idx2):
             return True
 
-    def discover_this_coordinate(self, x, y):
-        if self.discovered_coordinates[x, y]:
-            return False
-        self.discovered_coordinates[x, y] = 1
+    def activate_discovered_coordinate(self, x, y):
+        """Activate graph nodes/edges for a coordinate that Environment has marked discovered."""
         terrain_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
         self.activate_node_and_maybe_its_edges(terrain_idx)
         if self.entity_array[x, y] > 1:
             self.activate_node_and_maybe_its_edges(
                 self.graph_manager.get_node_idx((x, y), self.entity_z_level)
             )
-        return True
 
     def activate_node_and_maybe_its_edges(self, idx):
         # activate the nodes edges if the corresponding node is activated
@@ -220,7 +176,8 @@ class KnowledgeGraph:
         return (self.environment.player.grid_x, self.environment.player.grid_y)
 
     def move_player_node(self, x, y):
-        self.discover_this_coordinate(x, y)
+        self.environment.discover_coordinate(x, y)
+        self.activate_discovered_coordinate(x, y)
         # Update player node position features (only when features have x/y columns)
         player_idx = self.graph_manager.player_idx
         if self.graph.x.shape[1] > 1:
@@ -233,7 +190,7 @@ class KnowledgeGraph:
         height, width = self.entity_array.shape
         for x in range(width):
             for y in range(height):
-                if not self.discovered_coordinates[x, y]:
+                if not self.environment.discovered_grid[x, y]:
                     continue
                 if self.entity_array[x, y] > 1:
                     entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
@@ -256,109 +213,13 @@ class KnowledgeGraph:
                     else:
                         print(f"Entity node {entity_idx} at " f"{(x, y)} not active/found")
 
-    def create_node(self, coordinates, z_level, mask=0):
-        features = self.create_node_features(coordinates, z_level, mask)
-        node_idx = self.graph_manager.create_idx(coordinates, z_level)
-        if self.converter:
-            self.graph.x[node_idx] = torch.tensor(features, dtype=torch.float64)
-        else:
-            self.graph.x[node_idx] = torch.tensor(features, dtype=torch.int)
-        return node_idx
+    # Construction methods (create_node, add_nodes, create_edge, add_edge_to_graph,
+    # create_terrain_edges, add_entity_edges, compute_total_possible_edges,
+    # init_graph_tensors, complete_graph, verify_graph_integrity) moved to
+    # DefaultGridConstitution.build().
 
-    def add_nodes(self):
-        # Adding player node
-        self.graph_manager.player_idx = self.create_node(
-            self.player_pos, self.player_z_level, mask=1
-        )
-        for y in range(self.environment.height):
-            for x in range(self.environment.width):
-                # Add terrain nodes
-                self.create_node(
-                    (x, y), self.terrain_z_level, mask=self.discovered_coordinates[x, y]
-                )
-                # If an entity is present at the location check if it is discovered
-                self.create_node(
-                    (x, y), self.entity_z_level, mask=self.discovered_coordinates[x, y]
-                )
-
-    def create_edge(self, node_idx1, coor_1, node_idx2, coor_2, distance=None, active=None):
-        """Create an edge ensuring undirected consistency."""
-        if active is None:
-            if self.is_node_active(node_idx1) and self.is_node_active(node_idx2):
-                active = 1
-            else:
-                active = 0
-
-        if distance is None:
-            distance = self.get_cartesian_distance(coor_1, coor_2)
-
-        direct_edge_idx, reverse_edge_idx = self.graph_manager.create_edge_idx(node_idx1, node_idx2)
-        self.add_edge_to_graph(
-            node_idx1, node_idx2, distance, active, direct_edge_idx, reverse_edge_idx
-        )
-
-    def add_edge_to_graph(self, idx1, idx2, distance, active, direct_edge_idx, reverse_edge_idx):
-        self.graph.edge_index[:, direct_edge_idx] = torch.tensor([idx1, idx2], dtype=torch.int)
-        self.graph.edge_index[:, reverse_edge_idx] = torch.tensor([idx2, idx1], dtype=torch.int)
-        self.graph.edge_attr[direct_edge_idx] = torch.tensor([distance, active], dtype=torch.float)
-        self.graph.edge_attr[reverse_edge_idx] = torch.tensor([distance, active], dtype=torch.float)
-
-    def create_terrain_edges(self):
-        height, width = self.environment.height, self.environment.width
-        for x in range(width):
-            for y in range(height):
-                current_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
-                # Check and connect the right and bottom neighbors to create undirected edges
-                if x < width - 1:  # Right neighbour
-                    right_idx = self.graph_manager.get_node_idx((x + 1, y), self.terrain_z_level)
-                    self.create_edge(
-                        current_idx, (x, y), right_idx, (x + 1, y), distance=1, active=1
-                    )
-                if y < height - 1:  # Bottom neighbour
-                    bottom_idx = self.graph_manager.get_node_idx((x, y + 1), self.terrain_z_level)
-                    self.create_edge(
-                        current_idx, (x, y), bottom_idx, (x, y + 1), distance=1, active=1
-                    )
-
-    def add_entity_edges(self):
-        for x in range(self.environment.width):
-            for y in range(self.environment.height):
-                entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
-                terrain_idx = self.graph_manager.get_node_idx((x, y), self.terrain_z_level)
-                # Connect to the terrain node
-                self.create_edge(entity_idx, (x, y), terrain_idx, (x, y), 0)
-                # Connect to the player node
-                self.create_edge(entity_idx, (x, y), self.graph_manager.player_idx, self.player_pos)
-
-    def calculate_discovered_coordinates(self):
-        # discovered = np.full_like(self.terrain_array, False, dtype=bool)
-        discovered = np.zeros_like(self.terrain_array, dtype=int)
-        for x in range(self.player_pos[0] - self.distance, self.player_pos[0] + self.distance + 1):
-            for y in range(
-                self.player_pos[1] - self.distance, self.player_pos[1] + self.distance + 1
-            ):
-                if self.environment.within_bounds(x, y):
-                    discovered[x, y] = 1
-        return discovered
-
-    def compute_total_possible_edges(self):
-        # Intra-terrain edges
-        terrain_edges = 2 * (
-            (self.environment.width * (self.environment.height - 1))
-            + (self.environment.height * (self.environment.width - 1))
-        )
-        # Entity edges to terrain nodes and player node
-        entity_edges = 0
-        for _ in range(self.environment.width):
-            for _ in range(self.environment.height):
-                entity_edges += 4  # 2 edges to terrain nodes and 2 to the player node
-
-        return terrain_edges + entity_edges, terrain_edges, entity_edges
-
-    def get_graph_distance(self, completion):
-        """Calculates the effective distance for subgraph extraction."""
-        completion = min(completion, 1)
-        return max(int(completion * self.terrain_array.shape[0]), self.vision_range)
+    # get_graph_distance() — removed; distance computation now lives in
+    # CompletenessProjection / ProjectionPolicy.
 
     def get_cartesian_distance(self, pos1, pos2):
         return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
@@ -376,7 +237,7 @@ class KnowledgeGraph:
         flag = False
         for y in range(self.environment.height):
             for x in range(self.environment.width):
-                if not self.discovered_coordinates[x, y]:
+                if not self.environment.discovered_grid[x, y]:
                     continue
                 if self.entity_array[x, y] > 1:
                     entity_idx = self.graph_manager.get_node_idx((x, y), self.entity_z_level)
@@ -470,16 +331,5 @@ class KnowledgeGraph:
         return None
 
     def get_subgraph(self):
-        node_idx = self.graph_manager.get_node_idx(self.player_pos, self.terrain_z_level)
-
-        subset, edge_index, mapping, edge_mask = k_hop_subgraph(
-            node_idx=node_idx, num_hops=self.distance, edge_index=self.graph.edge_index
-        )
-
-        subgraph_data = Data(
-            x=self.graph.x[subset],  # Node features of the subgraph
-            edge_index=edge_index,  # Edges of the subgraph
-            edge_attr=self.graph.edge_attr[edge_mask],  # Edge attributes of the subgraph
-        )
-
-        return subgraph_data
+        player_terrain_idx = self.graph_manager.get_node_idx(self.player_pos, self.terrain_z_level)
+        return self.projection.project(self.graph, self.graph.edge_index, player_terrain_idx)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from tsp_rl_kg.game_world.environment import Environment
-from tsp_rl_kg.knowledge.graph_idx_manager import Graph_Manager
+from tsp_rl_kg.graph.graph_idx_manager import Graph_Manager
 from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
 
 # ===========================================================================
@@ -106,10 +106,10 @@ class TestKnowledgeGraphDiscovery:
         )
         # Pick a coordinate outside initial discovery
         x, y = headless_environment.width - 1, headless_environment.height - 1
-        kg.discovered_coordinates[x, y] = 0  # Force undiscovered
-        result = kg.discover_this_coordinate(x, y)
-        assert result is True
-        assert kg.discovered_coordinates[x, y] == 1
+        headless_environment.discovered_grid[x, y] = False  # Force undiscovered
+        headless_environment.discover_coordinate(x, y)
+        kg.activate_discovered_coordinate(x, y)
+        assert headless_environment.discovered_grid[x, y]
 
     def test_discover_already_discovered_returns_false(self, headless_environment: Environment):
         kg = KnowledgeGraph(
@@ -119,7 +119,7 @@ class TestKnowledgeGraphDiscovery:
         )
         # All coordinates are already discovered at completion=1.0
         px, py = kg.player_pos
-        result = kg.discover_this_coordinate(px, py)
+        result = headless_environment.discover_coordinate(px, py)
         assert result is False
 
 
@@ -151,5 +151,6 @@ class TestKnowledgeGraphEdges:
         # Every adjacent terrain pair should have edges
         w, h = headless_environment.width, headless_environment.height
         expected_terrain_edges = 2 * (w * (h - 1) + h * (w - 1))
-        _, terrain_count, _ = kg.compute_total_possible_edges()
-        assert terrain_count == expected_terrain_edges
+        # Terrain edges are created in the graph; total edges also include entity edges
+        entity_edges = w * h * 4
+        assert kg.num_possible_edges == expected_terrain_edges + entity_edges

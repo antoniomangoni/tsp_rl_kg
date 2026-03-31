@@ -8,6 +8,7 @@ from tsp_rl_kg.game_world.actions import ActionType
 from tsp_rl_kg.game_world.agent import Agent
 from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.game_world.heightmap_generator import HeightmapGenerator
+from tsp_rl_kg.graph.projection import CompletenessProjection, ProjectionPolicy
 from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
 from tsp_rl_kg.renderer import Renderer
 from tsp_rl_kg.rl.target import Target_Manager
@@ -72,9 +73,13 @@ class GameManager:
 
         self.target_manager = Target_Manager(self.environment)
 
-    def init_knowledge_graph(self, kg_completeness):
+    def init_knowledge_graph(self, projection: ProjectionPolicy):
         self.kg_class = KnowledgeGraph(
-            self.environment, self.vision_range, kg_completeness, self.plot, self.converter
+            self.environment,
+            self.vision_range,
+            plot=self.plot,
+            converter=self.converter,
+            projection=projection,
         )
         self.agent_controler.get_kg(self.kg_class)
 
@@ -92,10 +97,12 @@ class GameManager:
         # self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
         pygame.display.flip()
 
-    def start_game(self, kg_completeness=0.5):
+    def start_game(self, kg_completeness=0.5, projection: ProjectionPolicy | None = None):
         if not self.headless:
             self.init_pygame()
-        self.init_knowledge_graph(kg_completeness)
+        if projection is None:
+            projection = CompletenessProjection(kg_completeness, self.vision_range, self.num_tiles)
+        self.init_knowledge_graph(projection)
         if not self.headless:
             self.initialise_rendering()
 
