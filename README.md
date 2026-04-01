@@ -4,7 +4,7 @@
 
 *Neuro-Symbolic Creation of Non-Playable Characters*
 
-This master thesis explores the integration of Knowledge Graphs (KGs) with Reinforcement Learning (RL) to enhance the decision-making capabilities of Non-Player Characters (NPCs) in video games. It features a custom-built game environment simulating a Travelling Salesman Problem (TSP) with procedurally generated terrain and resources. 
+This master thesis explores the integration of Knowledge Graphs (KGs) with Reinforcement Learning (RL) to enhance the decision-making capabilities of Non-Player Characters (NPCs) in video games. It features a custom-built game environment simulating a Travelling Salesman Problem (TSP) with procedurally generated terrain and resources.
 
 [Read the full thesis (PDF)](https://gupea.ub.gu.se/bitstream/handle/2077/86450/CSE%2024-36%20AM.pdf?sequence=1&isAllowed=y)
 
@@ -104,9 +104,20 @@ The environment, knowledge-graph, and observation contracts stay stable; backend
 
 ## Contributing
 
-Contributions to this project are welcome. Please fork the repository and submit a pull request with your changes.
+All changes to `main` must go through a pull request. Direct pushes to `main` are not allowed, including for the maintainer.
 
-There is a `requirements.txt` (which does not include plotly used in `test.py`) and an `environment_droplet.yml` for pip and conda environments respectively. 
+Before opening a pull request, bootstrap the repository and run the same checks that CI enforces:
+
+```bash
+uv sync
+uv run pre-commit install
+uv run pre-commit run --all-files --show-diff-on-failure
+uv run pytest tests/ -v
+```
+
+Create a topic branch from `main` for each change using one of these prefixes: `feature/`, `fix/`, `chore/`, `docs/`, `refactor/`, or `test/`.
+
+Maintainer-authored pull requests may merge once all required checks pass. Pull requests authored by anyone else require an approving review from `@antoniomangoni` before merge.
 
 ## Contact
 
