@@ -54,15 +54,19 @@ To run the Reinforcement Learning training:
 ```bash
 uv run tsp-rl-kg train --algorithm PPO
 uv run tsp-rl-kg train --algorithm DQN
+uv run tsp-rl-kg train --config configs/train.json
 ```
 
-2. For the ablation study runner, edit `src/tsp_rl_kg/rl/training/run.py` and execute:
+2. For the ablation study runner, either use the Typer CLI or run the module file directly:
 
 ```bash
-uv run python src/tsp_rl_kg/rl/training/run.py
+uv run tsp-rl-kg-study --config configs/ablation.toml
+uv run python src/tsp_rl_kg/rl/training/run.py --config configs/ablation.toml
 ```
 
-3. The training stack is configured via `TrainingConfig.algorithm`, not just legacy PPO-only `model_config` values. A typical config now looks like:
+3. The CLIs accept JSON or TOML config files. `tsp-rl-kg train` loads a `TrainingConfig`-shaped mapping from the root, `train`, `training`, `main.train`, or `base_config`. `tsp-rl-kg-study` loads a study spec from the root, `study`, `ablation`, or `run`.
+
+4. The training stack is configured via `TrainingConfig.algorithm`, not just legacy PPO-only `model_config` values. A typical config now looks like:
 
 ```python
 min_episodes_per_curriculum = 4

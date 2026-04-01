@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-import argparse
 import json
 import os
+from dataclasses import asdict
 from datetime import datetime
+from pathlib import Path
+from typing import Annotated, Any
 
 import numpy as np
+import typer
+from click.exceptions import ClickException
+from click.exceptions import Exit as ClickExit
 from loguru import logger
 
 from tsp_rl_kg.config import (
@@ -22,94 +27,72 @@ from tsp_rl_kg.config import (
 from tsp_rl_kg.game_world.game_manager import GameManager
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
 from tsp_rl_kg.rl.training.trainer import Trainer
+from tsp_rl_kg.utils.config_files import find_mapping_section, load_config_file, merge_nested_dicts
 from tsp_rl_kg.utils.logger import configure_logging
 
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Entry points for tsp_rl_kg")
-    parser.add_argument(
-        "mode",
-        nargs="?",
-        default="play",
-        choices=["play", "train", "simulate"],
-        help="Run a single game world, a config-driven training demo, or export worlds.",
-    )
-    parser.add_argument(
-        "--algorithm",
-        default=AlgorithmName.PPO.value,
-        choices=[algorithm.value for algorithm in AlgorithmName],
-        help="Training backend algorithm for train mode.",
-    )
-    parser.add_argument(
-        "--timesteps", type=int, default=512, help="Training timesteps in train mode."
-    )
-    parser.add_argument("--seed", type=int, default=42, help="Seed used in train mode.")
-    parser.add_argument(
-        "--kg-completeness", type=float, default=0.5, help="KG completeness used in train mode."
-    )
-    parser.add_argument(
-        "--num-tiles", type=int, default=None, help="Override the world width and height in tiles."
-    )
-    parser.add_argument(
-        "--screen-size", type=int, default=None, help="Override the renderer screen size."
-    )
-    parser.add_argument(
-        "--vision-range", type=int, default=None, help="Override the agent vision range."
-    )
-    parser.add_argument(
-        "--num-environments",
-        type=int,
-        default=None,
-        help="Override the number of generated environments for train or simulate mode.",
-    )
-    parser.add_argument(
-        "--num-curricula",
-        type=int,
-        default=None,
-        help="Override the number of curriculum buckets for train or simulate mode.",
-    )
-    parser.add_argument(
-        "--min-episodes-per-curriculum",
-        type=int,
-        default=2,
-        help="Curriculum pacing used in train mode.",
-    )
-    parser.add_argument(
-        "--headless",
-        action="store_true",
-        help="Force headless world generation for play or simulate mode.",
-    )
-    return parser
+app = typer.Typer(add_completion=False, invoke_without_command=True)
 
 
-def _default_game_manager_config(mode: str, args) -> GameManagerConfig:
+def _load_cli_config(
+    config_path: Path | None,
+    *candidate_sections: tuple[str, ...],
+) -> dict[str, Any] | None:
+    if config_path is None:
+        return None
+
+    try:
+        loaded_config = load_config_file(config_path)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="--config") from exc
+
+    return find_mapping_section(loaded_config, *candidate_sections) or loaded_config
+
+
+def _filter_config_fields(data: dict[str, Any], field_names: set[str]) -> dict[str, Any]:
+    return {key: value for key, value in data.items() if key in field_names}
+
+
+def _default_game_manager_config(
+    mode: str,
+    *,
+    num_tiles: int | None = None,
+    screen_size: int | None = None,
+    vision_range: int | None = None,
+    headless: bool | None = None,
+) -> GameManagerConfig:
     if mode == "train":
         return GameManagerConfig(
-            num_tiles=args.num_tiles or 5,
-            screen_size=args.screen_size or 20,
-            vision_range=args.vision_range or 1,
-            headless=True,
+            num_tiles=num_tiles or 5,
+            screen_size=screen_size or 20,
+            vision_range=vision_range or 1,
+            headless=True if headless is None else headless,
         )
 
     return GameManagerConfig(
-        num_tiles=args.num_tiles or 50,
-        screen_size=args.screen_size or 800,
-        vision_range=args.vision_range or 2,
-        headless=args.headless,
+        num_tiles=num_tiles or 50,
+        screen_size=screen_size or 800,
+        vision_range=vision_range or 2,
+        headless=False if headless is None else headless,
     )
 
 
-def _default_simulation_manager_config(mode: str, args) -> SimulationManagerConfig:
+def _default_simulation_manager_config(
+    mode: str,
+    *,
+    num_environments: int | None = None,
+    num_curricula: int | None = None,
+    min_episodes_per_curriculum: int | None = None,
+) -> SimulationManagerConfig:
     if mode == "train":
         return SimulationManagerConfig(
-            number_of_environments=args.num_environments or 32,
-            number_of_curricula=args.num_curricula or 4,
-            min_episodes_per_curriculum=args.min_episodes_per_curriculum,
+            number_of_environments=num_environments or 32,
+            number_of_curricula=num_curricula or 4,
+            min_episodes_per_curriculum=min_episodes_per_curriculum or 2,
         )
 
     return SimulationManagerConfig(
-        number_of_environments=args.num_environments or 2,
-        number_of_curricula=args.num_curricula or 3,
+        number_of_environments=num_environments or 2,
+        number_of_curricula=num_curricula or 3,
         min_episodes_per_curriculum=1,
     )
 
@@ -134,25 +117,163 @@ def _demo_algorithm_hyperparameters(
     return hyperparameters
 
 
-def _build_training_config(args) -> TrainingConfig:
-    algorithm = AlgorithmName.from_value(args.algorithm)
+def _default_training_config() -> TrainingConfig:
     return TrainingConfig(
-        game_manager=_default_game_manager_config("train", args),
-        simulation_manager=_default_simulation_manager_config("train", args),
+        game_manager=GameManagerConfig(num_tiles=5, screen_size=20, vision_range=1, headless=True),
+        simulation_manager=SimulationManagerConfig(
+            number_of_environments=32,
+            number_of_curricula=4,
+            min_episodes_per_curriculum=2,
+        ),
         model_args=ModelArgs(num_actions=11),
         algorithm=AlgorithmConfig(
-            algorithm=algorithm,
-            hyperparameters=_demo_algorithm_hyperparameters(algorithm),
+            algorithm=AlgorithmName.PPO,
+            hyperparameters=_demo_algorithm_hyperparameters(AlgorithmName.PPO),
         ),
         curriculum=CurriculumConfig(
-            min_episodes_per_curriculum=args.min_episodes_per_curriculum,
+            min_episodes_per_curriculum=2,
             performance_threshold=0.85,
         ),
         episode=EpisodeConfig(max_episode_steps=128, max_steps_without_progress=64),
-        total_timesteps=args.timesteps,
-        kg_completeness=args.kg_completeness,
-        seeds=[args.seed],
+        total_timesteps=512,
+        kg_completeness=0.5,
+        seeds=[42],
     )
+
+
+def _build_game_manager_config(
+    mode: str,
+    loaded_config: dict[str, Any] | None = None,
+    *,
+    num_tiles: int | None = None,
+    screen_size: int | None = None,
+    vision_range: int | None = None,
+    headless: bool | None = None,
+) -> GameManagerConfig:
+    default_config = asdict(_default_game_manager_config(mode))
+    config_data = {}
+    if loaded_config is not None:
+        raw_config = (
+            find_mapping_section(
+                loaded_config,
+                ("game_manager",),
+                ("game_manager_args",),
+            )
+            or loaded_config
+        )
+        config_data = _filter_config_fields(raw_config, set(GameManagerConfig.__dataclass_fields__))
+
+    merged_config = merge_nested_dicts(default_config, config_data)
+    if num_tiles is not None:
+        merged_config["num_tiles"] = num_tiles
+    if screen_size is not None:
+        merged_config["screen_size"] = screen_size
+    if vision_range is not None:
+        merged_config["vision_range"] = vision_range
+    if headless is not None:
+        merged_config["headless"] = headless
+
+    return GameManagerConfig(**merged_config)
+
+
+def _build_simulation_manager_config(
+    mode: str,
+    loaded_config: dict[str, Any] | None = None,
+    *,
+    num_environments: int | None = None,
+    num_curricula: int | None = None,
+    min_episodes_per_curriculum: int | None = None,
+) -> SimulationManagerConfig:
+    default_config = asdict(
+        _default_simulation_manager_config(
+            mode,
+            min_episodes_per_curriculum=min_episodes_per_curriculum,
+        )
+    )
+    config_data = {}
+    if loaded_config is not None:
+        raw_config = (
+            find_mapping_section(
+                loaded_config,
+                ("simulation_manager",),
+                ("simulation_manager_args",),
+            )
+            or loaded_config
+        )
+        config_data = _filter_config_fields(
+            raw_config,
+            set(SimulationManagerConfig.__dataclass_fields__),
+        )
+
+    merged_config = merge_nested_dicts(default_config, config_data)
+    if num_environments is not None:
+        merged_config["number_of_environments"] = num_environments
+    if num_curricula is not None:
+        merged_config["number_of_curricula"] = num_curricula
+    if min_episodes_per_curriculum is not None:
+        merged_config["min_episodes_per_curriculum"] = min_episodes_per_curriculum
+
+    return SimulationManagerConfig(**merged_config)
+
+
+def _build_training_config(
+    loaded_config: dict[str, Any] | None = None,
+    *,
+    algorithm: AlgorithmName | None = None,
+    timesteps: int | None = None,
+    seed: int | None = None,
+    kg_completeness: float | None = None,
+    num_tiles: int | None = None,
+    screen_size: int | None = None,
+    vision_range: int | None = None,
+    num_environments: int | None = None,
+    num_curricula: int | None = None,
+    min_episodes_per_curriculum: int | None = None,
+) -> TrainingConfig:
+    default_config = _default_training_config()
+    if loaded_config is not None:
+        config = TrainingConfig.from_dict(
+            merge_nested_dicts(default_config.to_dict(), loaded_config)
+        )
+    else:
+        config = default_config
+
+    if algorithm is not None:
+        if algorithm == config.algorithm.algorithm:
+            hyperparameters = dict(config.algorithm.hyperparameters)
+        else:
+            hyperparameters = _demo_algorithm_hyperparameters(algorithm)
+        config.algorithm = AlgorithmConfig(
+            backend=config.algorithm.backend,
+            algorithm=algorithm,
+            policy_name=config.algorithm.policy_name,
+            verbose=config.algorithm.verbose,
+            tensorboard_run_name=config.algorithm.tensorboard_run_name,
+            hyperparameters=hyperparameters,
+        )
+
+    if timesteps is not None:
+        config.total_timesteps = timesteps
+    if seed is not None:
+        config.seeds = [seed]
+    if kg_completeness is not None:
+        config.kg_completeness = kg_completeness
+
+    if num_tiles is not None:
+        config.game_manager.num_tiles = num_tiles
+    if screen_size is not None:
+        config.game_manager.screen_size = screen_size
+    if vision_range is not None:
+        config.game_manager.vision_range = vision_range
+    if num_environments is not None:
+        config.simulation_manager.number_of_environments = num_environments
+    if num_curricula is not None:
+        config.simulation_manager.number_of_curricula = num_curricula
+    if min_episodes_per_curriculum is not None:
+        config.simulation_manager.min_episodes_per_curriculum = min_episodes_per_curriculum
+        config.curriculum.min_episodes_per_curriculum = min_episodes_per_curriculum
+
+    return config
 
 
 def _create_results_directory(prefix: str) -> str:
@@ -164,29 +285,30 @@ def _create_results_directory(prefix: str) -> str:
     return results_dir
 
 
-def _run_training_mode(args) -> None:
-    config = _build_training_config(args)
+def _run_training_mode(config: TrainingConfig) -> None:
     results_dir = _create_results_directory("manual")
     experiment_name = f"manual_{config.algorithm.algorithm.value.lower()}"
+    seed = config.seeds[0] if config.seeds else None
 
     trainer = Trainer(
         config.kg_completeness,
         results_dir=results_dir,
     )
-    trainer.setup(config, seed=args.seed)
+    trainer.setup(config, seed=seed)
     trainer.env_manager.set_kg_completeness(trainer.env, config.kg_completeness)
     trainer.env_manager.set_kg_completeness(trainer.eval_env, config.kg_completeness)
     trainer.run(experiment_name)
 
 
-def _run_play_mode(args) -> None:
-    game_manager = GameManager(config=_default_game_manager_config("play", args))
+def _run_play_mode(config: GameManagerConfig) -> None:
+    game_manager = GameManager(config=config)
     game_manager.run()
 
 
-def _run_simulation_mode(args) -> None:
-    game_manager_config = _default_game_manager_config("simulate", args)
-    simulation_manager_config = _default_simulation_manager_config("simulate", args)
+def _run_simulation_mode(
+    game_manager_config: GameManagerConfig,
+    simulation_manager_config: SimulationManagerConfig,
+) -> None:
     simulation_manager = SimulationManager(
         game_manager_config,
         sim_config=simulation_manager_config,
@@ -243,18 +365,201 @@ def _run_simulation_mode(args) -> None:
         json.dump(entity_dict, entity_file)
 
 
+@app.callback(invoke_without_command=True)
+def cli(
+    ctx: typer.Context,
+    log_level: Annotated[
+        str,
+        typer.Option("--log-level", help="Logging level."),
+    ] = "INFO",
+) -> None:
+    configure_logging(log_dir="logs", level=log_level.upper())
+    if ctx.invoked_subcommand is None:
+        play()
+
+
+@app.command()
+def play(
+    config: Annotated[
+        Path | None,
+        typer.Option("--config", help="Load play settings from a JSON or TOML file."),
+    ] = None,
+    num_tiles: Annotated[
+        int | None,
+        typer.Option(help="Override the world width and height in tiles."),
+    ] = None,
+    screen_size: Annotated[
+        int | None,
+        typer.Option(help="Override the renderer screen size."),
+    ] = None,
+    vision_range: Annotated[
+        int | None,
+        typer.Option(help="Override the agent vision range."),
+    ] = None,
+    headless: Annotated[
+        bool | None,
+        typer.Option(
+            "--headless/--no-headless",
+            help="Override headless rendering from config or defaults.",
+        ),
+    ] = None,
+) -> None:
+    loaded_config = _load_cli_config(config, ("main", "play"), ("play",), ("base_config",))
+    _run_play_mode(
+        _build_game_manager_config(
+            "play",
+            loaded_config,
+            num_tiles=num_tiles,
+            screen_size=screen_size,
+            vision_range=vision_range,
+            headless=headless,
+        )
+    )
+
+
+@app.command()
+def train(
+    config: Annotated[
+        Path | None,
+        typer.Option("--config", help="Load training settings from a JSON or TOML file."),
+    ] = None,
+    algorithm: Annotated[
+        AlgorithmName | None,
+        typer.Option(help="Training backend algorithm override."),
+    ] = None,
+    timesteps: Annotated[
+        int | None,
+        typer.Option(help="Training timesteps override."),
+    ] = None,
+    seed: Annotated[
+        int | None,
+        typer.Option(help="Seed override."),
+    ] = None,
+    kg_completeness: Annotated[
+        float | None,
+        typer.Option(help="KG completeness override."),
+    ] = None,
+    num_tiles: Annotated[
+        int | None,
+        typer.Option(help="Override the world width and height in tiles."),
+    ] = None,
+    screen_size: Annotated[
+        int | None,
+        typer.Option(help="Override the renderer screen size."),
+    ] = None,
+    vision_range: Annotated[
+        int | None,
+        typer.Option(help="Override the agent vision range."),
+    ] = None,
+    num_environments: Annotated[
+        int | None,
+        typer.Option(help="Override the number of generated environments."),
+    ] = None,
+    num_curricula: Annotated[
+        int | None,
+        typer.Option(help="Override the number of curriculum buckets."),
+    ] = None,
+    min_episodes_per_curriculum: Annotated[
+        int | None,
+        typer.Option(help="Curriculum pacing override."),
+    ] = None,
+) -> None:
+    loaded_config = _load_cli_config(
+        config,
+        ("main", "train"),
+        ("train",),
+        ("training",),
+        ("base_config",),
+    )
+    _run_training_mode(
+        _build_training_config(
+            loaded_config,
+            algorithm=algorithm,
+            timesteps=timesteps,
+            seed=seed,
+            kg_completeness=kg_completeness,
+            num_tiles=num_tiles,
+            screen_size=screen_size,
+            vision_range=vision_range,
+            num_environments=num_environments,
+            num_curricula=num_curricula,
+            min_episodes_per_curriculum=min_episodes_per_curriculum,
+        )
+    )
+
+
+@app.command()
+def simulate(
+    config: Annotated[
+        Path | None,
+        typer.Option("--config", help="Load simulation settings from a JSON or TOML file."),
+    ] = None,
+    num_tiles: Annotated[
+        int | None,
+        typer.Option(help="Override the world width and height in tiles."),
+    ] = None,
+    screen_size: Annotated[
+        int | None,
+        typer.Option(help="Override the renderer screen size."),
+    ] = None,
+    vision_range: Annotated[
+        int | None,
+        typer.Option(help="Override the agent vision range."),
+    ] = None,
+    num_environments: Annotated[
+        int | None,
+        typer.Option(help="Override the number of generated environments."),
+    ] = None,
+    num_curricula: Annotated[
+        int | None,
+        typer.Option(help="Override the number of curriculum buckets."),
+    ] = None,
+    headless: Annotated[
+        bool | None,
+        typer.Option(
+            "--headless/--no-headless",
+            help="Override headless rendering from config or defaults.",
+        ),
+    ] = None,
+) -> None:
+    loaded_config = _load_cli_config(
+        config,
+        ("main", "simulate"),
+        ("simulate",),
+        ("base_config",),
+    )
+    _run_simulation_mode(
+        _build_game_manager_config(
+            "simulate",
+            loaded_config,
+            num_tiles=num_tiles,
+            screen_size=screen_size,
+            vision_range=vision_range,
+            headless=headless,
+        ),
+        _build_simulation_manager_config(
+            "simulate",
+            loaded_config,
+            num_environments=num_environments,
+            num_curricula=num_curricula,
+        ),
+    )
+
+
+def _run_app(argv: list[str] | None = None) -> int:
+    try:
+        result = app(args=argv, prog_name="tsp-rl-kg", standalone_mode=False)
+    except ClickExit as exc:
+        return exc.exit_code
+    except ClickException as exc:
+        exc.show()
+        return exc.exit_code
+
+    return result if isinstance(result, int) else 0
+
+
 def main(argv: list[str] | None = None) -> int:
-    configure_logging(log_dir="logs", level="INFO")
-    args = build_parser().parse_args(argv)
-
-    if args.mode == "train":
-        _run_training_mode(args)
-    elif args.mode == "simulate":
-        _run_simulation_mode(args)
-    else:
-        _run_play_mode(args)
-
-    return 0
+    return _run_app(argv)
 
 
 if __name__ == "__main__":

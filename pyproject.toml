@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "tsp_rl_kg"
 version = "0.1.0"
 description = "Reinforcement learning with knowledge graphs for TSP game environment"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 authors = [
     {name = "Antonio Mangoni", email = "antoniomangoni@gmail.com"},
 ]
@@ -17,7 +17,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.14",
 ]
 
 dependencies = [
@@ -33,10 +33,12 @@ dependencies = [
     "stable_baselines3>=2.3.2",
     "torch>=2.6.0",
     "torch_geometric>=2.6.0",
+    "typer"
 ]
 
 [project.scripts]
 tsp-rl-kg = "tsp_rl_kg.main:main"
+tsp-rl-kg-study = "tsp_rl_kg.rl.training.run:main"
 
 [tool.setuptools.package-data]
 tsp_rl_kg = ["assets/full_art/*.png", "assets/pixel_art/*.png"]
@@ -52,7 +54,7 @@ dev = [
 # Tool configurations for development
 [tool.black]
 line-length = 100
-target-version = ["py312"]
+target-version = ["py314"]
 
 [tool.isort]
 profile = "black"
@@ -60,7 +62,7 @@ line_length = 100
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py314"
 select = ["E", "F", "B", "I"]
 
 [tool.setuptools]
