@@ -1,0 +1,35 @@
+{
+  "main": {
+    "train": {
+      "algorithm": {
+        "algorithm": "PPO",
+        "hyperparameters": {
+          "n_steps": 8,
+          "batch_size": 4,
+          "learning_rate": 0.0003,
+          "gamma": 0.99
+        }
+      },
+      "simulation_manager": {
+        "number_of_environments": 8,
+        "number_of_curricula": 2,
+        "min_episodes_per_curriculum": 1
+      },
+      "curriculum": {
+        "min_episodes_per_curriculum": 1,
+        "performance_threshold": 0.5
+      },
+      "episode": {
+        "max_episode_steps": 8,
+        "max_steps_without_progress": 4
+      },
+      "evaluation": {
+        "eval_freq": 4,
+        "n_eval_episodes": 1
+      },
+      "total_timesteps": 8,
+      "kg_completeness": 0.5,
+      "seeds": [42]
+    }
+  }
+}

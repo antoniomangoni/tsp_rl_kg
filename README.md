@@ -55,7 +55,10 @@ To run the Reinforcement Learning training:
 uv run tsp-rl-kg train --algorithm PPO
 uv run tsp-rl-kg train --algorithm DQN
 uv run tsp-rl-kg train --config configs/train.json
+uv run tsp-rl-kg train --config configs/train_namespaced.json
 ```
+
+Example config files are included in `configs/train.json`, `configs/train_namespaced.json`, and `configs/ablation.toml`. `configs/train_namespaced.json` shows the `main.train` wrapper shape accepted by the CLI.
 
 2. For the ablation study runner, either use the Typer CLI or run the module file directly:
 

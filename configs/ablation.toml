@@ -1,0 +1,66 @@
+[study]
+mlflow_experiment_name = "example-ablation"
+kg_completeness_values = [0.5]
+
+[study.base_config]
+total_timesteps = 8
+kg_completeness = 0.5
+seeds = [42]
+
+[study.base_config.game_manager]
+num_tiles = 5
+screen_size = 20
+vision_range = 1
+headless = true
+
+[study.base_config.simulation_manager]
+number_of_environments = 8
+number_of_curricula = 2
+min_episodes_per_curriculum = 1
+
+[study.base_config.algorithm]
+algorithm = "PPO"
+
+[study.base_config.algorithm.hyperparameters]
+n_steps = 8
+batch_size = 4
+learning_rate = 0.0003
+gamma = 0.99
+
+[study.base_config.curriculum]
+min_episodes_per_curriculum = 1
+performance_threshold = 0.5
+
+[study.base_config.episode]
+max_episode_steps = 8
+max_steps_without_progress = 4
+
+[study.base_config.evaluation]
+eval_freq = 4
+n_eval_episodes = 1
+
+[[study.experiments]]
+name = "ppo_baseline"
+kg_completeness = 0.5
+
+[[study.experiments]]
+name = "vision_only"
+kg_completeness = 0.5
+
+[study.experiments.ablation]
+disable_graph = true
+
+[[study.experiments]]
+name = "dqn_baseline"
+kg_completeness = 0.5
+
+[study.experiments.algorithm]
+algorithm = "DQN"
+
+[study.experiments.algorithm.hyperparameters]
+learning_rate = 0.001
+buffer_size = 64
+learning_starts = 0
+batch_size = 4
+train_freq = 1
+gamma = 0.99
