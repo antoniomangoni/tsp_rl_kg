@@ -65,6 +65,7 @@ def test_main_builds_training_config_for_requested_algorithm():
     assert config.total_timesteps == 64
     assert config.game_manager.headless is True
     assert config.algorithm.hyperparameters["buffer_size"] == 1_024
+    assert config.episode.max_episode_steps == 128
 
 
 def test_main_dispatches_train_mode(monkeypatch):

@@ -118,6 +118,8 @@ class TestMoveEntity:
                 assert (new_x, new_y) == (nx, ny)
                 assert player.grid_x == nx
                 assert player.grid_y == ny
+                assert headless_environment.entity_index_grid[old_x, old_y] == 0
+                assert headless_environment.entity_index_grid[new_x, new_y] == ENTITY_ID_PLAYER
                 return
         pytest.skip("No passable neighbour found for player")
 

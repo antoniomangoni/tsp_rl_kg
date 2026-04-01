@@ -96,6 +96,28 @@ class TestKnowledgeGraphInit:
         assert kg.num_possible_nodes == expected
         assert kg.graph_manager.node_idx == expected
 
+    def test_rebuild_after_player_move_does_not_leave_stale_player_entities(
+        self,
+        headless_environment: Environment,
+    ):
+        player = headless_environment.player
+        old_x, old_y = player.grid_x, player.grid_y
+
+        for dx, dy in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
+            nx, ny = old_x + dx, old_y + dy
+            if headless_environment.is_move_valid(nx, ny):
+                headless_environment.move_entity(player, dx, dy)
+                kg = KnowledgeGraph(
+                    environment=headless_environment,
+                    vision_range=1,
+                    completion=1.0,
+                )
+                assert kg.player_pos == (nx, ny)
+                assert headless_environment.entity_index_grid[old_x, old_y] == 0
+                return
+
+        pytest.skip("No passable neighbour found for player")
+
 
 class TestKnowledgeGraphDiscovery:
     def test_discover_coordinate(self, headless_environment: Environment):

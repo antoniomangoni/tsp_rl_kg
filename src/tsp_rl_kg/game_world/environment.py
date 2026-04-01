@@ -230,8 +230,8 @@ class Environment:
             self.terrain_object_grid[location[0], location[1]].remove_entity()
         player = Player(location[0], location[1], self.tile_size)
         self.entity_group.add(player, layer=2)
-        # Cannot use the entity_index_grid to store the player id,
-        # as it is already used to store the woodpath id
+        # The player is tracked separately via environment.player, but the grid also marks the
+        # live player position for rendering and state-export convenience.
         self.entity_index_grid[location[0], location[1]] = player.id
         return player
 
@@ -248,8 +248,10 @@ class Environment:
             return current_x, current_y
 
         self.terrain_object_grid[current_x, current_y].remove_entity()
+        self.entity_index_grid[current_x, current_y] = 0
         entity.move(dx, dy)
         self.terrain_object_grid[new_x, new_y].add_entity(entity)
+        self.entity_index_grid[new_x, new_y] = entity.id
         # We never remove the entity from the entity_group, so no need to re-add it
         self.environment_changed(current_x, current_y, new_x, new_y)
         return new_x, new_y

@@ -52,6 +52,7 @@ class Trainer:
             config.simulation_manager,
             config.model_args,
             self.feature_encoder,
+            episode_config=config.episode,
             ablation_config=config.ablation,
         )
 
