@@ -342,6 +342,27 @@ class AgentModelConfig:
 
 
 @dataclass
+class FeatureEncodingConfig:
+    strategy: str = "one_hot"
+    schema_path: str | None = None
+    embedding_path: str | None = None
+
+    def __post_init__(self) -> None:
+        self.strategy = self.strategy.lower()
+        allowed_strategies = {"raw_int", "one_hot", "embedding_lookup"}
+        if self.strategy not in allowed_strategies:
+            raise ValueError(
+                f"strategy must be one of {sorted(allowed_strategies)}, got {self.strategy!r}"
+            )
+
+        if self.strategy == "embedding_lookup":
+            if not self.schema_path:
+                raise ValueError("schema_path is required when strategy='embedding_lookup'")
+            if not self.embedding_path:
+                raise ValueError("embedding_path is required when strategy='embedding_lookup'")
+
+
+@dataclass
 class AblationConfig:
     disable_vision: bool = False
     disable_graph: bool = False
@@ -373,6 +394,7 @@ class TrainingConfig:
     curriculum: CurriculumConfig = field(default_factory=CurriculumConfig)
     episode: EpisodeConfig = field(default_factory=EpisodeConfig)
     agent_model: AgentModelConfig = field(default_factory=AgentModelConfig)
+    feature_encoding: FeatureEncodingConfig = field(default_factory=FeatureEncodingConfig)
     ablation: AblationConfig = field(default_factory=AblationConfig)
     total_timesteps: int = 100_000
     kg_completeness: float = 0.5
@@ -403,6 +425,8 @@ class TrainingConfig:
             self.episode = EpisodeConfig(**self.episode)
         if isinstance(self.agent_model, dict):
             self.agent_model = AgentModelConfig(**self.agent_model)
+        if isinstance(self.feature_encoding, dict):
+            self.feature_encoding = FeatureEncodingConfig(**self.feature_encoding)
         if isinstance(self.ablation, dict):
             self.ablation = AblationConfig(**self.ablation)
 
@@ -443,6 +467,7 @@ class TrainingConfig:
         curriculum_data = d.get("curriculum", d.get("curriculum_config", {}))
         episode_data = d.get("episode", d.get("episode_config", {}))
         agent_model_data = d.get("agent_model", d.get("agent_model_config", {}))
+        feature_encoding_data = d.get("feature_encoding", d.get("feature_encoding_config", {}))
         ablation_data = d.get("ablation", d.get("ablation_config", {}))
 
         model_config = ModelConfig(**model_config_data)
@@ -465,6 +490,7 @@ class TrainingConfig:
             curriculum=CurriculumConfig(**curriculum_data),
             episode=EpisodeConfig(**episode_data),
             agent_model=AgentModelConfig(**agent_model_data),
+            feature_encoding=FeatureEncodingConfig(**feature_encoding_data),
             ablation=AblationConfig(**ablation_data),
             total_timesteps=d.get("total_timesteps", 100_000),
             kg_completeness=d.get("kg_completeness", 0.5),

@@ -11,6 +11,7 @@ import torch
 from loguru import logger
 
 from tsp_rl_kg.config import TrainingConfig
+from tsp_rl_kg.graph.feature_encoder import build_feature_encoder
 from tsp_rl_kg.rl.custom_env import CustomEnv
 from tsp_rl_kg.rl.training.environment_manager import EnvironmentManager
 from tsp_rl_kg.rl.training.model_trainer import ModelTrainer
@@ -28,6 +29,7 @@ class Trainer:
         logger.info(f"Using device: {self.device}")
         self.current_kg_completeness = current_kg_completeness
         self.results_dir = results_dir
+        self._feature_encoder_override = feature_encoder
         self.feature_encoder = feature_encoder
 
     def setup(self, config: TrainingConfig | dict, seed: int | None = None):
@@ -46,6 +48,13 @@ class Trainer:
         agent_model_config = config.agent_model
         agent_model_config.disable_vision = config.ablation.disable_vision
         agent_model_config.disable_graph = config.ablation.disable_graph
+
+        self.feature_encoder = self._feature_encoder_override
+        if self.feature_encoder is None:
+            self.feature_encoder = build_feature_encoder(
+                config.feature_encoding,
+                grid_size=config.game_manager.num_tiles,
+            )
 
         self.env_manager: EnvironmentManager = EnvironmentManager(
             config.game_manager,

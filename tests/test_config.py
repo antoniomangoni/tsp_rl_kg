@@ -12,6 +12,7 @@ from tsp_rl_kg.config import (
     CurriculumConfig,
     EpisodeConfig,
     EvaluationConfig,
+    FeatureEncodingConfig,
     GameManagerConfig,
     ModelConfig,
     ReplayConfig,
@@ -248,6 +249,22 @@ class TestExtendedTrainingConfigs:
         assert cfg.enabled is False
         assert cfg.latent_dim == 128
 
+    def test_feature_encoding_defaults(self):
+        cfg = FeatureEncodingConfig()
+        assert cfg.strategy == "one_hot"
+        assert cfg.schema_path is None
+        assert cfg.embedding_path is None
+
+    def test_feature_encoding_requires_paths_for_embedding_lookup(self):
+        with pytest.raises(ValueError, match="schema_path is required"):
+            FeatureEncodingConfig(strategy="embedding_lookup", embedding_path="embeddings.npy")
+
+        with pytest.raises(ValueError, match="embedding_path is required"):
+            FeatureEncodingConfig(
+                strategy="embedding_lookup",
+                schema_path="configs/semantic_schema.toml",
+            )
+
 
 # ---------------------------------------------------------------------------
 # TrainingConfig
@@ -309,7 +326,24 @@ class TestTrainingConfig:
         assert "replay" in d
         assert "sequence" in d
         assert "world_model" in d
+        assert "feature_encoding" in d
         assert d["game_manager"]["num_tiles"] == 32
+        assert d["feature_encoding"]["strategy"] == "one_hot"
+
+    def test_from_dict_feature_encoding(self):
+        cfg = TrainingConfig.from_dict(
+            {
+                "feature_encoding": {
+                    "strategy": "embedding_lookup",
+                    "schema_path": "configs/semantic_schema.toml",
+                    "embedding_path": "configs/embeddings/example.npy",
+                }
+            }
+        )
+
+        assert cfg.feature_encoding.strategy == "embedding_lookup"
+        assert cfg.feature_encoding.schema_path == "configs/semantic_schema.toml"
+        assert cfg.feature_encoding.embedding_path == "configs/embeddings/example.npy"
 
     def test_from_dict_invalid_nested_values(self):
         raw = {"game_manager_args": {"num_tiles": 0}}

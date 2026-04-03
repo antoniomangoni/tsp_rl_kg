@@ -25,6 +25,7 @@ def test_build_base_config_allows_backend_selection():
     assert config.simulation_manager.number_of_environments == 8
     assert "buffer_size" in config.algorithm.hyperparameters
     assert "n_steps" not in config.algorithm.hyperparameters
+    assert config.feature_encoding.strategy == "one_hot"
 
 
 def test_ablation_study_merges_algorithm_and_config_overrides(monkeypatch, tmp_path):
@@ -56,6 +57,27 @@ def test_ablation_study_merges_algorithm_and_config_overrides(monkeypatch, tmp_p
     assert experiment_config.algorithm.hyperparameters["learning_rate"] == 1e-4
     assert experiment_config.evaluation.n_eval_episodes == 2
     assert base_config.algorithm.algorithm == AlgorithmName.PPO
+
+
+def test_ablation_study_merges_feature_encoding_overrides(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    base_config = build_base_config(
+        total_timesteps=32,
+        seeds=[11],
+        number_of_environments=8,
+        number_of_curricula=2,
+    )
+    study = AblationStudy(base_config, kg_completeness_values=[0.5], experiments=[])
+
+    experiment_config, _, _ = study._build_experiment_config(
+        {
+            "name": "raw_int_override",
+            "config_overrides": {"feature_encoding": {"strategy": "raw_int"}},
+        }
+    )
+
+    assert experiment_config.feature_encoding.strategy == "raw_int"
+    assert base_config.feature_encoding.strategy == "one_hot"
 
 
 def test_main_builds_training_config_for_requested_algorithm():

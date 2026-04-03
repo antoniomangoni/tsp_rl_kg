@@ -27,6 +27,9 @@
         "eval_freq": 4,
         "n_eval_episodes": 1
       },
+      "feature_encoding": {
+        "strategy": "one_hot"
+      },
       "total_timesteps": 8,
       "kg_completeness": 0.5,
       "seeds": [42]

@@ -39,6 +39,9 @@ max_steps_without_progress = 4
 eval_freq = 4
 n_eval_episodes = 1
 
+[study.base_config.feature_encoding]
+strategy = "one_hot"
+
 [[study.experiments]]
 name = "ppo_baseline"
 kg_completeness = 0.5
@@ -64,3 +67,10 @@ learning_starts = 0
 batch_size = 4
 train_freq = 1
 gamma = 0.99
+
+[[study.experiments]]
+name = "raw_int_baseline"
+kg_completeness = 0.5
+
+[study.experiments.config_overrides.feature_encoding]
+strategy = "raw_int"

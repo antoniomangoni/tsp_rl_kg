@@ -1,0 +1,23 @@
+[meta]
+version = 1
+
+[terrain]
+"0" = "deep water terrain"
+"1" = "shallow water terrain"
+"2" = "open plains terrain"
+"3" = "rolling hills terrain"
+"4" = "rugged mountain terrain"
+"5" = "snow-covered highland terrain"
+
+[entity]
+"0" = "empty tile"
+"1" = "fish resource"
+"2" = "forest tree resource"
+"3" = "mossy rock obstacle"
+"4" = "snowy rock obstacle"
+"5" = "remote outpost destination"
+"6" = "wooden path marker"
+"7" = "reserved player entity slot"
+
+[player]
+descriptor = "travelling player agent"
