@@ -1,12 +1,11 @@
 # Knowledge Graph-Enhanced Reinforcement Learning for NPC Decision Making
 
-## Master Thesis Overview
-
-*Neuro-Symbolic Creation of Non-Playable Characters*
-
-This master thesis explores the integration of Knowledge Graphs (KGs) with Reinforcement Learning (RL) to enhance the decision-making capabilities of Non-Player Characters (NPCs) in video games. It features a custom-built game environment simulating a Travelling Salesman Problem (TSP) with procedurally generated terrain and resources.
-
-[Read the full thesis (PDF)](https://gupea.ub.gu.se/bitstream/handle/2077/86450/CSE%2024-36%20AM.pdf?sequence=1&isAllowed=y)
+A research engineering project combining knowledge graphs with reinforcement learning for NPC
+decision-making in a custom game environment. The agent navigates a procedurally generated world
+modelled as a Travelling Salesman Problem (TSP), using a hybrid CNN-GAT policy that fuses visual
+observations with a dynamic knowledge graph built from discovered terrain and entity data. Training
+is handled by a composable backend layer (SB3 PPO and DQN) and an ablation study CLI for
+systematic experiments across different KG completeness configurations.
 
 ## Key Features
 
@@ -16,88 +15,99 @@ This master thesis explores the integration of Knowledge Graphs (KGs) with Reinf
 - Composable RL backend layer with SB3 PPO and DQN support
 - Ablation study across different KG completeness levels
 
+## System Overview
+
+```mermaid
+flowchart TD
+    CLI["main.py Typer CLI\nplay / train / simulate"]
+
+    subgraph ConfigPkg["tsp_rl_kg.config + utils"]
+      CFG["TrainingConfig\nGameManagerConfig\nSimulationManagerConfig"]
+      CFGL["load_config_file\nfind_mapping_section"]
+    end
+
+    subgraph GameplayPkg["game_world + rl runtime"]
+      ENV["rl.custom_env.CustomEnv\n(Gym training context)"]
+      SIM["rl.simulation_manager.SimulationManager\n(curriculum / game-world pool)"]
+      GM["game_world.game_manager.GameManager\n(single game world)"]
+      ENV --> SIM --> GM
+    end
+
+    subgraph TrainPkg["rl.training"]
+      TR["trainer.Trainer"]
+      MT["model_trainer.ModelTrainer"]
+      BE["backends (TrainingBackend)"]
+      EV["evaluation.EpisodeEvaluator"]
+      TS["trajectory_store"]
+    end
+
+    subgraph KGObsPkg["knowledge + graph + observation pipeline"]
+      KG["knowledge.KnowledgeGraph"]
+      CON["graph.constitution"]
+      FE["graph.feature_encoder"]
+      PROJ["graph.projection"]
+      OE["observation.encoder\n(PaddedPyGObservationEncoder)"]
+      KG --> CON --> FE --> OE
+      KG --> PROJ --> OE
+    end
+
+    subgraph ModelPkg["rl.agent_model (HybridEncoder)"]
+      CNN["VisionEncoder\n(CNN)"]
+      GAT["GraphEncoder\n(GAT)"]
+      FUSION["fusion FC"]
+      CNN --> FUSION
+      GAT --> FUSION
+    end
+
+    CLI --> CFGL --> CFG
+    CLI -->|play| GM
+    CLI -->|simulate| SIM
+    CLI -->|train| TR
+
+    TR --> ENV
+    TR --> MT --> BE --> EV
+    BE -. optional world-model data .-> TS
+
+    GM -->|"game state"| KG
+    ENV -->|"vision window"| OE
+    OE -->|"vision obs"| CNN
+    OE -->|"graph obs"| GAT
+    FUSION -->|"action"| ENV
+```
+
 ## Project Structure
 
 ### `src/tsp_rl_kg` (top level)
-Root package containing the CLI entrypoint and shared config contracts.
-
-- `main.py` — Typer CLI (`play`, `train`, `simulate` commands).
-- `config.py` — typed config dataclasses and enums (`TrainingConfig`, `GameManagerConfig`, `AlgorithmConfig`, etc.).
-- `renderer.py` — optional Pygame renderer used by `game_world`.
+Root package containing the CLI entrypoint and shared config contracts: `main.py` (Typer CLI with
+`play`, `train`, `simulate` commands), `config.py` (typed dataclasses and enums), and
+`renderer.py` (optional Pygame renderer).
 
 ### `src/tsp_rl_kg/game_world`
-Core simulation domain and world state.
-
-- `actions.py` — available in-world action definitions.
-- `agent.py` — agent state and behavior in the world.
-- `entities.py` — game entity/data structures.
-- `environment.py` — environment step/reset coordination.
-- `game_manager.py` — world orchestration and episode lifecycle support.
-- `heightmap_generator.py` — procedural terrain generation helpers.
-- `terrains.py` — terrain types and terrain-specific constants/logic.
+Core simulation domain: environment step/reset coordination, agent state, game entity structures,
+procedural terrain generation, and episode lifecycle management.
 
 ### `src/tsp_rl_kg/knowledge`
-Knowledge graph construction and index helpers.
-
-- `knowledge_graph.py` — KG representation and update/query routines.
-- `graph_idx_manager.py` — index mapping utilities used by KG nodes/edges.
+Knowledge graph construction (`knowledge_graph.py`) and index mapping utilities
+(`graph_idx_manager.py`).
 
 ### `src/tsp_rl_kg/graph`
-Graph feature processing and schema/constitution helpers.
-
-- `constitution.py` — graph constitution/schema-related definitions.
-- `feature_encoder.py` — feature encoding for graph inputs.
-- `graph_idx_manager.py` — graph index management utilities.
-- `projection.py` — projection/transformation utilities for graph outputs.
+Graph feature processing: schema/constitution definitions, feature encoding (RawInt / OneHot /
+EmbeddingLookup), and projection/transformation of graph outputs.
 
 ### `src/tsp_rl_kg/observation`
-Observation encoding boundary between environment and model.
-
-- `encoder.py` — observation encoding and model-ready tensor conversion.
+Observation encoding boundary between the game environment and the RL policy (`encoder.py`).
 
 ### `src/tsp_rl_kg/rl`
-RL-facing environment wrappers, models, and reward logic.
-
-- `agent_model.py` — RL policy/model architecture entrypoint.
-- `custom_env.py` — Gymnasium-compatible environment wrapper.
-- `encoders.py` — RL encoder components.
-- `reward.py` — reward shaping and reward aggregation logic.
-- `simulation_manager.py` — simulation coordination for RL runs.
-- `target.py` — target/task abstractions used by RL components.
+RL-facing wrappers and model components: Gymnasium-compatible environment, CNN-GAT policy
+architecture, reward shaping, and simulation coordination.
 
 ### `src/tsp_rl_kg/rl/training`
-Training orchestration, studies, evaluation, and backend adapters.
-
-- `run.py` — ablation-study CLI entrypoint (`tsp-rl-kg-study`).
-- `trainer.py` — core training loop orchestration.
-- `model_trainer.py` — model training execution utilities.
-- `environment_manager.py` — vectorized/single env setup management.
-- `callbacks.py` — training callback hooks.
-- `curriculum.py` — curriculum scheduling logic.
-- `evaluation.py` — evaluation and benchmark routines.
-- `metrics.py` — metric calculation/reporting helpers.
-- `sequence_sampler.py` — sequence sampling helpers.
-- `trajectory_store.py` — trajectory persistence/buffering utilities.
-- `ablation_study.py` — ablation experiment coordinator.
-- `backends/base.py` — backend interface/contract.
-- `backends/sb3.py` — Stable-Baselines3 backend implementation.
+Training orchestration, ablation studies, evaluation, and backend adapters. Entry point for
+ablation runs: `run.py` (`tsp-rl-kg-study`). Backend protocol defined in `backends/base.py`;
+Stable-Baselines3 implementation in `backends/sb3.py`.
 
 ### `src/tsp_rl_kg/utils`
-Shared utility helpers.
-
-- `config_files.py` — JSON/TOML loading, section extraction, and dict merge helpers.
-- `helper_functions.py` — generic utility helpers.
-- `logger.py` — logging setup/configuration.
-
-## Diagrams
-
-Architecture diagrams are maintained in `docs/mermaid_diagrams/` and aligned with the current code:
-
-- [`system_overview.md`](docs/mermaid_diagrams/system_overview.md): `main.py` entrypoints and package boundaries.
-- [`training_backend_protocols.md`](docs/mermaid_diagrams/training_backend_protocols.md): backend contracts in `rl/training/backends/base.py`.
-- [`training_sb3_backend.md`](docs/mermaid_diagrams/training_sb3_backend.md): SB3 backend internals (`rl/training/backends/sb3.py`).
-- [`training_orchestration.md`](docs/mermaid_diagrams/training_orchestration.md): interaction across `trainer.py`, `environment_manager.py`, `curriculum.py`, `evaluation.py`, and `trajectory_store.py`.
-- [`kg_observation_flow.md`](docs/mermaid_diagrams/kg_observation_flow.md): knowledge-graph constitution/projection/encoding and observation assembly.
+Shared helpers: JSON/TOML config loading, generic utilities, and logging setup.
 
 ## Running the Project
 
@@ -146,6 +156,15 @@ Both CLIs accept JSON or TOML.
 
 Within study config, the base training config can be provided under `base_config` (or `training` / `training_config`).
 
+## Architecture Diagrams
+
+Detailed architecture diagrams are maintained in `docs/mermaid_diagrams/` and aligned with the current code:
+
+- [`training_backend_protocols.md`](docs/mermaid_diagrams/training_backend_protocols.md): backend contracts in `rl/training/backends/base.py`.
+- [`training_sb3_backend.md`](docs/mermaid_diagrams/training_sb3_backend.md): SB3 backend internals (`rl/training/backends/sb3.py`).
+- [`training_orchestration.md`](docs/mermaid_diagrams/training_orchestration.md): interaction across `trainer.py`, `environment_manager.py`, `curriculum.py`, `evaluation.py`, and `trajectory_store.py`.
+- [`kg_observation_flow.md`](docs/mermaid_diagrams/kg_observation_flow.md): knowledge-graph constitution/projection/encoding and observation assembly.
+
 ## Docs Index
 
 - Root documentation:
@@ -166,6 +185,16 @@ Within study config, the base training config can be provided under `base_config
   - [`docs/mermaid_diagrams/training_sb3_backend.md`](docs/mermaid_diagrams/training_sb3_backend.md)
   - [`docs/mermaid_diagrams/training_orchestration.md`](docs/mermaid_diagrams/training_orchestration.md)
   - [`docs/mermaid_diagrams/kg_observation_flow.md`](docs/mermaid_diagrams/kg_observation_flow.md)
+
+## Background
+
+This project originated as a master's thesis at the University of Gothenburg (2024), investigating
+neuro-symbolic approaches to NPC decision-making by combining knowledge graphs with reinforcement
+learning. Since submission it has continued to evolve as a standalone research engineering
+project — the codebase has been substantially refactored, extended with a composable backend layer,
+and equipped with an ablation study framework that did not exist in the original thesis.
+
+[Read the full thesis (PDF)](https://gupea.ub.gu.se/bitstream/handle/2077/86450/CSE%2024-36%20AM.pdf?sequence=1&isAllowed=y)
 
 ## Contributing
 
