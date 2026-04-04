@@ -13,43 +13,113 @@ This master thesis explores the integration of Knowledge Graphs (KGs) with Reinf
 - Custom game environment with procedurally generated terrain
 - Dynamic Knowledge Graph integration
 - Hybrid CNN-GAT model for processing visual and graph-based inputs
-- Composable RL backend layer with SB3 PPO and DQN support today
+- Composable RL backend layer with SB3 PPO and DQN support
 - Ablation study across different KG completeness levels
 
 ## Project Structure
 
-Flow diagrams can be found in the `mermaid_diagrams` folder:
+<<<<<<< ours
+### `src/tsp_rl_kg/game_world`
+Core simulation domain and world state.
 
-- `flow.md`: Overall project structure
-- `environment.md`: Custom game environment creation via Perlin noise
-- `game_manager.md`: Game world creation and target energy route calculation
-- `pipeline.md`: Data flow into the agent model
-- `agent_model.md`: Structure of the agent model
-- `reward.md`: Decision flow of the reward structure
+- `actions.py` — available in-world action definitions.
+- `agent.py` — agent state and behavior in the world.
+- `entities.py` — game entity/data structures.
+- `environment.py` — environment step/reset coordination.
+- `game_manager.py` — world orchestration and episode lifecycle support.
+- `heightmap_generator.py` — procedural terrain generation helpers.
+- `terrains.py` — terrain types and terrain-specific constants/logic.
+
+### `src/tsp_rl_kg/knowledge`
+Knowledge graph construction and index helpers.
+
+- `knowledge_graph.py` — KG representation and update/query routines.
+- `graph_idx_manager.py` — index mapping utilities used by KG nodes/edges.
+
+### `src/tsp_rl_kg/graph`
+Graph feature processing and schema/constitution helpers.
+
+- `constitution.py` — graph constitution/schema-related definitions.
+- `feature_encoder.py` — feature encoding for graph inputs.
+- `graph_idx_manager.py` — graph index management utilities.
+- `projection.py` — projection/transformation utilities for graph outputs.
+
+### `src/tsp_rl_kg/observation`
+Observation encoding boundary between environment and model.
+
+- `encoder.py` — observation encoding and model-ready tensor conversion.
+
+### `src/tsp_rl_kg/rl`
+RL-facing environment wrappers, models, and reward logic.
+
+- `agent_model.py` — RL policy/model architecture entrypoint.
+- `custom_env.py` — Gymnasium-compatible environment wrapper.
+- `encoders.py` — RL encoder components.
+- `reward.py` — reward shaping and reward aggregation logic.
+- `simulation_manager.py` — simulation coordination for RL runs.
+- `target.py` — target/task abstractions used by RL components.
+
+### `src/tsp_rl_kg/rl/training`
+Training orchestration, studies, evaluation, and backend adapters.
+
+- `run.py` — ablation-study CLI entrypoint (`tsp-rl-kg-study`).
+- `trainer.py` — core training loop orchestration.
+- `model_trainer.py` — model training execution utilities.
+- `environment_manager.py` — vectorized/single env setup management.
+- `callbacks.py` — training callback hooks.
+- `curriculum.py` — curriculum scheduling logic.
+- `evaluation.py` — evaluation and benchmark routines.
+- `metrics.py` — metric calculation/reporting helpers.
+- `sequence_sampler.py` — sequence sampling helpers.
+- `trajectory_store.py` — trajectory persistence/buffering utilities.
+- `ablation_study.py` — ablation experiment coordinator.
+- `backends/base.py` — backend interface/contract.
+- `backends/sb3.py` — Stable-Baselines3 backend implementation.
+
+### `src/tsp_rl_kg/utils`
+Shared utility helpers.
+
+- `config_files.py` — JSON/TOML loading, section extraction, and dict merge helpers.
+- `helper_functions.py` — generic utility helpers.
+- `logger.py` — logging setup/configuration.
+
+## Diagrams
+
+Mermaid design/flow docs live under `docs/mermaid_diagrams/`:
+
+- [`flow.md`](docs/mermaid_diagrams/flow.md) — overall project flow.
+- [`environment.md`](docs/mermaid_diagrams/environment.md) — environment creation flow.
+- [`game_manager.md`](docs/mermaid_diagrams/game_manager.md) — game manager/world lifecycle.
+- [`pipeline.md`](docs/mermaid_diagrams/pipeline.md) — input pipeline and data flow.
+- [`agent_model.md`](docs/mermaid_diagrams/agent_model.md) — model architecture.
+- [`reward.md`](docs/mermaid_diagrams/reward.md) — reward decision flow.
+- [`kg.md`](docs/mermaid_diagrams/kg.md) — knowledge graph modeling flow.
+- [`sim_env.md`](docs/mermaid_diagrams/sim_env.md) — simulation environment behavior.
+=======
+Architecture diagrams are maintained in `docs/mermaid_diagrams/` and aligned with the current code:
+
+- `system_overview.md`: `main.py` entrypoints and package boundaries.
+- `training_backend_protocols.md`: backend contracts in `rl/training/backends/base.py`.
+- `training_sb3_backend.md`: SB3 backend internals (`rl/training/backends/sb3.py`).
+- `training_orchestration.md`: interaction across `trainer.py`, `environment_manager.py`, `curriculum.py`, `evaluation.py`, and `trajectory_store.py`.
+- `kg_observation_flow.md`: knowledge-graph constitution/projection/encoding and observation assembly.
+>>>>>>> theirs
 
 ## Running the Project
 
-### Non-RL Version
+Installed console scripts (from `pyproject.toml`):
 
-To run the project without Reinforcement Learning:
+- `tsp-rl-kg = tsp_rl_kg.main:main`
+- `tsp-rl-kg-study = tsp_rl_kg.rl.training.run:main`
 
-1. Run a single interactive world:
+### Non-RL / world commands (`tsp-rl-kg`)
 
 ```bash
 uv run tsp-rl-kg play
-```
-
-2. Export a small batch of generated worlds:
-
-```bash
 uv run tsp-rl-kg simulate
 ```
 
-### RL Version
-
-To run the Reinforcement Learning training:
-
-1. For a quick config-driven training run through the shared trainer path:
+### RL training via main CLI (`tsp-rl-kg`)
 
 ```bash
 uv run tsp-rl-kg train --algorithm PPO
@@ -58,49 +128,55 @@ uv run tsp-rl-kg train --config configs/train.json
 uv run tsp-rl-kg train --config configs/train_namespaced.json
 ```
 
-Example config files are included in `configs/train.json`, `configs/train_namespaced.json`, and `configs/ablation.toml`. `configs/train_namespaced.json` shows the `main.train` wrapper shape accepted by the CLI.
-
-2. For the ablation study runner, either use the Typer CLI or run the module file directly:
+### Ablation study CLI (`tsp-rl-kg-study`)
 
 ```bash
 uv run tsp-rl-kg-study --config configs/ablation.toml
-uv run python src/tsp_rl_kg/rl/training/run.py --config configs/ablation.toml
 ```
 
-3. The CLIs accept JSON or TOML config files. `tsp-rl-kg train` loads a `TrainingConfig`-shaped mapping from the root, `train`, `training`, `main.train`, or `base_config`. `tsp-rl-kg-study` loads a study spec from the root, `study`, `ablation`, or `run`.
+## Configuration Shapes (Concise)
 
-4. The training stack is configured via `TrainingConfig.algorithm`, not just legacy PPO-only `model_config` values. A typical config now looks like:
+Both CLIs accept JSON or TOML.
 
-```python
-min_episodes_per_curriculum = 4
-base_config = {
-    "model_args": {"num_actions": 11},
-    "game_manager": {"num_tiles": 5, "screen_size": 20, "vision_range": 1, "headless": True},
-    "simulation_manager": {
-        "number_of_environments": 3000,
-        "number_of_curricula": 30,
-        "min_episodes_per_curriculum": min_episodes_per_curriculum,
-    },
-    "algorithm": {
-        "backend": "sb3",
-        "algorithm": "PPO",
-        "policy_name": "MultiInputPolicy",
-        "hyperparameters": {
-            "n_steps": 4096,
-            "batch_size": 512,
-            "learning_rate": 6e-4,
-            "gamma": 0.995,
-        },
-    },
-    "curriculum": {
-        "min_episodes_per_curriculum": min_episodes_per_curriculum,
-        "performance_threshold": 0.85,
-    },
-    "total_timesteps": 100000,
-}
-```
+- `tsp-rl-kg` (`src/tsp_rl_kg/main.py`) loads training config from the first matching mapping among:
+  - root object
+  - `train`
+  - `training`
+  - `main.train`
+  - `base_config`
+- `tsp-rl-kg-study` (`src/tsp_rl_kg/rl/training/run.py`) loads study config from the first matching mapping among:
+  - root object
+  - `ablation`
+  - `study`
+  - `run`
 
-The environment, knowledge-graph, and observation contracts stay stable; backend choice and algorithm cadence live in the training layer.
+Within study config, the base training config can be provided under `base_config` (or `training` / `training_config`).
+
+## Docs Index
+
+- Root documentation:
+  - [`README.md`](README.md)
+- Module READMEs:
+  - _No module-level `README.md` files are currently present under `src/tsp_rl_kg/`._
+- Mermaid diagrams:
+  - [`docs/mermaid_diagrams/flow.md`](docs/mermaid_diagrams/flow.md)
+  - [`docs/mermaid_diagrams/environment.md`](docs/mermaid_diagrams/environment.md)
+  - [`docs/mermaid_diagrams/game_manager.md`](docs/mermaid_diagrams/game_manager.md)
+  - [`docs/mermaid_diagrams/pipeline.md`](docs/mermaid_diagrams/pipeline.md)
+  - [`docs/mermaid_diagrams/agent_model.md`](docs/mermaid_diagrams/agent_model.md)
+  - [`docs/mermaid_diagrams/reward.md`](docs/mermaid_diagrams/reward.md)
+  - [`docs/mermaid_diagrams/kg.md`](docs/mermaid_diagrams/kg.md)
+  - [`docs/mermaid_diagrams/sim_env.md`](docs/mermaid_diagrams/sim_env.md)
+
+Training-layer diagram references:
+
+- [Backend protocols](docs/mermaid_diagrams/training_backend_protocols.md)
+- [SB3 backend internals](docs/mermaid_diagrams/training_sb3_backend.md)
+- [Training orchestration](docs/mermaid_diagrams/training_orchestration.md)
+
+KG/observation diagram reference:
+
+- [KG and observation flow](docs/mermaid_diagrams/kg_observation_flow.md)
 
 ## Contributing
 
