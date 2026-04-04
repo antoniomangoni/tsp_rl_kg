@@ -9,7 +9,7 @@ Owns reusable support utilities for logging, config file loading/merging, and he
 - `time_function` decorator (`helper_functions.py`).
 
 ## Inputs / outputs and neighboring package interactions
-- **Inputs:** file paths for YAML/JSON configs, nested mapping overrides, logger sink settings.
+- **Inputs:** file paths for JSON/TOML configs, nested mapping overrides, logger sink settings.
 - **Outputs:** validated/merged config mappings, structured logging behavior, and timing instrumentation wrappers.
 - **Neighbor interactions:**
   - Used by training CLI and orchestration (`rl.training.run`, `heightmap_generator`, and other modules importing logger/config helpers).

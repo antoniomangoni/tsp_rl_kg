@@ -18,7 +18,13 @@ This master thesis explores the integration of Knowledge Graphs (KGs) with Reinf
 
 ## Project Structure
 
-<<<<<<< ours
+### `src/tsp_rl_kg` (top level)
+Root package containing the CLI entrypoint and shared config contracts.
+
+- `main.py` — Typer CLI (`play`, `train`, `simulate` commands).
+- `config.py` — typed config dataclasses and enums (`TrainingConfig`, `GameManagerConfig`, `AlgorithmConfig`, etc.).
+- `renderer.py` — optional Pygame renderer used by `game_world`.
+
 ### `src/tsp_rl_kg/game_world`
 Core simulation domain and world state.
 
@@ -85,25 +91,13 @@ Shared utility helpers.
 
 ## Diagrams
 
-Mermaid design/flow docs live under `docs/mermaid_diagrams/`:
-
-- [`flow.md`](docs/mermaid_diagrams/flow.md) — overall project flow.
-- [`environment.md`](docs/mermaid_diagrams/environment.md) — environment creation flow.
-- [`game_manager.md`](docs/mermaid_diagrams/game_manager.md) — game manager/world lifecycle.
-- [`pipeline.md`](docs/mermaid_diagrams/pipeline.md) — input pipeline and data flow.
-- [`agent_model.md`](docs/mermaid_diagrams/agent_model.md) — model architecture.
-- [`reward.md`](docs/mermaid_diagrams/reward.md) — reward decision flow.
-- [`kg.md`](docs/mermaid_diagrams/kg.md) — knowledge graph modeling flow.
-- [`sim_env.md`](docs/mermaid_diagrams/sim_env.md) — simulation environment behavior.
-=======
 Architecture diagrams are maintained in `docs/mermaid_diagrams/` and aligned with the current code:
 
-- `system_overview.md`: `main.py` entrypoints and package boundaries.
-- `training_backend_protocols.md`: backend contracts in `rl/training/backends/base.py`.
-- `training_sb3_backend.md`: SB3 backend internals (`rl/training/backends/sb3.py`).
-- `training_orchestration.md`: interaction across `trainer.py`, `environment_manager.py`, `curriculum.py`, `evaluation.py`, and `trajectory_store.py`.
-- `kg_observation_flow.md`: knowledge-graph constitution/projection/encoding and observation assembly.
->>>>>>> theirs
+- [`system_overview.md`](docs/mermaid_diagrams/system_overview.md): `main.py` entrypoints and package boundaries.
+- [`training_backend_protocols.md`](docs/mermaid_diagrams/training_backend_protocols.md): backend contracts in `rl/training/backends/base.py`.
+- [`training_sb3_backend.md`](docs/mermaid_diagrams/training_sb3_backend.md): SB3 backend internals (`rl/training/backends/sb3.py`).
+- [`training_orchestration.md`](docs/mermaid_diagrams/training_orchestration.md): interaction across `trainer.py`, `environment_manager.py`, `curriculum.py`, `evaluation.py`, and `trajectory_store.py`.
+- [`kg_observation_flow.md`](docs/mermaid_diagrams/kg_observation_flow.md): knowledge-graph constitution/projection/encoding and observation assembly.
 
 ## Running the Project
 
@@ -157,26 +151,21 @@ Within study config, the base training config can be provided under `base_config
 - Root documentation:
   - [`README.md`](README.md)
 - Module READMEs:
-  - _No module-level `README.md` files are currently present under `src/tsp_rl_kg/`._
+  - [`src/tsp_rl_kg/README.md`](src/tsp_rl_kg/README.md) — top-level package overview.
+  - [`src/tsp_rl_kg/game_world/README.md`](src/tsp_rl_kg/game_world/README.md)
+  - [`src/tsp_rl_kg/knowledge/README.md`](src/tsp_rl_kg/knowledge/README.md)
+  - [`src/tsp_rl_kg/graph/README.md`](src/tsp_rl_kg/graph/README.md)
+  - [`src/tsp_rl_kg/observation/README.md`](src/tsp_rl_kg/observation/README.md)
+  - [`src/tsp_rl_kg/rl/README.md`](src/tsp_rl_kg/rl/README.md)
+  - [`src/tsp_rl_kg/rl/training/README.md`](src/tsp_rl_kg/rl/training/README.md)
+  - [`src/tsp_rl_kg/rl/training/backends/README.md`](src/tsp_rl_kg/rl/training/backends/README.md)
+  - [`src/tsp_rl_kg/utils/README.md`](src/tsp_rl_kg/utils/README.md)
 - Mermaid diagrams:
-  - [`docs/mermaid_diagrams/flow.md`](docs/mermaid_diagrams/flow.md)
-  - [`docs/mermaid_diagrams/environment.md`](docs/mermaid_diagrams/environment.md)
-  - [`docs/mermaid_diagrams/game_manager.md`](docs/mermaid_diagrams/game_manager.md)
-  - [`docs/mermaid_diagrams/pipeline.md`](docs/mermaid_diagrams/pipeline.md)
-  - [`docs/mermaid_diagrams/agent_model.md`](docs/mermaid_diagrams/agent_model.md)
-  - [`docs/mermaid_diagrams/reward.md`](docs/mermaid_diagrams/reward.md)
-  - [`docs/mermaid_diagrams/kg.md`](docs/mermaid_diagrams/kg.md)
-  - [`docs/mermaid_diagrams/sim_env.md`](docs/mermaid_diagrams/sim_env.md)
-
-Training-layer diagram references:
-
-- [Backend protocols](docs/mermaid_diagrams/training_backend_protocols.md)
-- [SB3 backend internals](docs/mermaid_diagrams/training_sb3_backend.md)
-- [Training orchestration](docs/mermaid_diagrams/training_orchestration.md)
-
-KG/observation diagram reference:
-
-- [KG and observation flow](docs/mermaid_diagrams/kg_observation_flow.md)
+  - [`docs/mermaid_diagrams/system_overview.md`](docs/mermaid_diagrams/system_overview.md)
+  - [`docs/mermaid_diagrams/training_backend_protocols.md`](docs/mermaid_diagrams/training_backend_protocols.md)
+  - [`docs/mermaid_diagrams/training_sb3_backend.md`](docs/mermaid_diagrams/training_sb3_backend.md)
+  - [`docs/mermaid_diagrams/training_orchestration.md`](docs/mermaid_diagrams/training_orchestration.md)
+  - [`docs/mermaid_diagrams/kg_observation_flow.md`](docs/mermaid_diagrams/kg_observation_flow.md)
 
 ## Contributing
 

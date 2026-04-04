@@ -16,14 +16,14 @@ flowchart TD
     SB3B --> BUILD --> ALG
     BUILD --> MODEL["stable_baselines3 model\n(policy + AgentModel extractor)"]
 
-    SB3B -->|train()| CURR
+    SB3B -->|"train()"| CURR
     CURR --> CB
-    SB3B -->|train()| EVCB
+    SB3B -->|"train()"| EVCB
     MODEL --> LEARN
     CB --> LEARN
     EVCB --> LEARN
 
-    SB3B -->|predict() / save()| MODEL
+    SB3B -->|"predict() / save()"| MODEL
     SB3B --> MET --> OUT["MetricsDict\nmean_reward, losses, exploration_rate"]
 ```
 

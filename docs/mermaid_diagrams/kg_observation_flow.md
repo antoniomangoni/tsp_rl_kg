@@ -12,10 +12,10 @@ flowchart LR
     OBS["PaddedPyGObservationEncoder"]
     OUT["Gym Dict obs\nvision + node_features + edge_attr + edge_index"]
 
-    ENV -->|shared refs (read-only)| KG
+    ENV -->|"shared refs (read-only)"| KG
     KG -->|build graph| CON
     CON -->|encode nodes/edges| FE
-    KG -->|get_subgraph(player terrain idx)| PROJ
+    KG -->|"get_subgraph(player terrain idx)"| PROJ
     PROJ --> SUB
     ENV -->|vision window| OBS
     SUB --> OBS
