@@ -21,27 +21,25 @@ systematic experiments across different KG completeness configurations.
 flowchart TD
     CLI["main.py Typer CLI\nplay / train / simulate"]
 
-    subgraph ConfigPkg["tsp_rl_kg.config + utils"]
-      CFG["TrainingConfig\nGameManagerConfig\nSimulationManagerConfig"]
-      CFGL["load_config_file\nfind_mapping_section"]
+    subgraph GameWorldPkg["game_world"]
+      GM["game_manager.GameManager\n(single game world)"]
     end
 
-    subgraph GameplayPkg["game_world + rl runtime"]
-      ENV["rl.custom_env.CustomEnv\n(Gym training context)"]
-      SIM["rl.simulation_manager.SimulationManager\n(curriculum / game-world pool)"]
-      GM["game_world.game_manager.GameManager\n(single game world)"]
-      ENV --> SIM --> GM
+    subgraph TrainPkg["rl + rl.training"]
+      ENV["custom_env.CustomEnv\n(Gym training context)"]
+      SIM["simulation_manager.SimulationManager\n(curriculum / game-world pool)"]
+      TR["training.Trainer"]
+      MT["training.ModelTrainer"]
+      BE["training.backends (TrainingBackend)"]
+      EV["training.EpisodeEvaluator"]
+      TS["training.trajectory_store"]
+      ENV --> SIM
+      TR --> ENV
+      TR --> MT --> BE --> EV
+      BE -. optional world-model data .-> TS
     end
 
-    subgraph TrainPkg["rl.training"]
-      TR["trainer.Trainer"]
-      MT["model_trainer.ModelTrainer"]
-      BE["backends (TrainingBackend)"]
-      EV["evaluation.EpisodeEvaluator"]
-      TS["trajectory_store"]
-    end
-
-    subgraph KGObsPkg["knowledge + graph + observation pipeline"]
+    subgraph KGObsPkg["knowledge graph"]
       KG["knowledge.KnowledgeGraph"]
       CON["graph.constitution"]
       FE["graph.feature_encoder"]
@@ -59,15 +57,11 @@ flowchart TD
       GAT --> FUSION
     end
 
-    CLI --> CFGL --> CFG
     CLI -->|play| GM
     CLI -->|simulate| SIM
     CLI -->|train| TR
 
-    TR --> ENV
-    TR --> MT --> BE --> EV
-    BE -. optional world-model data .-> TS
-
+    SIM -->|"spawns"| GM
     GM -->|"game state"| KG
     ENV -->|"vision window"| OE
     OE -->|"vision obs"| CNN
