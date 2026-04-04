@@ -350,6 +350,8 @@ class CustomEnv(gym.Env):
                 gx = view_x + dx
                 gy = view_y + dy
                 if 0 <= gx < env.width and 0 <= gy < env.height:
+                    if not env.discovered_grid[gx, gy]:
+                        continue  # leave as black (0, 0, 0)
                     terrain = env.terrain_object_grid[gx, gy]
                     colour = terrain.colour if terrain.colour else (0, 0, 0)
                     px = dx * ts

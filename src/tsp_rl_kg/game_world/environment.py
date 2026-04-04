@@ -274,6 +274,7 @@ class Environment:
         if self.discovered_grid[x, y]:
             return False
         self.discovered_grid[x, y] = True
+        self.single_environment_changed(x, y)
         return True
 
     def init_discovered_area(self, center: tuple[int, int], radius: int) -> None:
