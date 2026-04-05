@@ -93,7 +93,7 @@ class Environment:
         self.discovered_grid = np.zeros((self.width, self.height), dtype=bool)
 
         self.environment_changed_flag = False
-        self.changed_tiles_list = []
+        self.changed_tiles: set[tuple[int, int]] = set()
 
     def get_random_zero_coordinate(self):
         zero_coords = np.argwhere(self.entity_index_grid == 0)
@@ -287,12 +287,12 @@ class Environment:
 
     def environment_changed(self, old_x, old_y, new_x, new_y):
         self.environment_changed_flag = True
-        self.changed_tiles_list.append((old_x, old_y))
-        self.changed_tiles_list.append((new_x, new_y))
+        self.changed_tiles.add((old_x, old_y))
+        self.changed_tiles.add((new_x, new_y))
 
     def single_environment_changed(self, x, y):
         self.environment_changed_flag = True
-        self.changed_tiles_list.append((x, y))
+        self.changed_tiles.add((x, y))
 
     def place_path(self, x, y):
         wood_path = WoodPath(x, y, self.tile_size)

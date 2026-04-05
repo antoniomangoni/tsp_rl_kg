@@ -23,6 +23,8 @@ class Renderer:
         self.fog_tile = pygame.Surface((self.tile_size, self.tile_size))
         self.fog_tile.fill((0, 0, 0))
 
+        self._heat_surface = pygame.Surface((self.tile_size, self.tile_size))
+
     def init_render(self):
         discovered = self.environment.discovered_grid
         # Draw terrain or fog onto the terrain surface
@@ -37,17 +39,22 @@ class Renderer:
 
         # Initial blit of the terrain surface onto the main surface
         self.surface.blit(self.terrain_surface, (0, 0))
-        # Draw entities only on discovered tiles
+        # Initial draw still uses the sprite group because this is a one-time full render.
         self.environment.entity_group.draw(self.surface)
-        self._overdraw_fog_on_entities()
+        for sprite in self.environment.entity_group:
+            gx, gy = sprite.grid_x, sprite.grid_y
+            if not discovered[gx, gy]:
+                self.surface.blit(self.fog_tile, (gx * self.tile_size, gy * self.tile_size))
         pygame.display.flip()
 
     def render_updated_tiles(self):
         if not self.environment.environment_changed_flag:
             return
 
+        changed_tiles = self.environment.changed_tiles
+
         # Go through the list of changed tiles and update them
-        for x, y in self.environment.changed_tiles_list:
+        for x, y in changed_tiles:
             self.update_tile(x, y)
             # Blit the updated terrain tile onto the main surface
             rect = pygame.Rect(
@@ -55,20 +62,19 @@ class Renderer:
             )
             self.surface.blit(self.terrain_surface, rect.topleft, rect)
 
-        # Redraw entities, then overdraw fog on any undiscovered tiles
-        # to hide entity sprites that entity_group.draw() renders globally.
-        self.environment.entity_group.draw(self.surface)
-        self._overdraw_fog_on_entities()
+            terrain_tile = self.environment.terrain_object_grid[x, y]
+            if self.environment.discovered_grid[x, y] and terrain_tile.entity_on_tile is not None:
+                self.surface.blit(terrain_tile.entity_on_tile.image, rect.topleft)
 
         # Finally, update the display only for the dirty rects
         dirty_rects = [
             pygame.Rect(x * self.tile_size, y * self.tile_size, self.tile_size, self.tile_size)
-            for x, y in self.environment.changed_tiles_list
+            for x, y in changed_tiles
         ]
         pygame.display.update(dirty_rects)
 
         # Clear the list of changed tiles after updating
-        self.environment.changed_tiles_list.clear()
+        changed_tiles.clear()
         self.environment.environment_changed_flag = False
 
     def update_tile(self, x, y):
@@ -80,20 +86,6 @@ class Renderer:
         # Directly access and redraw the terrain tile
         terrain_tile = self.environment.terrain_object_grid[x, y]
         self.terrain_surface.blit(terrain_tile.image, pos)
-
-        # Redraw the entity if present on this tile
-        if terrain_tile.entity_on_tile is not None:
-            self.surface.blit(terrain_tile.entity_on_tile.image, pos)
-
-    def _overdraw_fog_on_entities(self):
-        """Cover entity sprites on undiscovered tiles with fog."""
-        discovered = self.environment.discovered_grid
-        for sprite in self.environment.entity_group:
-            gx, gy = sprite.grid_x, sprite.grid_y
-            if not discovered[gx, gy]:
-                self.surface.blit(
-                    self.fog_tile, (gx * self.tile_size, gy * self.tile_size)
-                )
 
     def render_heatmap(self, max_intensity, bool_heatmap=False):
         if not bool_heatmap:
@@ -108,8 +100,7 @@ class Renderer:
                 if intensity > 0:
                     alpha = int((intensity / max_intensity) * 255)  # Scale intensity to 0-255 range
                     color = (*self.heatmap_colour[:3], alpha)  # Add alpha to the heatmap color
-                    heat_rect = pygame.Surface((self.tile_size, self.tile_size))
-                    heat_rect.set_alpha(alpha)
-                    heat_rect.fill(color[:3])
-                    self.surface.blit(heat_rect, (x * self.tile_size, y * self.tile_size))
+                    self._heat_surface.set_alpha(alpha)
+                    self._heat_surface.fill(color[:3])
+                    self.surface.blit(self._heat_surface, (x * self.tile_size, y * self.tile_size))
         pygame.display.update()
