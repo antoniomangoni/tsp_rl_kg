@@ -59,6 +59,7 @@ def _default_game_manager_config(
     screen_size: int | None = None,
     vision_range: int | None = None,
     headless: bool | None = None,
+    max_steps: int | None = None,
 ) -> GameManagerConfig:
     if mode == "train":
         return GameManagerConfig(
@@ -66,6 +67,7 @@ def _default_game_manager_config(
             screen_size=screen_size or 20,
             vision_range=vision_range or 1,
             headless=True if headless is None else headless,
+            max_steps=max_steps,
         )
 
     return GameManagerConfig(
@@ -73,6 +75,7 @@ def _default_game_manager_config(
         screen_size=screen_size or 800,
         vision_range=vision_range or 2,
         headless=False if headless is None else headless,
+        max_steps=max_steps,
     )
 
 
@@ -149,8 +152,18 @@ def _build_game_manager_config(
     screen_size: int | None = None,
     vision_range: int | None = None,
     headless: bool | None = None,
+    max_steps: int | None = None,
 ) -> GameManagerConfig:
-    default_config = asdict(_default_game_manager_config(mode))
+    default_config = asdict(
+        _default_game_manager_config(
+            mode,
+            num_tiles=num_tiles,
+            screen_size=screen_size,
+            vision_range=vision_range,
+            headless=headless,
+            max_steps=max_steps,
+        )
+    )
     config_data = {}
     if loaded_config is not None:
         raw_config = (
@@ -172,6 +185,8 @@ def _build_game_manager_config(
         merged_config["vision_range"] = vision_range
     if headless is not None:
         merged_config["headless"] = headless
+    if max_steps is not None:
+        merged_config["max_steps"] = max_steps
 
     return GameManagerConfig(**merged_config)
 
@@ -453,6 +468,10 @@ def play(
             help="Override headless rendering from config or defaults.",
         ),
     ] = None,
+    max_steps: Annotated[
+        int | None,
+        typer.Option(help="Optional max number of play-loop steps before auto-stop."),
+    ] = None,
 ) -> None:
     loaded_config = _load_cli_config(config, ("main", "play"), ("play",), ("base_config",))
     _run_play_mode(
@@ -463,6 +482,7 @@ def play(
             screen_size=screen_size,
             vision_range=vision_range,
             headless=headless,
+            max_steps=max_steps,
         )
     )
 

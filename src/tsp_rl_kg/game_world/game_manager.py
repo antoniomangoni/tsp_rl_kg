@@ -1,4 +1,5 @@
 import random
+from pathlib import Path
 
 import numpy as np
 import pygame
@@ -9,6 +10,7 @@ from tsp_rl_kg.game_world.actions import ActionType
 from tsp_rl_kg.game_world.agent import Agent
 from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.game_world.heightmap_generator import HeightmapGenerator
+from tsp_rl_kg.game_world.play_recorder import PlayRecorder
 from tsp_rl_kg.graph.projection import CompletenessProjection, ProjectionPolicy
 from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
 from tsp_rl_kg.renderer import Renderer
@@ -65,6 +67,8 @@ class GameManager:
         self.target_fps = self._config.target_fps
         self.clock: pygame.time.Clock | None = None
         self.vision_range = self._config.vision_range
+        self.max_steps = self._config.max_steps
+        self.recorder: PlayRecorder | None = None
         self.initialize_components()
 
     def init_pygame(self):
@@ -131,6 +135,12 @@ class GameManager:
         if projection is None:
             projection = CompletenessProjection(kg_completeness, self.vision_range, self.num_tiles)
         self.init_knowledge_graph(projection)
+        self.recorder = PlayRecorder(self._config)
+        self.recorder.write_run_start(
+            player_pos=(self.agent.grid_x, self.agent.grid_y),
+            discovered_tiles=PlayRecorder.count_discovered_tiles(self.environment.discovered_grid),
+        )
+        logger.info(f"Play recorder initialised at {self.recorder.paths.run_dir}")
         if not self.headless:
             self.initialise_rendering()
 
@@ -143,7 +153,7 @@ class GameManager:
     #   This is the main game loop that runs the game when the model is not being used  #
     #####################################################################################
 
-    def game_step(self):
+    def game_step(self) -> ActionType | None:
         action: ActionType | None = None
         if self.human_mode:
             action = (
@@ -161,6 +171,7 @@ class GameManager:
         #     self.target_manager.min_path_length
         # )
         self.rerender()
+        return action
 
     def _poll_human_action(self) -> ActionType | None:
         for event in pygame.event.get():
@@ -173,18 +184,40 @@ class GameManager:
 
     def run(self):
         i = 0
+        end_reason = "quit_event"
         self.start_game()
-        while self.running:
-            self.game_step()
+        while self.running and (self.max_steps is None or i < self.max_steps):
+            action = self.game_step()
             if self.clock is not None:
                 self.clock.tick(self.target_fps)
             # pygame.time.wait(1000)
             # save the surface to an image
-            if i % 10 == 0:
-                pygame.image.save(self.screen, f"game_world_{i}.jpeg")
+            frame_path: str | None = None
+            if i % 10 == 0 and not self.headless:
+                assert self.recorder is not None
+                frame_file = Path(self.recorder.paths.visual_dir) / f"game_world_{i}.jpeg"
+                pygame.image.save(self.screen, frame_file.as_posix())
+                frame_path = frame_file.as_posix()
+            if action is not None and self.recorder is not None:
+                self.recorder.append_step(
+                    step_index=i,
+                    action=action,
+                    player_pos=(self.agent.grid_x, self.agent.grid_y),
+                    energy_spent=self.agent_controler.energy_spent,
+                    wood=self.agent_controler.wood,
+                    stone=self.agent_controler.stone,
+                    discovered_tiles=PlayRecorder.count_discovered_tiles(
+                        self.environment.discovered_grid
+                    ),
+                    frame_path=frame_path,
+                )
             i += 1
             # exit()
 
+        if self.max_steps is not None and i >= self.max_steps:
+            end_reason = "max_steps_reached"
+        if self.recorder is not None:
+            self.recorder.write_run_end(end_reason=end_reason)
         pygame.quit()
         logger.info("Game closed")
         self.environment.print_environment()

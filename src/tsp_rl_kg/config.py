@@ -43,6 +43,7 @@ class GameManagerConfig:
     human_mode: bool = False
     use_random_human_actions: bool = False
     target_fps: int = 30
+    max_steps: int | None = None
 
     def __post_init__(self) -> None:
         if self.num_tiles < 1:
@@ -55,6 +56,8 @@ class GameManagerConfig:
             raise ValueError(f"vision_range must be >= 0, got {self.vision_range}")
         if self.target_fps < 1:
             raise ValueError(f"target_fps must be >= 1, got {self.target_fps}")
+        if self.max_steps is not None and self.max_steps < 1:
+            raise ValueError(f"max_steps must be >= 1 when provided, got {self.max_steps}")
 
 
 @dataclass
