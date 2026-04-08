@@ -40,6 +40,9 @@ class GameManagerConfig:
     screen_size: int = 800
     vision_range: int = 2
     headless: bool = False
+    human_mode: bool = False
+    use_random_human_actions: bool = False
+    target_fps: int = 30
 
     def __post_init__(self) -> None:
         if self.num_tiles < 1:
@@ -50,6 +53,8 @@ class GameManagerConfig:
             )
         if self.vision_range < 0:
             raise ValueError(f"vision_range must be >= 0, got {self.vision_range}")
+        if self.target_fps < 1:
+            raise ValueError(f"target_fps must be >= 1, got {self.target_fps}")
 
 
 @dataclass

@@ -16,6 +16,20 @@ from tsp_rl_kg.rl.target import Target_Manager
 
 
 class GameManager:
+    KEY_TO_ACTION: dict[int, ActionType] = {
+        pygame.K_a: ActionType.MOVE_LEFT,
+        pygame.K_d: ActionType.MOVE_RIGHT,
+        pygame.K_w: ActionType.MOVE_UP,
+        pygame.K_s: ActionType.MOVE_DOWN,
+        pygame.K_q: ActionType.SCOUT,
+        pygame.K_e: ActionType.BUILD_PATH,
+        pygame.K_r: ActionType.PLACE_ROCK,
+        pygame.K_i: ActionType.COLLECT_UP,
+        pygame.K_k: ActionType.COLLECT_DOWN,
+        pygame.K_l: ActionType.COLLECT_RIGHT,
+        pygame.K_j: ActionType.COLLECT_LEFT,
+    }
+
     def __init__(
         self,
         config: GameManagerConfig | None = None,
@@ -46,12 +60,17 @@ class GameManager:
         self.plot = plot
         self.feature_encoder = feature_encoder
         self.headless = self._config.headless
+        self.human_mode = self._config.human_mode
+        self.use_random_human_actions = self._config.use_random_human_actions
+        self.target_fps = self._config.target_fps
+        self.clock: pygame.time.Clock | None = None
         self.vision_range = self._config.vision_range
         self.initialize_components()
 
     def init_pygame(self):
         pygame.init()
         pygame.display.set_caption("Game World")
+        self.clock = pygame.time.Clock()
 
     def initialize_components(self):
         # Generate heightmap
@@ -117,18 +136,40 @@ class GameManager:
     #####################################################################################
 
     def game_step(self):
-        self.agent_controler.agent_action(random.choice(list(ActionType)))
+        action: ActionType | None = None
+        if self.human_mode:
+            action = (
+                random.choice(list(ActionType))
+                if self.use_random_human_actions
+                else self._poll_human_action()
+            )
+        else:
+            action = random.choice(list(ActionType))
+
+        if action is not None:
+            self.agent_controler.agent_action(action)
         # self.environment.update_heat_map(
         #     self.agent.grid_x, self.agent.grid_y,
         #     self.target_manager.min_path_length
         # )
         self.rerender()
 
+    def _poll_human_action(self) -> ActionType | None:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.end_game()
+                return None
+            if event.type == pygame.KEYDOWN and event.key in self.KEY_TO_ACTION:
+                return self.KEY_TO_ACTION[event.key]
+        return None
+
     def run(self):
         i = 0
         self.start_game()
         while self.running:
             self.game_step()
+            if self.clock is not None:
+                self.clock.tick(self.target_fps)
             # pygame.time.wait(1000)
             # save the surface to an image
             if i % 10 == 0:
