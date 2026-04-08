@@ -285,7 +285,7 @@ def _create_results_directory(prefix: str) -> str:
     return results_dir
 
 
-def _run_training_mode(config: TrainingConfig) -> None:
+def _run_training_mode(config: TrainingConfig) -> dict[str, Any]:
     results_dir = _create_results_directory("manual")
     experiment_name = f"manual_{config.algorithm.algorithm.value.lower()}"
     seed = config.seeds[0] if config.seeds else None
@@ -297,7 +297,57 @@ def _run_training_mode(config: TrainingConfig) -> None:
     trainer.setup(config, seed=seed)
     trainer.env_manager.set_kg_completeness(trainer.env, config.kg_completeness)
     trainer.env_manager.set_kg_completeness(trainer.eval_env, config.kg_completeness)
-    trainer.run(experiment_name)
+    return trainer.run(experiment_name)
+
+
+def _write_benchmark_summary(
+    *,
+    benchmark_result: dict[str, Any],
+    config: TrainingConfig,
+    benchmark_name: str = "vision_only",
+) -> str:
+    os.makedirs("results", exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    benchmark_file = os.path.join("results", f"benchmark_{timestamp}.json")
+    summary = {
+        "benchmark_name": benchmark_name,
+        "timestamp_utc": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "algorithm": config.algorithm.algorithm.value,
+        "total_timesteps": config.total_timesteps,
+        "seed": config.seeds[0] if config.seeds else None,
+        "kg_completeness": config.kg_completeness,
+        "ablation": {
+            "disable_vision": config.ablation.disable_vision,
+            "disable_graph": config.ablation.disable_graph,
+            "disable_curriculum": config.ablation.disable_curriculum,
+            "disable_reward_components": [c.value for c in config.ablation.disable_reward_components],
+        },
+        "metrics": {
+            "mean_reward": float(benchmark_result["mean_reward"]),
+            "std_reward": float(benchmark_result["std_reward"]),
+        },
+        "artifacts": {
+            "metrics_file": benchmark_result["metrics_file"],
+            "model_path": benchmark_result["model_path"],
+            "stats_file": benchmark_result["stats_file"],
+        },
+    }
+    with open(benchmark_file, "w", encoding="utf-8") as stream:
+        json.dump(summary, stream, indent=2, sort_keys=True)
+    logger.info(f"Benchmark summary written to {benchmark_file}")
+    return benchmark_file
+
+
+def _run_benchmark_mode(config: TrainingConfig) -> str:
+    benchmark_config = TrainingConfig.from_dict(config.to_dict())
+    benchmark_config.ablation.disable_graph = True
+    benchmark_config.ablation.disable_vision = False
+    benchmark_result = _run_training_mode(benchmark_config)
+    return _write_benchmark_summary(
+        benchmark_result=benchmark_result,
+        config=benchmark_config,
+        benchmark_name="vision_only",
+    )
 
 
 def _run_play_mode(config: GameManagerConfig) -> None:
@@ -463,6 +513,13 @@ def train(
         int | None,
         typer.Option(help="Curriculum pacing override."),
     ] = None,
+    benchmark: Annotated[
+        bool,
+        typer.Option(
+            "--benchmark/--no-benchmark",
+            help="Run standardized benchmark workflow (vision-only ablation) and write results/benchmark_*.json.",
+        ),
+    ] = False,
 ) -> None:
     loaded_config = _load_cli_config(
         config,
@@ -471,21 +528,23 @@ def train(
         ("training",),
         ("base_config",),
     )
-    _run_training_mode(
-        _build_training_config(
-            loaded_config,
-            algorithm=algorithm,
-            timesteps=timesteps,
-            seed=seed,
-            kg_completeness=kg_completeness,
-            num_tiles=num_tiles,
-            screen_size=screen_size,
-            vision_range=vision_range,
-            num_environments=num_environments,
-            num_curricula=num_curricula,
-            min_episodes_per_curriculum=min_episodes_per_curriculum,
-        )
+    training_config = _build_training_config(
+        loaded_config,
+        algorithm=algorithm,
+        timesteps=timesteps,
+        seed=seed,
+        kg_completeness=kg_completeness,
+        num_tiles=num_tiles,
+        screen_size=screen_size,
+        vision_range=vision_range,
+        num_environments=num_environments,
+        num_curricula=num_curricula,
+        min_episodes_per_curriculum=min_episodes_per_curriculum,
     )
+    if benchmark:
+        _run_benchmark_mode(training_config)
+    else:
+        _run_training_mode(training_config)
 
 
 @app.command()

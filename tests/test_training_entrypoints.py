@@ -152,6 +152,38 @@ def test_main_dispatches_train_mode(monkeypatch):
     assert called == {"algorithm": AlgorithmName.DQN}
 
 
+def test_main_train_benchmark_writes_standardized_metrics(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
+
+    def fake_run_training_mode(config):
+        assert config.ablation.disable_graph is True
+        assert config.ablation.disable_vision is False
+        return {
+            "mean_reward": 1.25,
+            "std_reward": 0.5,
+            "metrics_file": "results/manual_x/metrics.csv",
+            "model_path": "results/manual_x/model.zip",
+            "stats_file": "results/manual_x/profile_stats.txt",
+        }
+
+    monkeypatch.setattr(main_module, "_run_training_mode", fake_run_training_mode)
+
+    exit_code = main_module.main(["train", "--benchmark"])
+
+    assert exit_code == 0
+    benchmark_files = sorted((tmp_path / "results").glob("benchmark_*.json"))
+    assert len(benchmark_files) == 1
+
+    payload = json.loads(benchmark_files[0].read_text(encoding="utf-8"))
+    assert payload["benchmark_name"] == "vision_only"
+    assert "timestamp_utc" in payload
+    assert payload["ablation"]["disable_graph"] is True
+
+    required_metric_keys = {"mean_reward", "std_reward"}
+    assert required_metric_keys.issubset(payload["metrics"])
+
+
 def test_run_module_loads_external_toml_study_config(monkeypatch, tmp_path):
     config_path = tmp_path / "study.toml"
     config_path.write_text(
