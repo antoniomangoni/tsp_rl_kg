@@ -5,19 +5,31 @@ from tsp_rl_kg.game_world.environment import Environment
 
 
 class Renderer:
+    HUD_HEIGHT = 72
+    HUD_PADDING = 8
+    HUD_TEXT_COLOUR = (240, 240, 240)
+    HUD_BACKGROUND_COLOUR = (24, 24, 24)
+    HUD_FONT_SIZE = 22
+
     def __init__(self, environment: Environment, agent_control: Agent):
         self.environment = environment
         self.agent = agent_control  # Reference to the agent to access its status and inventory
         self.tile_size = environment.tile_size
-        self.window_width = environment.width * self.tile_size
-        self.window_height = environment.height * self.tile_size
+        self.game_area_width = environment.width * self.tile_size
+        self.game_area_height = environment.height * self.tile_size
+        self.window_width = self.game_area_width
+        self.window_height = self.game_area_height + self.HUD_HEIGHT
+        self.hud_top = self.game_area_height
 
         self.heatmap_colour = (255, 0, 0)  # Colour for the heatmap overlay is red
 
         self.surface = pygame.display.set_mode((self.window_width, self.window_height))
 
-        self.terrain_surface = pygame.Surface((self.window_width, self.window_height))
+        self.terrain_surface = pygame.Surface((self.game_area_width, self.game_area_height))
         self.terrain_surface.set_alpha(None)
+        self.hud_surface = pygame.Surface((self.window_width, self.HUD_HEIGHT))
+        self.hud_surface.fill(self.HUD_BACKGROUND_COLOUR)
+        self.font = pygame.font.Font(None, self.HUD_FONT_SIZE)
 
         # Reusable black tile for undiscovered (fog-of-war) areas
         self.fog_tile = pygame.Surface((self.tile_size, self.tile_size))
@@ -76,6 +88,17 @@ class Renderer:
         # Clear the list of changed tiles after updating
         changed_tiles.clear()
         self.environment.environment_changed_flag = False
+
+    def render_ui(self, status: dict[str, str | int | float]):
+        self.hud_surface.fill(self.HUD_BACKGROUND_COLOUR)
+        status_parts = [f"{key}: {value}" for key, value in status.items()]
+        status_text = "   |   ".join(status_parts)
+        text_surface = self.font.render(status_text, True, self.HUD_TEXT_COLOUR)
+        self.hud_surface.blit(text_surface, (self.HUD_PADDING, self.HUD_PADDING))
+        self.surface.blit(self.hud_surface, (0, self.hud_top))
+        pygame.display.update(
+            pygame.Rect(0, self.hud_top, self.window_width, self.HUD_HEIGHT),
+        )
 
     def update_tile(self, x, y):
         pos = (x * self.tile_size, y * self.tile_size)

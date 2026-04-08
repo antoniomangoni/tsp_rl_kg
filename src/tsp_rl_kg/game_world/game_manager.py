@@ -105,15 +105,23 @@ class GameManager:
 
     def initialise_rendering(self):
         self.renderer = Renderer(self.environment, self.agent_controler)
-        self.screen = pygame.display.set_mode(
-            (self.num_tiles * self.tile_size, self.num_tiles * self.tile_size)
-        )
+        self.screen = self.renderer.surface
         self.renderer.init_render()
+        self.renderer.render_ui(self._build_status())
+
+    def _build_status(self) -> dict[str, int]:
+        return {
+            "X": self.agent.grid_x,
+            "Y": self.agent.grid_y,
+            "Energy": self.agent_controler.energy_spent,
+            "Outposts": len(self.environment.outpost_locations),
+        }
 
     def rerender(self):
         if self.headless:
             return
         self.renderer.render_updated_tiles()
+        self.renderer.render_ui(self._build_status())
         # self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
         pygame.display.flip()
 
