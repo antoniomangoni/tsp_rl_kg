@@ -36,13 +36,27 @@ class TestGameManagerConfig:
         assert cfg.screen_size == 800
         assert cfg.vision_range == 2
         assert cfg.headless is False
+        assert cfg.human_mode is False
+        assert cfg.use_random_human_actions is False
+        assert cfg.target_fps == 30
 
     def test_custom_values(self):
-        cfg = GameManagerConfig(num_tiles=5, screen_size=250, vision_range=1, headless=True)
+        cfg = GameManagerConfig(
+            num_tiles=5,
+            screen_size=250,
+            vision_range=1,
+            headless=True,
+            human_mode=True,
+            use_random_human_actions=True,
+            target_fps=60,
+        )
         assert cfg.num_tiles == 5
         assert cfg.screen_size == 250
         assert cfg.vision_range == 1
         assert cfg.headless is True
+        assert cfg.human_mode is True
+        assert cfg.use_random_human_actions is True
+        assert cfg.target_fps == 60
 
     def test_invalid_num_tiles(self):
         with pytest.raises(ValueError, match="num_tiles must be >= 1"):
@@ -55,6 +69,10 @@ class TestGameManagerConfig:
     def test_negative_vision_range(self):
         with pytest.raises(ValueError, match="vision_range must be >= 0"):
             GameManagerConfig(vision_range=-1)
+
+    def test_invalid_target_fps(self):
+        with pytest.raises(ValueError, match="target_fps must be >= 1"):
+            GameManagerConfig(target_fps=0)
 
 
 # ---------------------------------------------------------------------------
