@@ -152,6 +152,123 @@ def test_main_dispatches_train_mode(monkeypatch):
     assert called == {"algorithm": AlgorithmName.DQN}
 
 
+def test_main_dispatches_play_mode_with_keyboard_control(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
+
+    def fake_run_play_mode(config):
+        captured["config"] = config
+
+    monkeypatch.setattr(main_module, "_run_play_mode", fake_run_play_mode)
+
+    exit_code = main_module.main(["play"])
+
+    assert exit_code == 0
+    assert captured["config"].human_mode is True
+    assert captured["config"].use_random_human_actions is False
+    assert captured["config"].headless is False
+
+
+def test_main_play_random_actions_flag_disables_human_mode(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
+
+    def fake_run_play_mode(config):
+        captured["config"] = config
+
+    monkeypatch.setattr(main_module, "_run_play_mode", fake_run_play_mode)
+
+    exit_code = main_module.main(["play", "--random-actions"])
+
+    assert exit_code == 0
+    assert captured["config"].human_mode is False
+    assert captured["config"].use_random_human_actions is False
+    assert captured["config"].headless is False
+
+
+def test_main_play_human_flag_overrides_config(monkeypatch, tmp_path):
+    config_path = tmp_path / "play_config.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "main": {
+                    "play": {
+                        "game_manager": {
+                            "human_mode": False,
+                            "use_random_human_actions": True,
+                        }
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    captured = {}
+    monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
+
+    def fake_run_play_mode(config):
+        captured["config"] = config
+
+    monkeypatch.setattr(main_module, "_run_play_mode", fake_run_play_mode)
+
+    exit_code = main_module.main(["play", "--config", str(config_path), "--human"])
+
+    assert exit_code == 0
+    assert captured["config"].human_mode is True
+    assert captured["config"].use_random_human_actions is False
+
+
+def test_main_play_rejects_headless_keyboard_control(monkeypatch, capsys):
+    monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
+    called = {"run_play_mode": False}
+
+    def fake_run_play_mode(config):
+        called["run_play_mode"] = True
+
+    monkeypatch.setattr(main_module, "_run_play_mode", fake_run_play_mode)
+
+    exit_code = main_module.main(["play", "--headless"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert called["run_play_mode"] is False
+    assert "Keyboard-controlled play requires a visible window." in captured.err
+
+
+def test_main_play_allows_headless_random_actions(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
+
+    def fake_run_play_mode(config):
+        captured["config"] = config
+
+    monkeypatch.setattr(main_module, "_run_play_mode", fake_run_play_mode)
+
+    exit_code = main_module.main(["play", "--headless", "--random-actions"])
+
+    assert exit_code == 0
+    assert captured["config"].headless is True
+    assert captured["config"].human_mode is False
+
+
+def test_main_simulate_keeps_non_human_default(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
+
+    def fake_run_simulation_mode(game_manager_config, simulation_manager_config):
+        captured["game_manager_config"] = game_manager_config
+        captured["simulation_manager_config"] = simulation_manager_config
+
+    monkeypatch.setattr(main_module, "_run_simulation_mode", fake_run_simulation_mode)
+
+    exit_code = main_module.main(["simulate"])
+
+    assert exit_code == 0
+    assert captured["game_manager_config"].human_mode is False
+    assert captured["game_manager_config"].use_random_human_actions is False
+
+
 def test_main_train_benchmark_writes_standardized_metrics(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)

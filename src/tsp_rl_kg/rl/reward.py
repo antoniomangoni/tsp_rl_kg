@@ -95,7 +95,7 @@ class RewardCalculator:
     ) -> tuple[float, bool]:
         """Compute reward for route improvement.
 
-        Returns ``(reward, early_stop)`` — *early_stop* is ``True`` when the
+        Returns ``(reward, early_stop)`` - *early_stop* is ``True`` when the
         agent has exhausted its non-improvement budget.
         """
         reward = 0.0

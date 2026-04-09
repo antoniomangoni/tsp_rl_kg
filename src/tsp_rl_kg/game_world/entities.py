@@ -14,7 +14,7 @@ ENTITY_ID_PLAYER = 7
 
 
 class BaseEntity:
-    """Lightweight entity base with position/id/name — no pygame dependency."""
+    """Lightweight entity base with position/id/name - no pygame dependency."""
 
     _headless = False
 

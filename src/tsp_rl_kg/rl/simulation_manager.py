@@ -16,7 +16,7 @@ class SimulationManager:
         self,
         game_manager_config: GameManagerConfig | dict,
         sim_config: SimulationManagerConfig | None = None,
-        # Legacy positional args — ignored when sim_config is provided
+        # Legacy positional args - ignored when sim_config is provided
         number_of_environments: int = 500,
         number_of_curricula: int = 10,
         min_episodes_per_curriculum: int = 1,

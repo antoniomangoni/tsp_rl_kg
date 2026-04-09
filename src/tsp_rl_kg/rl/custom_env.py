@@ -50,7 +50,7 @@ class CustomEnv(gym.Env):
 
         if not self._gm_config.headless:
             logger.warning(
-                "CustomEnv created with headless=False — training will require a display server."
+                "CustomEnv created with headless=False - training will require a display server."
             )
 
         if isinstance(simulation_manager_args, dict):

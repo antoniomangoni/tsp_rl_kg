@@ -4,9 +4,9 @@ FeatureEncoder is the Protocol that controls how raw terrain/entity/player
 integers become tensors and how edge attributes are encoded. Supported node
 encoders are:
 
-* **RawIntEncoder** — legacy 1-dim integer features.
-* **OneHotEncoder** — one-hot terrain/entity/player features.
-* **EmbeddingLookupEncoder** — pre-computed semantic embeddings loaded once
+* **RawIntEncoder** - legacy 1-dim integer features.
+* **OneHotEncoder** - one-hot terrain/entity/player features.
+* **EmbeddingLookupEncoder** - pre-computed semantic embeddings loaded once
     at startup from a numpy file.
 """
 

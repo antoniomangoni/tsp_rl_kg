@@ -36,7 +36,7 @@ class KHopProjection:
 
 
 class FullGraphProjection:
-    """Return the entire graph unfiltered — useful as a testing baseline."""
+    """Return the entire graph unfiltered - useful as a testing baseline."""
 
     @property
     def distance(self) -> None:

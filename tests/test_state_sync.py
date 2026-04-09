@@ -1,4 +1,4 @@
-"""Regression tests for G10 — Environment/KnowledgeGraph state sync bugs.
+"""Regression tests for G10 - Environment/KnowledgeGraph state sync bugs.
 
 Each test targets a specific bug from the spec to prevent regression.
 """
@@ -91,7 +91,7 @@ class TestKgCompletenessPropagation:
 
 
 # ===========================================================================
-# BUG-3: is_node_active dead code — removed in G12
+# BUG-3: is_node_active dead code - removed in G12
 # ===========================================================================
 
 

@@ -197,7 +197,7 @@ class TestDiscoveredGrid:
         for x in range(1, 4):
             for y in range(1, 4):
                 assert headless_environment.discovered_grid[x, y], f"({x},{y}) not discovered"
-        # Corner (0,0) is outside radius — should NOT be discovered
+        # Corner (0,0) is outside radius - should NOT be discovered
         assert not headless_environment.discovered_grid[0, 0]
 
     def test_init_discovered_area_clips_to_bounds(self, headless_environment: Environment):

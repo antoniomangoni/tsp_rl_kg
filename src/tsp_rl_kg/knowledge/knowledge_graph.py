@@ -12,7 +12,7 @@ from tsp_rl_kg.graph.projection import CompletenessProjection, ProjectionPolicy
 # ---------------------------------------------------------------------------
 # Environment is the single source of truth for terrain, entity, and player
 # state.  KnowledgeGraph holds *shared references* to the numpy arrays
-# (terrain_index_grid, entity_index_grid) — it may READ them but must NEVER
+# (terrain_index_grid, entity_index_grid) - it may READ them but must NEVER
 # WRITE to them.  All mutations to the world go through Environment; KG
 # derives node features from the current array values on demand.
 #
@@ -144,7 +144,7 @@ class KnowledgeGraph:
     # init_graph_tensors, complete_graph, verify_graph_integrity) moved to
     # DefaultGridConstitution.build().
 
-    # get_graph_distance() — removed; distance computation now lives in
+    # get_graph_distance() - removed; distance computation now lives in
     # CompletenessProjection / ProjectionPolicy.
 
     def get_cartesian_distance(self, pos1, pos2):

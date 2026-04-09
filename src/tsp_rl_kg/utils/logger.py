@@ -58,7 +58,7 @@ def configure_logging(
     # Remove default Loguru sink so we control everything.
     logger.remove()
 
-    # Console — coloured, human-readable
+    # Console - coloured, human-readable
     logger.add(
         sys.stderr,
         level=level,
@@ -71,7 +71,7 @@ def configure_logging(
         colorize=True,
     )
 
-    # File — rotated at 10 MB, kept for 7 days
+    # File - rotated at 10 MB, kept for 7 days
     logger.add(
         os.path.join(log_dir, "tsp_rl_kg_{time}.log"),
         level=level,

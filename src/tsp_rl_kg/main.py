@@ -9,6 +9,7 @@ from typing import Annotated, Any
 
 import numpy as np
 import typer
+from click.core import ParameterSource
 from click.exceptions import ClickException
 from click.exceptions import Exit as ClickExit
 from loguru import logger
@@ -52,6 +53,16 @@ def _filter_config_fields(data: dict[str, Any], field_names: set[str]) -> dict[s
     return {key: value for key, value in data.items() if key in field_names}
 
 
+def _cli_override_if_explicit(
+    ctx: typer.Context,
+    parameter_name: str,
+    value: Any,
+) -> Any | None:
+    if ctx.get_parameter_source(parameter_name) is ParameterSource.COMMANDLINE:
+        return value
+    return None
+
+
 def _default_game_manager_config(
     mode: str,
     *,
@@ -61,6 +72,17 @@ def _default_game_manager_config(
     headless: bool | None = None,
     max_steps: int | None = None,
 ) -> GameManagerConfig:
+    if mode == "play":
+        return GameManagerConfig(
+            num_tiles=num_tiles or 50,
+            screen_size=screen_size or 800,
+            vision_range=vision_range or 2,
+            headless=False if headless is None else headless,
+            human_mode=True,
+            use_random_human_actions=False,
+            max_steps=max_steps,
+        )
+
     if mode == "train":
         return GameManagerConfig(
             num_tiles=num_tiles or 5,
@@ -70,13 +92,16 @@ def _default_game_manager_config(
             max_steps=max_steps,
         )
 
-    return GameManagerConfig(
-        num_tiles=num_tiles or 50,
-        screen_size=screen_size or 800,
-        vision_range=vision_range or 2,
-        headless=False if headless is None else headless,
-        max_steps=max_steps,
-    )
+    if mode == "simulate":
+        return GameManagerConfig(
+            num_tiles=num_tiles or 50,
+            screen_size=screen_size or 800,
+            vision_range=vision_range or 2,
+            headless=False if headless is None else headless,
+            max_steps=max_steps,
+        )
+
+    raise ValueError(f"Unsupported game manager mode: {mode}")
 
 
 def _default_simulation_manager_config(
@@ -152,6 +177,7 @@ def _build_game_manager_config(
     screen_size: int | None = None,
     vision_range: int | None = None,
     headless: bool | None = None,
+    human_mode: bool | None = None,
     max_steps: int | None = None,
 ) -> GameManagerConfig:
     default_config = asdict(
@@ -185,6 +211,9 @@ def _build_game_manager_config(
         merged_config["vision_range"] = vision_range
     if headless is not None:
         merged_config["headless"] = headless
+    if human_mode is not None:
+        merged_config["human_mode"] = human_mode
+        merged_config["use_random_human_actions"] = False
     if max_steps is not None:
         merged_config["max_steps"] = max_steps
 
@@ -365,6 +394,15 @@ def _run_benchmark_mode(config: TrainingConfig) -> str:
     )
 
 
+def _validate_play_config(config: GameManagerConfig) -> None:
+    if config.headless and config.human_mode:
+        raise typer.BadParameter(
+            "Keyboard-controlled play requires a visible window. "
+            "Use --no-headless for manual play or --random-actions for autoplay.",
+            param_hint="--headless",
+        )
+
+
 def _run_play_mode(config: GameManagerConfig) -> None:
     game_manager = GameManager(config=config)
     game_manager.run()
@@ -440,11 +478,14 @@ def cli(
 ) -> None:
     configure_logging(log_dir="logs", level=log_level.upper())
     if ctx.invoked_subcommand is None:
-        play()
+        play_config = _build_game_manager_config("play")
+        _validate_play_config(play_config)
+        _run_play_mode(play_config)
 
 
 @app.command()
 def play(
+    ctx: typer.Context,
     config: Annotated[
         Path | None,
         typer.Option("--config", help="Load play settings from a JSON or TOML file."),
@@ -468,23 +509,31 @@ def play(
             help="Override headless rendering from config or defaults.",
         ),
     ] = None,
+    human_control: Annotated[
+        bool,
+        typer.Option(
+            "--human/--random-actions",
+            help="Choose keyboard-controlled play or random autoplay.",
+        ),
+    ] = True,
     max_steps: Annotated[
         int | None,
         typer.Option(help="Optional max number of play-loop steps before auto-stop."),
     ] = None,
 ) -> None:
     loaded_config = _load_cli_config(config, ("main", "play"), ("play",), ("base_config",))
-    _run_play_mode(
-        _build_game_manager_config(
-            "play",
-            loaded_config,
-            num_tiles=num_tiles,
-            screen_size=screen_size,
-            vision_range=vision_range,
-            headless=headless,
-            max_steps=max_steps,
-        )
+    play_config = _build_game_manager_config(
+        "play",
+        loaded_config,
+        num_tiles=num_tiles,
+        screen_size=screen_size,
+        vision_range=vision_range,
+        headless=headless,
+        human_mode=_cli_override_if_explicit(ctx, "human_control", human_control),
+        max_steps=max_steps,
     )
+    _validate_play_config(play_config)
+    _run_play_mode(play_config)
 
 
 @app.command()

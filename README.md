@@ -114,8 +114,13 @@ Installed console scripts (from `pyproject.toml`):
 
 ```bash
 uv run tsp-rl-kg play
+uv run tsp-rl-kg play --random-actions
 uv run tsp-rl-kg simulate
 ```
+
+`play` opens a keyboard-controlled session by default. Controls: `WASD` move, `Q` scout,
+`E` build path, `R` place rock, and `IJKL` collect from adjacent tiles. Use
+`--random-actions` for autoplay.
 
 ### RL training via main CLI (`tsp-rl-kg`)
 
@@ -164,7 +169,7 @@ Detailed architecture diagrams are maintained in `docs/mermaid_diagrams/` and al
 - Root documentation:
   - [`README.md`](README.md)
 - Module READMEs:
-  - [`src/tsp_rl_kg/README.md`](src/tsp_rl_kg/README.md) — top-level package overview.
+  - [`src/tsp_rl_kg/README.md`](src/tsp_rl_kg/README.md) - top-level package overview.
   - [`src/tsp_rl_kg/game_world/README.md`](src/tsp_rl_kg/game_world/README.md)
   - [`src/tsp_rl_kg/knowledge/README.md`](src/tsp_rl_kg/knowledge/README.md)
   - [`src/tsp_rl_kg/graph/README.md`](src/tsp_rl_kg/graph/README.md)
@@ -185,7 +190,7 @@ Detailed architecture diagrams are maintained in `docs/mermaid_diagrams/` and al
 This project originated as a master's thesis at the University of Gothenburg (2024), investigating
 neuro-symbolic approaches to NPC decision-making by combining knowledge graphs with reinforcement
 learning. Since submission it has continued to evolve as a standalone research engineering
-project — the codebase has been substantially refactored, extended with a composable backend layer,
+project - the codebase has been substantially refactored, extended with a composable backend layer,
 and equipped with an ablation study framework that did not exist in the original thesis.
 
 [Read the full thesis (PDF)](https://gupea.ub.gu.se/bitstream/handle/2077/86450/CSE%2024-36%20AM.pdf?sequence=1&isAllowed=y)

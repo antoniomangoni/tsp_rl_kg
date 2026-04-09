@@ -37,7 +37,7 @@ class GameManager:
         config: GameManagerConfig | None = None,
         plot: bool = False,
         feature_encoder=None,
-        # Legacy positional args — prefer config
+        # Legacy positional args - prefer config
         num_tiles: int | None = None,
         screen_size: int | None = None,
         vision_range: int | None = None,
