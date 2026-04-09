@@ -18,7 +18,6 @@ class Agent:
         self.environment = environment
         self.terrain_id_grid = self.environment.terrain_index_grid
         self.entity_id_grid = self.environment.entity_index_grid
-        self.kg = None
         self.agent = self.environment.player
         self.agent_step_count = 0
 

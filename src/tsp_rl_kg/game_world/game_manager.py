@@ -19,18 +19,29 @@ from tsp_rl_kg.rl.target import Target_Manager
 
 class GameManager:
     KEY_TO_ACTION: dict[int, ActionType] = {
-        pygame.K_a: ActionType.MOVE_LEFT,
         pygame.K_d: ActionType.MOVE_RIGHT,
-        pygame.K_w: ActionType.MOVE_UP,
-        pygame.K_s: ActionType.MOVE_DOWN,
+        pygame.K_a: ActionType.MOVE_LEFT,
+        pygame.K_s: ActionType.MOVE_UP,
+        pygame.K_w: ActionType.MOVE_DOWN,
         pygame.K_q: ActionType.SCOUT,
         pygame.K_e: ActionType.BUILD_PATH,
         pygame.K_r: ActionType.PLACE_ROCK,
-        pygame.K_i: ActionType.COLLECT_UP,
-        pygame.K_k: ActionType.COLLECT_DOWN,
+        pygame.K_k: ActionType.COLLECT_UP,
+        pygame.K_i: ActionType.COLLECT_DOWN,
         pygame.K_l: ActionType.COLLECT_RIGHT,
         pygame.K_j: ActionType.COLLECT_LEFT,
     }
+    HUMAN_CONTROL_LINES: tuple[str, ...] = (
+        "Human controls:",
+        "  A: move left",
+        "  D: move right",
+        "  W: move up",
+        "  S: move down",
+        "  Q: scout",
+        "  E: build path",
+        "  R: place rock",
+        "  I/J/K/L: collect from adjacent tiles",
+    )
 
     def __init__(
         self,
@@ -52,12 +63,7 @@ class GameManager:
             )
         self.num_tiles = self._config.num_tiles
         self.tile_size: int = self._config.screen_size // self._config.num_tiles
-        self.environment = None
-        self.agent_controler = None
-        self.agent = None
-        self.target_manager = None
         self.route_energy_list = []
-        self.renderer = None
         self.running = True
         self.plot = plot
         self.feature_encoder = feature_encoder
@@ -113,6 +119,8 @@ class GameManager:
         self.renderer.init_render()
         self.renderer.render_ui(self._build_status())
 
+    # TODO: This is a bit hacky - we should separate the status building from the rendering,
+    # but this is a quick way to get the status info into the recorder without tightly coupling it to the renderer.
     def _build_status(self) -> dict[str, int]:
         return {
             "X": self.agent.grid_x,
@@ -135,6 +143,8 @@ class GameManager:
         if projection is None:
             projection = CompletenessProjection(kg_completeness, self.vision_range, self.num_tiles)
         self.init_knowledge_graph(projection)
+        if self.human_mode and not self.use_random_human_actions:
+            print("\n".join(self.HUMAN_CONTROL_LINES))
         self.recorder = PlayRecorder(self._config)
         self.recorder.write_run_start(
             player_pos=(self.agent.grid_x, self.agent.grid_y),

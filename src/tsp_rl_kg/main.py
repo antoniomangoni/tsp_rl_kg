@@ -436,6 +436,9 @@ def _run_simulation_mode(
     )
 
     for i, game_manager in enumerate(simulation_manager.game_managers):
+        if game_manager.environment is None:
+            logger.warning(f"Environment for game manager {i} is None, skipping.")
+            continue
         logger.info(
             f"Terrain index grid for environment {i}:\n"
             f"{game_manager.environment.terrain_index_grid}"
