@@ -22,7 +22,6 @@ from tsp_rl_kg.config import (
     TrainingConfig,
     default_algorithm_hyperparameters,
 )
-from tsp_rl_kg.rl.training.ablation_study import AblationStudy
 from tsp_rl_kg.utils.config_files import (
     find_list_section,
     find_mapping_section,
@@ -31,7 +30,11 @@ from tsp_rl_kg.utils.config_files import (
 )
 from tsp_rl_kg.utils.logger import configure_logging
 
-app = typer.Typer(add_completion=False, invoke_without_command=True)
+app = typer.Typer(
+    add_completion=False,
+    invoke_without_command=True,
+    help="Run ablation studies across TSP RL training configurations.",
+)
 
 # Uncomment for windows
 # os.environ['PYGAME_DETECT_AVX2'] = '1'
@@ -190,6 +193,8 @@ def create_default_ablation_study(
     mlflow_experiment_name: str = "tsp_rl_kg_ablation",
     mlflow_tracking_uri: str | None = None,
 ) -> AblationStudy:
+    from tsp_rl_kg.rl.training.ablation_study import AblationStudy
+
     loaded_kwargs = {}
     if config_path is not None:
         loaded_kwargs = _create_ablation_study_from_external_config(Path(config_path))

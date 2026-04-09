@@ -9,7 +9,6 @@ from pathlib import Path
 from tsp_rl_kg import main as main_module
 from tsp_rl_kg.config import AlgorithmName
 from tsp_rl_kg.rl.training import run as run_module
-from tsp_rl_kg.rl.training.ablation_study import AblationStudy
 from tsp_rl_kg.rl.training.run import build_base_config
 
 
@@ -21,6 +20,16 @@ def test_project_scripts_include_short_and_long_cli_names():
     assert scripts["tsp-study"] == "tsp_rl_kg.rl.training.run:main"
     assert scripts["tsp-rl-kg"] == "tsp_rl_kg.main:main"
     assert scripts["tsp-rl-kg-study"] == "tsp_rl_kg.rl.training.run:main"
+
+
+def test_main_module_does_not_eager_import_runtime_dependencies():
+    assert not hasattr(main_module, "GameManager")
+    assert not hasattr(main_module, "SimulationManager")
+    assert not hasattr(main_module, "Trainer")
+
+
+def test_study_module_does_not_eager_import_runtime_dependencies():
+    assert not hasattr(run_module, "AblationStudy")
 
 
 def test_build_base_config_allows_backend_selection():
@@ -41,6 +50,8 @@ def test_build_base_config_allows_backend_selection():
 
 
 def test_ablation_study_merges_algorithm_and_config_overrides(monkeypatch, tmp_path):
+    from tsp_rl_kg.rl.training.ablation_study import AblationStudy
+
     monkeypatch.chdir(tmp_path)
     base_config = build_base_config(
         total_timesteps=32,
@@ -72,6 +83,8 @@ def test_ablation_study_merges_algorithm_and_config_overrides(monkeypatch, tmp_p
 
 
 def test_ablation_study_merges_feature_encoding_overrides(monkeypatch, tmp_path):
+    from tsp_rl_kg.rl.training.ablation_study import AblationStudy
+
     monkeypatch.chdir(tmp_path)
     base_config = build_base_config(
         total_timesteps=32,
@@ -201,6 +214,18 @@ def test_main_run_app_derives_prog_name_from_sys_argv(monkeypatch):
     assert captured["args"] is None
     assert captured["prog_name"] == "tsp"
     assert captured["standalone_mode"] is False
+
+
+def test_main_help_lists_command_descriptions_without_pygame_banner(capsys):
+    exit_code = main_module._run_app(["--help"])
+    captured = capsys.readouterr()
+    combined_output = captured.out + captured.err
+
+    assert exit_code == 0
+    assert "Run a manual world session." in captured.out
+    assert "Run the RL training workflow." in captured.out
+    assert "Generate and export worlds." in captured.out
+    assert "pygame-ce" not in combined_output
 
 
 def test_main_dispatches_play_mode_with_keyboard_control(monkeypatch):
@@ -359,6 +384,16 @@ def test_study_run_app_derives_prog_name_from_sys_argv(monkeypatch):
     assert captured["standalone_mode"] is False
 
 
+def test_study_help_includes_description_without_pygame_banner(capsys):
+    exit_code = run_module._run_app(["--help"])
+    captured = capsys.readouterr()
+    combined_output = captured.out + captured.err
+
+    assert exit_code == 0
+    assert "Run ablation studies across TSP RL training configurations." in captured.out
+    assert "pygame-ce" not in combined_output
+
+
 def test_main_train_benchmark_writes_standardized_metrics(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
@@ -392,6 +427,8 @@ def test_main_train_benchmark_writes_standardized_metrics(monkeypatch, tmp_path)
 
 
 def test_run_module_loads_external_toml_study_config(monkeypatch, tmp_path):
+    from tsp_rl_kg.rl.training.ablation_study import AblationStudy
+
     config_path = tmp_path / "study.toml"
     config_path.write_text(
         """
@@ -440,7 +477,7 @@ learning_starts = 0
         captured["mlflow_experiment_name"] = self.mlflow_experiment_name
         captured["experiments"] = self.experiments
 
-    monkeypatch.setattr(run_module.AblationStudy, "run", fake_run)
+    monkeypatch.setattr(AblationStudy, "run", fake_run)
 
     exit_code = run_module.main(["--config", str(config_path)])
 

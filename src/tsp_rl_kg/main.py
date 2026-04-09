@@ -26,13 +26,14 @@ from tsp_rl_kg.config import (
     TrainingConfig,
     default_algorithm_hyperparameters,
 )
-from tsp_rl_kg.game_world.game_manager import GameManager
-from tsp_rl_kg.rl.simulation_manager import SimulationManager
-from tsp_rl_kg.rl.training.trainer import Trainer
 from tsp_rl_kg.utils.config_files import find_mapping_section, load_config_file, merge_nested_dicts
 from tsp_rl_kg.utils.logger import configure_logging
 
-app = typer.Typer(add_completion=False, invoke_without_command=True)
+app = typer.Typer(
+    add_completion=False,
+    invoke_without_command=True,
+    help="Play, train, or simulate the TSP RL knowledge-graph environment.",
+)
 
 
 def _load_cli_config(
@@ -331,6 +332,8 @@ def _create_results_directory(prefix: str) -> str:
 
 
 def _run_training_mode(config: TrainingConfig) -> dict[str, Any]:
+    from tsp_rl_kg.rl.training.trainer import Trainer
+
     results_dir = _create_results_directory("manual")
     experiment_name = f"manual_{config.algorithm.algorithm.value.lower()}"
     seed = config.seeds[0] if config.seeds else None
@@ -405,6 +408,8 @@ def _validate_play_config(config: GameManagerConfig) -> None:
 
 
 def _run_play_mode(config: GameManagerConfig) -> None:
+    from tsp_rl_kg.game_world.game_manager import GameManager
+
     game_manager = GameManager(config=config)
     game_manager.run()
 
@@ -413,6 +418,8 @@ def _run_simulation_mode(
     game_manager_config: GameManagerConfig,
     simulation_manager_config: SimulationManagerConfig,
 ) -> None:
+    from tsp_rl_kg.rl.simulation_manager import SimulationManager
+
     simulation_manager = SimulationManager(
         game_manager_config,
         sim_config=simulation_manager_config,
@@ -484,7 +491,10 @@ def cli(
         _run_play_mode(play_config)
 
 
-@app.command()
+@app.command(
+    short_help="Run a manual world session.",
+    help="Launch an interactive play session in the generated world, or use --random-actions for autoplay.",
+)
 def play(
     ctx: typer.Context,
     config: Annotated[
@@ -537,7 +547,10 @@ def play(
     _run_play_mode(play_config)
 
 
-@app.command()
+@app.command(
+    short_help="Run the RL training workflow.",
+    help="Train an RL agent against the game world and write training artifacts.",
+)
 def train(
     config: Annotated[
         Path | None,
@@ -617,7 +630,10 @@ def train(
         _run_training_mode(training_config)
 
 
-@app.command()
+@app.command(
+    short_help="Generate and export worlds.",
+    help="Generate simulation worlds and export terrain and entity arrays for inspection.",
+)
 def simulate(
     config: Annotated[
         Path | None,
