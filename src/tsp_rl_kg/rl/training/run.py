@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import traceback
 from pathlib import Path
 from typing import Annotated, Any
@@ -269,8 +270,11 @@ def cli(
 
 
 def _run_app(argv: list[str] | None = None) -> int:
+    prog_name = (
+        "tsp-rl-kg-study" if argv is not None else (Path(sys.argv[0]).name or "tsp-rl-kg-study")
+    )
     try:
-        result = app(args=argv, prog_name="tsp-rl-kg-study", standalone_mode=False)
+        result = app(args=argv, prog_name=prog_name, standalone_mode=False)
     except ClickExit as exc:
         return exc.exit_code
     except ClickException as exc:

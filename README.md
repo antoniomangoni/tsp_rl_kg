@@ -97,7 +97,7 @@ architecture, reward shaping, and simulation coordination.
 
 ### `src/tsp_rl_kg/rl/training`
 Training orchestration, ablation studies, evaluation, and backend adapters. Entry point for
-ablation runs: `run.py` (`tsp-rl-kg-study`). Backend protocol defined in `backends/base.py`;
+ablation runs: `run.py` (`tsp-study`, legacy `tsp-rl-kg-study`). Backend protocol defined in `backends/base.py`;
 Stable-Baselines3 implementation in `backends/sb3.py`.
 
 ### `src/tsp_rl_kg/utils`
@@ -107,47 +107,51 @@ Shared helpers: JSON/TOML config loading, generic utilities, and logging setup.
 
 Installed console scripts (from `pyproject.toml`):
 
+- `tsp = tsp_rl_kg.main:main`
+- `tsp-study = tsp_rl_kg.rl.training.run:main`
 - `tsp-rl-kg = tsp_rl_kg.main:main`
 - `tsp-rl-kg-study = tsp_rl_kg.rl.training.run:main`
 
-### Non-RL / world commands (`tsp-rl-kg`)
+Short aliases are preferred below; the legacy long names remain available.
+
+### Non-RL / world commands (`tsp`)
 
 ```bash
-uv run tsp-rl-kg play
-uv run tsp-rl-kg play --random-actions
-uv run tsp-rl-kg simulate
+uv run tsp
+uv run tsp play --random-actions
+uv run tsp simulate
 ```
 
 `play` opens a keyboard-controlled session by default. Controls: `WASD` move, `Q` scout,
 `E` build path, `R` place rock, and `IJKL` collect from adjacent tiles. Use
 `--random-actions` for autoplay.
 
-### RL training via main CLI (`tsp-rl-kg`)
+### RL training via main CLI (`tsp`)
 
 ```bash
-uv run tsp-rl-kg train --algorithm PPO
-uv run tsp-rl-kg train --algorithm DQN
-uv run tsp-rl-kg train --config configs/train.json
-uv run tsp-rl-kg train --config configs/train_namespaced.json
+uv run tsp train --algorithm PPO
+uv run tsp train --algorithm DQN
+uv run tsp train --config configs/train.json
+uv run tsp train --config configs/train_namespaced.json
 ```
 
-### Ablation study CLI (`tsp-rl-kg-study`)
+### Ablation study CLI (`tsp-study`)
 
 ```bash
-uv run tsp-rl-kg-study --config configs/ablation.toml
+uv run tsp-study --config configs/ablation.toml
 ```
 
 ## Configuration Shapes (Concise)
 
 Both CLIs accept JSON or TOML.
 
-- `tsp-rl-kg` (`src/tsp_rl_kg/main.py`) loads training config from the first matching mapping among:
+- `tsp` (`src/tsp_rl_kg/main.py`; legacy `tsp-rl-kg`) loads training config from the first matching mapping among:
   - root object
   - `train`
   - `training`
   - `main.train`
   - `base_config`
-- `tsp-rl-kg-study` (`src/tsp_rl_kg/rl/training/run.py`) loads study config from the first matching mapping among:
+- `tsp-study` (`src/tsp_rl_kg/rl/training/run.py`; legacy `tsp-rl-kg-study`) loads study config from the first matching mapping among:
   - root object
   - `ablation`
   - `study`

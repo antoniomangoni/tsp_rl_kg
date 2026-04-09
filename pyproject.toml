@@ -42,6 +42,8 @@ embed-gen = [
 ]
 
 [project.scripts]
+tsp = "tsp_rl_kg.main:main"
+tsp-study = "tsp_rl_kg.rl.training.run:main"
 tsp-rl-kg = "tsp_rl_kg.main:main"
 tsp-rl-kg-study = "tsp_rl_kg.rl.training.run:main"
 

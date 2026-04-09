@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
@@ -675,8 +676,9 @@ def simulate(
 
 
 def _run_app(argv: list[str] | None = None) -> int:
+    prog_name = "tsp-rl-kg" if argv is not None else (Path(sys.argv[0]).name or "tsp-rl-kg")
     try:
-        result = app(args=argv, prog_name="tsp-rl-kg", standalone_mode=False)
+        result = app(args=argv, prog_name=prog_name, standalone_mode=False)
     except ClickExit as exc:
         return exc.exit_code
     except ClickException as exc:

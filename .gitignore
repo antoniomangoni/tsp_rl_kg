@@ -172,3 +172,7 @@ Pipfile.lock
 .github/
 docs/specs/
 docs/plans/
+
+mlflow.db
+mlruns/
+.codex

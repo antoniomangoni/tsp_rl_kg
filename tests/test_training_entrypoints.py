@@ -3,12 +3,24 @@
 from __future__ import annotations
 
 import json
+import tomllib
+from pathlib import Path
 
 from tsp_rl_kg import main as main_module
 from tsp_rl_kg.config import AlgorithmName
 from tsp_rl_kg.rl.training import run as run_module
 from tsp_rl_kg.rl.training.ablation_study import AblationStudy
 from tsp_rl_kg.rl.training.run import build_base_config
+
+
+def test_project_scripts_include_short_and_long_cli_names():
+    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    scripts = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))["project"]["scripts"]
+
+    assert scripts["tsp"] == "tsp_rl_kg.main:main"
+    assert scripts["tsp-study"] == "tsp_rl_kg.rl.training.run:main"
+    assert scripts["tsp-rl-kg"] == "tsp_rl_kg.main:main"
+    assert scripts["tsp-rl-kg-study"] == "tsp_rl_kg.rl.training.run:main"
 
 
 def test_build_base_config_allows_backend_selection():
@@ -152,6 +164,45 @@ def test_main_dispatches_train_mode(monkeypatch):
     assert called == {"algorithm": AlgorithmName.DQN}
 
 
+def test_main_run_app_uses_canonical_prog_name_for_explicit_argv(monkeypatch):
+    captured = {}
+
+    def fake_app(*, args, prog_name, standalone_mode):
+        captured["args"] = args
+        captured["prog_name"] = prog_name
+        captured["standalone_mode"] = standalone_mode
+        return 0
+
+    monkeypatch.setattr(main_module, "app", fake_app)
+
+    exit_code = main_module._run_app(["--help"])
+
+    assert exit_code == 0
+    assert captured["args"] == ["--help"]
+    assert captured["prog_name"] == "tsp-rl-kg"
+    assert captured["standalone_mode"] is False
+
+
+def test_main_run_app_derives_prog_name_from_sys_argv(monkeypatch):
+    captured = {}
+
+    def fake_app(*, args, prog_name, standalone_mode):
+        captured["args"] = args
+        captured["prog_name"] = prog_name
+        captured["standalone_mode"] = standalone_mode
+        return 0
+
+    monkeypatch.setattr(main_module, "app", fake_app)
+    monkeypatch.setattr(main_module.sys, "argv", ["/tmp/bin/tsp"])
+
+    exit_code = main_module._run_app()
+
+    assert exit_code == 0
+    assert captured["args"] is None
+    assert captured["prog_name"] == "tsp"
+    assert captured["standalone_mode"] is False
+
+
 def test_main_dispatches_play_mode_with_keyboard_control(monkeypatch):
     captured = {}
     monkeypatch.setattr(main_module, "configure_logging", lambda **kwargs: None)
@@ -267,6 +318,45 @@ def test_main_simulate_keeps_non_human_default(monkeypatch):
     assert exit_code == 0
     assert captured["game_manager_config"].human_mode is False
     assert captured["game_manager_config"].use_random_human_actions is False
+
+
+def test_study_run_app_uses_canonical_prog_name_for_explicit_argv(monkeypatch):
+    captured = {}
+
+    def fake_app(*, args, prog_name, standalone_mode):
+        captured["args"] = args
+        captured["prog_name"] = prog_name
+        captured["standalone_mode"] = standalone_mode
+        return 0
+
+    monkeypatch.setattr(run_module, "app", fake_app)
+
+    exit_code = run_module._run_app(["--help"])
+
+    assert exit_code == 0
+    assert captured["args"] == ["--help"]
+    assert captured["prog_name"] == "tsp-rl-kg-study"
+    assert captured["standalone_mode"] is False
+
+
+def test_study_run_app_derives_prog_name_from_sys_argv(monkeypatch):
+    captured = {}
+
+    def fake_app(*, args, prog_name, standalone_mode):
+        captured["args"] = args
+        captured["prog_name"] = prog_name
+        captured["standalone_mode"] = standalone_mode
+        return 0
+
+    monkeypatch.setattr(run_module, "app", fake_app)
+    monkeypatch.setattr(run_module.sys, "argv", ["/tmp/bin/tsp-study"])
+
+    exit_code = run_module._run_app()
+
+    assert exit_code == 0
+    assert captured["args"] is None
+    assert captured["prog_name"] == "tsp-study"
+    assert captured["standalone_mode"] is False
 
 
 def test_main_train_benchmark_writes_standardized_metrics(monkeypatch, tmp_path):
