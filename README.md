@@ -191,11 +191,10 @@ Detailed architecture diagrams are maintained in `docs/mermaid_diagrams/` and al
 
 ## Background
 
-This project originated as a master's thesis at the University of Gothenburg (2024), investigating
+This project originated as a master's thesis at the University of Gothenburg (2024), supervised by [Kivanc Tatar](https://www.chalmers.se/en/persons/tatar/), investigating
 neuro-symbolic approaches to NPC decision-making by combining knowledge graphs with reinforcement
 learning. Since submission it has continued to evolve as a standalone research engineering
-project - the codebase has been substantially refactored, extended with a composable backend layer,
-and equipped with an ablation study framework that did not exist in the original thesis.
+project.
 
 [Read the full thesis (PDF)](https://gupea.ub.gu.se/bitstream/handle/2077/86450/CSE%2024-36%20AM.pdf?sequence=1&isAllowed=y)
 
