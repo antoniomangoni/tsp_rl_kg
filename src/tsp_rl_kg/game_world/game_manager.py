@@ -64,6 +64,8 @@ class GameManager:
         self.num_tiles = self._config.num_tiles
         self.tile_size: int = self._config.screen_size // self._config.num_tiles
         self.route_energy_list = []
+        self.visited_outposts: set[tuple[int, int]] = set()
+        self.route_start_energy = 0
         self.running = True
         self.plot = plot
         self.feature_encoder = feature_encoder
@@ -121,13 +123,42 @@ class GameManager:
 
     # TODO: This is a bit hacky - we should separate the status building from the rendering,
     # but this is a quick way to get the status info into the recorder without tightly coupling it to the renderer.
-    def _build_status(self) -> dict[str, int]:
-        return {
-            "X": self.agent.grid_x,
-            "Y": self.agent.grid_y,
-            "Energy": self.agent_controler.energy_spent,
-            "Outposts": len(self.environment.outpost_locations),
-        }
+    def _build_status(self) -> list[dict[str, str | int | float]]:
+        agent = self.agent_controler
+        current_route_energy = agent.energy_spent - self.route_start_energy
+        return [
+            {
+                "X": self.agent.grid_x,
+                "Y": self.agent.grid_y,
+                "Energy": agent.energy_spent,
+                "Outposts": (
+                    f"{len(self.visited_outposts)}/{len(self.environment.outpost_locations)}"
+                ),
+            },
+            {
+                "Wood": f"{agent.wood}/{agent.resource_max}",
+                "Stone": f"{agent.stone}/{agent.resource_max}",
+                "Best route": self.target_manager.target_route_energy,
+                "Current route": current_route_energy,
+            },
+        ]
+
+    def _update_route_tracking(self) -> None:
+        """Track outpost visits during human/random play.
+
+        ``Current route`` energy accumulates from ``route_start_energy``; once
+        every outpost has been visited the finished route is recorded in
+        ``route_energy_list`` and the tracker resets for the next trip.
+        """
+        position = (self.agent.grid_x, self.agent.grid_y)
+        if position not in self.environment.outpost_locations:
+            return
+        self.visited_outposts.add(position)
+        if len(self.visited_outposts) == len(self.environment.outpost_locations):
+            route_energy = self.agent_controler.energy_spent - self.route_start_energy
+            self.route_energy_list.append(route_energy)
+            self.visited_outposts.clear()
+            self.route_start_energy = self.agent_controler.energy_spent
 
     def rerender(self):
         if self.headless:
@@ -144,7 +175,8 @@ class GameManager:
             projection = CompletenessProjection(kg_completeness, self.vision_range, self.num_tiles)
         self.init_knowledge_graph(projection)
         if self.human_mode and not self.use_random_human_actions:
-            print("\n".join(self.HUMAN_CONTROL_LINES))
+            for line in self.HUMAN_CONTROL_LINES:
+                logger.info(line)
         self.recorder = PlayRecorder(self._config)
         self.recorder.write_run_start(
             player_pos=(self.agent.grid_x, self.agent.grid_y),
@@ -176,6 +208,7 @@ class GameManager:
 
         if action is not None:
             self.agent_controler.agent_action(action)
+            self._update_route_tracking()
         # self.environment.update_heat_map(
         #     self.agent.grid_x, self.agent.grid_y,
         #     self.target_manager.min_path_length

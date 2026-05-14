@@ -89,12 +89,15 @@ class Renderer:
         changed_tiles.clear()
         self.environment.environment_changed_flag = False
 
-    def render_ui(self, status: dict[str, str | int | float]):
+    def render_ui(self, status_rows: list[dict[str, str | int | float]]):
         self.hud_surface.fill(self.HUD_BACKGROUND_COLOUR)
-        status_parts = [f"{key}: {value}" for key, value in status.items()]
-        status_text = "   |   ".join(status_parts)
-        text_surface = self.font.render(status_text, True, self.HUD_TEXT_COLOUR)
-        self.hud_surface.blit(text_surface, (self.HUD_PADDING, self.HUD_PADDING))
+        line_height = self.font.get_linesize()
+        for row_index, row in enumerate(status_rows):
+            status_parts = [f"{key}: {value}" for key, value in row.items()]
+            status_text = "   |   ".join(status_parts)
+            text_surface = self.font.render(status_text, True, self.HUD_TEXT_COLOUR)
+            y = self.HUD_PADDING + row_index * line_height
+            self.hud_surface.blit(text_surface, (self.HUD_PADDING, y))
         self.surface.blit(self.hud_surface, (0, self.hud_top))
         pygame.display.update(
             pygame.Rect(0, self.hud_top, self.window_width, self.HUD_HEIGHT),
