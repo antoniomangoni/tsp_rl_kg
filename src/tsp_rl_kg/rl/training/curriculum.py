@@ -51,8 +51,7 @@ class CurriculumService:
                 return CurriculumDecision(continue_training=False, should_stop=True)
 
             logger.info(
-                "Advancing to curriculum level "
-                f"{env.simulation_manager.current_curriculum_index}"
+                f"Advancing to curriculum level {env.simulation_manager.current_curriculum_index}"
             )
             return CurriculumDecision(
                 continue_training=True,

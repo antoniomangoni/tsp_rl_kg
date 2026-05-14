@@ -121,8 +121,9 @@ class GameManager:
         self.renderer.init_render()
         self.renderer.render_ui(self._build_status())
 
-    # TODO: This is a bit hacky - we should separate the status building from the rendering,
-    # but this is a quick way to get the status info into the recorder without tightly coupling it to the renderer.
+    # TODO: This is a bit hacky - we should separate the status building
+    # from the rendering, but this is a quick way to get the status info
+    # into the recorder without tightly coupling it to the renderer.
     def _build_status(self) -> list[dict[str, str | int | float]]:
         agent = self.agent_controler
         current_route_energy = agent.energy_spent - self.route_start_energy

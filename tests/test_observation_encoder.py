@@ -117,9 +117,9 @@ def test_observation_space_matches_encode_output(encoder: PaddedPyGObservationEn
 
     for key in space.spaces:
         assert key in obs, f"Missing key {key} in encoded observation"
-        assert (
-            obs[key].shape == space[key].shape
-        ), f"Shape mismatch for {key}: obs={obs[key].shape}, space={space[key].shape}"
+        assert obs[key].shape == space[key].shape, (
+            f"Shape mismatch for {key}: obs={obs[key].shape}, space={space[key].shape}"
+        )
 
 
 def test_observation_space_keys(encoder: PaddedPyGObservationEncoder):

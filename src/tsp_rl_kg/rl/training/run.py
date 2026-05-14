@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 import traceback
 from pathlib import Path
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
 from click.exceptions import ClickException
@@ -29,6 +29,9 @@ from tsp_rl_kg.utils.config_files import (
     merge_nested_dicts,
 )
 from tsp_rl_kg.utils.logger import configure_logging
+
+if TYPE_CHECKING:
+    from tsp_rl_kg.rl.training.ablation_study import AblationStudy
 
 app = typer.Typer(
     add_completion=False,

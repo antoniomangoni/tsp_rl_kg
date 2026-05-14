@@ -115,8 +115,7 @@ class RewardCalculator:
             )
             self.gap = self.calculate_efficiency_gap(agent_route_energy, algorithmic_best_energy)
             logger.info(
-                f"New best route found. Improvement: {self.improvement:.2f}, "
-                f"Gap: {self.gap:.2f}"
+                f"New best route found. Improvement: {self.improvement:.2f}, Gap: {self.gap:.2f}"
             )
             improvement_reward = self.config.completion_reward * self.improvement
             reward += improvement_reward

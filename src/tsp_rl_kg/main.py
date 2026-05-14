@@ -4,7 +4,7 @@ import json
 import os
 import sys
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -359,7 +359,7 @@ def _write_benchmark_summary(
     benchmark_file = os.path.join("results", f"benchmark_{timestamp}.json")
     summary = {
         "benchmark_name": benchmark_name,
-        "timestamp_utc": datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "timestamp_utc": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "algorithm": config.algorithm.algorithm.value,
         "total_timesteps": config.total_timesteps,
         "seed": config.seeds[0] if config.seeds else None,
@@ -368,7 +368,9 @@ def _write_benchmark_summary(
             "disable_vision": config.ablation.disable_vision,
             "disable_graph": config.ablation.disable_graph,
             "disable_curriculum": config.ablation.disable_curriculum,
-            "disable_reward_components": [c.value for c in config.ablation.disable_reward_components],
+            "disable_reward_components": [
+                c.value for c in config.ablation.disable_reward_components
+            ],
         },
         "metrics": {
             "mean_reward": float(benchmark_result["mean_reward"]),
@@ -444,8 +446,7 @@ def _run_simulation_mode(
             f"{game_manager.environment.terrain_index_grid}"
         )
         logger.info(
-            f"Entity index grid for environment {i}:\n"
-            f"{game_manager.environment.entity_index_grid}"
+            f"Entity index grid for environment {i}:\n{game_manager.environment.entity_index_grid}"
         )
         game_world_array[i, 0] = game_manager.environment.terrain_index_grid
         game_world_array[i, 1] = game_manager.environment.entity_index_grid
@@ -496,7 +497,10 @@ def cli(
 
 @app.command(
     short_help="Run a manual world session.",
-    help="Launch an interactive play session in the generated world, or use --random-actions for autoplay.",
+    help=(
+        "Launch an interactive play session in the generated world, or use "
+        "--random-actions for autoplay."
+    ),
 )
 def play(
     ctx: typer.Context,
@@ -603,7 +607,10 @@ def train(
         bool,
         typer.Option(
             "--benchmark/--no-benchmark",
-            help="Run standardized benchmark workflow (vision-only ablation) and write results/benchmark_*.json.",
+            help=(
+                "Run standardized benchmark workflow (vision-only ablation) "
+                "and write results/benchmark_*.json."
+            ),
         ),
     ] = False,
 ) -> None:

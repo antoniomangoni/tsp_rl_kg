@@ -46,8 +46,7 @@ class SB3TrainingBackend:
         self.model = None
         self.should_stop = False
         self.name = (
-            f"{self.algorithm_config.backend.value}_"
-            f"{self.algorithm_config.algorithm.value.lower()}"
+            f"{self.algorithm_config.backend.value}_{self.algorithm_config.algorithm.value.lower()}"
         )
 
     def _progress_bar_enabled(self) -> bool:

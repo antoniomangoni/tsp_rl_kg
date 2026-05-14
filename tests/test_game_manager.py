@@ -2,11 +2,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-import pygame
-
 from tsp_rl_kg.config import GameManagerConfig
-from tsp_rl_kg.game_world.actions import ActionType
 from tsp_rl_kg.game_world.game_manager import GameManager
+
 
 def test_start_game_logs_human_controls(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)

@@ -77,9 +77,7 @@ def configure_logging(
         level=level,
         rotation="10 MB",
         retention="7 days",
-        format=(
-            "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | " "{name}:{function}:{line} - {message}"
-        ),
+        format=("{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}"),
     )
 
     if json_output:
