@@ -30,6 +30,7 @@ class CustomEnv(gym.Env):
         episode_config: EpisodeConfig | None = None,
         game_managers: list | None = None,
         ablation_config: AblationConfig | None = None,
+        kg_completeness: float = 0.5,
     ):
         super(CustomEnv, self).__init__()
         logger.info("Initializing CustomEnv")
@@ -91,8 +92,7 @@ class CustomEnv(gym.Env):
         self.num_actions = self._model_args.num_actions
         self.num_tiles = self._gm_config.num_tiles
         self.screen_size = self._gm_config.screen_size
-        # self.kg_completeness = game_manager_args['kg_completeness']
-        self.kg_completeness = 0.5
+        self.kg_completeness = kg_completeness
         self.vision_range = self._gm_config.vision_range
         self.step_count = 0
         self.max_episode_steps = self._episode_config.max_episode_steps

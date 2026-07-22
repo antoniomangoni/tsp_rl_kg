@@ -19,6 +19,7 @@ class EnvironmentManager:
         feature_encoder,
         episode_config: EpisodeConfig | None = None,
         ablation_config: AblationConfig | None = None,
+        kg_completeness: float = 0.5,
     ):
         self.game_manager_config = game_manager_config
         self.simulation_manager_config = simulation_manager_config
@@ -26,6 +27,7 @@ class EnvironmentManager:
         self.feature_encoder = feature_encoder
         self.episode_config = episode_config
         self.ablation_config = ablation_config if ablation_config is not None else AblationConfig()
+        self.kg_completeness = kg_completeness
 
     def make_env(self):
         return CustomEnv(
@@ -36,6 +38,7 @@ class EnvironmentManager:
             plot=False,
             episode_config=self.episode_config,
             ablation_config=self.ablation_config,
+            kg_completeness=self.kg_completeness,
         )
 
     def make_eval_env(self, train_game_managers):
@@ -49,6 +52,7 @@ class EnvironmentManager:
             episode_config=self.episode_config,
             game_managers=eval_game_managers,
             ablation_config=self.ablation_config,
+            kg_completeness=self.kg_completeness,
         )
 
     def set_kg_completeness(self, env, completeness):

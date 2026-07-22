@@ -97,6 +97,41 @@ def test_environment_manager_passes_episode_config_to_custom_env():
     env.close()
 
 
+def test_custom_env_uses_provided_kg_completeness():
+    env = CustomEnv(
+        GameManagerConfig(num_tiles=5, screen_size=20, vision_range=1, headless=True),
+        SimulationManagerConfig(
+            number_of_environments=12,
+            number_of_curricula=3,
+            min_episodes_per_curriculum=1,
+        ),
+        ModelArgs(num_actions=11),
+        kg_completeness=0.75,
+    )
+
+    assert env.kg_completeness == 0.75
+    env.close()
+
+
+def test_environment_manager_passes_kg_completeness_to_custom_env():
+    manager = EnvironmentManager(
+        GameManagerConfig(num_tiles=5, screen_size=20, vision_range=1, headless=True),
+        SimulationManagerConfig(
+            number_of_environments=12,
+            number_of_curricula=3,
+            min_episodes_per_curriculum=1,
+        ),
+        ModelArgs(num_actions=11),
+        feature_encoder=None,
+        kg_completeness=0.25,
+    )
+
+    env = manager.make_env()
+
+    assert env.kg_completeness == 0.25
+    env.close()
+
+
 def test_custom_env_observation_width_tracks_feature_encoder_node_dim(tmp_path):
     schema_path = tmp_path / "semantic_schema.toml"
     embedding_path = tmp_path / "semantic_embeddings.npy"

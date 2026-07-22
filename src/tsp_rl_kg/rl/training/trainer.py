@@ -63,6 +63,7 @@ class Trainer:
             self.feature_encoder,
             episode_config=config.episode,
             ablation_config=config.ablation,
+            kg_completeness=self.current_kg_completeness,
         )
 
         logger.info("Creating environment")
