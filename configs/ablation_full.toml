@@ -1,0 +1,82 @@
+# Realistic-but-tractable ablation study over knowledge-graph completeness.
+#
+# This is the research counterpart to the tiny CI smoke config in ablation.toml.
+# It sweeps KG completeness {0.25, 0.5, 0.75, 1.0} against a vision-only baseline
+# across two seeds, on a world small enough that per-environment TSP/Dijkstra
+# construction stays cheap but large enough for completeness to change the
+# observed k-hop subgraph radius meaningfully.
+#
+# Run (expect this to take a while - run in the background / overnight):
+#   uv run tsp-study --config configs/ablation_full.toml
+# Track progress with MLflow (mlruns/, mlflow.db) and results/<timestamp>/.
+
+[study]
+mlflow_experiment_name = "kg-completeness-sweep"
+kg_completeness_values = [0.25, 0.5, 0.75, 1.0]
+
+[study.base_config]
+total_timesteps = 150000
+kg_completeness = 0.5
+seeds = [42, 7]
+
+[study.base_config.game_manager]
+num_tiles = 12
+screen_size = 480
+vision_range = 2
+headless = true
+
+[study.base_config.simulation_manager]
+number_of_environments = 150
+number_of_curricula = 5
+min_episodes_per_curriculum = 3
+
+[study.base_config.algorithm]
+algorithm = "PPO"
+
+# PPO hyperparameters are synchronised through the legacy ModelConfig, which
+# accepts n_steps / batch_size / learning_rate / gamma.
+[study.base_config.algorithm.hyperparameters]
+n_steps = 2048
+batch_size = 64
+learning_rate = 0.0003
+gamma = 0.99
+
+[study.base_config.curriculum]
+min_episodes_per_curriculum = 3
+performance_threshold = 0.75
+
+[study.base_config.episode]
+max_episode_steps = 300
+max_steps_without_progress = 100
+
+[study.base_config.evaluation]
+eval_freq = 10000
+n_eval_episodes = 5
+
+[study.base_config.feature_encoding]
+strategy = "one_hot"
+
+# --- Experiments: the KG-completeness sweep plus a no-graph control ----------
+
+[[study.experiments]]
+name = "kg_0.25"
+kg_completeness = 0.25
+
+[[study.experiments]]
+name = "kg_0.50"
+kg_completeness = 0.5
+
+[[study.experiments]]
+name = "kg_0.75"
+kg_completeness = 0.75
+
+[[study.experiments]]
+name = "kg_1.00"
+kg_completeness = 1.0
+
+[[study.experiments]]
+name = "vision_only"
+kg_completeness = 0.5
+
+[study.experiments.ablation]
+disable_graph = true
