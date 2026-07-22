@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from tsp_rl_kg.config import RewardConfig
 from tsp_rl_kg.rl.reward import RewardCalculator, manhattan_distance
 
 # ---------------------------------------------------------------------------
@@ -155,6 +156,14 @@ class TestProximityReward:
             reward_calculator.outposts_visited.add(coord)
         result = reward_calculator.proximity_reward(agent_pos=(0, 0))
         assert result == 0.0
+
+    def test_first_measurement_is_zero_not_nan(self, reward_calculator: RewardCalculator):
+        """The initial (inf-baseline) call must emit no shaping, never nan."""
+        assert reward_calculator.previous_min_distance == float("inf")
+        result = reward_calculator.proximity_reward(agent_pos=(0, 0))
+        assert result == 0.0
+        # Baseline recorded so the next measurement can produce a real reward.
+        assert reward_calculator.previous_min_distance != float("inf")
 
 
 # ---------------------------------------------------------------------------
@@ -310,3 +319,88 @@ class TestEfficiencyHelpers:
     def test_interpret_efficiency_imperfect(self, reward_calculator: RewardCalculator):
         result = reward_calculator.interpret_efficiency(80.0)
         assert "away" in result
+
+
+# ---------------------------------------------------------------------------
+# Per-step reward normalisation (regression guards for the scale-mismatch bug)
+# ---------------------------------------------------------------------------
+
+
+class TestNormalisation:
+    """The reward passed to ``_normalize_reward`` is a *single step*.
+
+    The old implementation divided the span by ``penalty_per_step *
+    max_episode_steps`` (~-8000 with production defaults), which pinned nearly
+    every step near ``+0.95`` regardless of behaviour. These tests use the
+    production episode length (where the bug bit) to guard against a regression.
+    """
+
+    @staticmethod
+    def _production_calculator() -> RewardCalculator:
+        return RewardCalculator(
+            config=RewardConfig(),
+            outpost_coords=[(1, 1), (3, 3), (4, 0)],
+            max_episode_steps=2048 * 8,
+        )
+
+    def test_survival_step_is_not_rewarded(self):
+        """A neutral survival step must not score high (old bug: ~+0.95)."""
+        calc = self._production_calculator()
+        reward, _, _ = calc.calculate(
+            agent_pos=(0, 0),  # not an outpost
+            terrain_energy=2.0,
+            episode_step=10,
+            agent_energy_spent=50.0,
+            algorithmic_best_energy=40.0,
+            reset_energy_callback=lambda: None,
+        )
+        assert reward <= 0.0
+
+    def test_output_is_clipped_to_unit_range_on_completion(self):
+        calc = self._production_calculator()
+        # Skip the (infinite) first-route improvement branch so the raw reward
+        # is a large-but-finite completion payout.
+        calc.best_efficiency = 1e9
+        coords = calc.outpost_coords
+        for coord in coords[:-1]:
+            calc.outposts_visited.add(coord)
+
+        reward, _, all_visited = calc.calculate(
+            agent_pos=coords[-1],
+            terrain_energy=1.0,
+            episode_step=50,
+            agent_energy_spent=30.0,
+            algorithmic_best_energy=25.0,
+            reset_energy_callback=lambda: None,
+        )
+        assert all_visited is True
+        assert -1.0 <= reward <= 1.0
+        assert reward == pytest.approx(1.0)  # completion saturates the scale
+
+    def test_survival_trajectory_scores_below_outpost_progress(self):
+        """A long survival trajectory must not out-score a single outpost step."""
+        survival = self._production_calculator()
+        survival_total = 0.0
+        for step in range(1, 31):
+            reward, _, _ = survival.calculate(
+                agent_pos=(0, 0),  # stay put on a non-outpost tile
+                terrain_energy=2.0,
+                episode_step=step,
+                agent_energy_spent=float(step),
+                algorithmic_best_energy=40.0,
+                reset_energy_callback=lambda: None,
+            )
+            survival_total += reward
+
+        progress = self._production_calculator()
+        outpost_reward, _, _ = progress.calculate(
+            agent_pos=progress.outpost_coords[0],  # discover an outpost
+            terrain_energy=2.0,
+            episode_step=1,
+            agent_energy_spent=1.0,
+            algorithmic_best_energy=40.0,
+            reset_energy_callback=lambda: None,
+        )
+
+        assert survival_total < 0.0
+        assert outpost_reward > survival_total

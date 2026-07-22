@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections import deque
 
 from loguru import logger
@@ -144,6 +145,13 @@ class RewardCalculator:
         )
         reward = 0.0
 
+        # The first measurement of an episode has no finite baseline to compare
+        # against; record it and emit no shaping (comparing against ``inf`` would
+        # otherwise produce a ``nan`` reward).
+        if math.isinf(self.previous_min_distance):
+            self.previous_min_distance = current_min_distance
+            return reward
+
         if current_min_distance < self.previous_min_distance:
             reward = (
                 self.config.closer_to_outpost_reward
@@ -251,21 +259,22 @@ class RewardCalculator:
     # ------------------------------------------------------------------
 
     def _normalize_reward(self, reward: float) -> float:
-        """Scale reward to [-1, 1] via min-max normalization."""
-        min_reward = (
-            self.config.penalty_per_step * self.max_episode_steps
-            + self.config.time_penalty_factor * self.max_episode_steps
-            + self.config.circular_behavior_penalty
-        )
-        max_reward = (
-            self.config.completion_reward
-            + self.config.new_outpost_reward * len(self.outpost_coords)
-            + self.config.route_improvement_reward
-            + self.config.better_route_than_algo_reward
-        )
-        if max_reward <= min_reward:
+        """Scale a single-step reward into ``[-1, 1]`` against a fixed scale.
+
+        The reward passed in is a *per-step* value, so it must not be normalised
+        against episode-scale bounds. The previous implementation divided the
+        span by ``penalty_per_step * max_episode_steps`` (~-8000 with defaults),
+        which pinned virtually every step near ``+0.95`` regardless of behaviour
+        and washed out the shaping terms. Instead we divide by a fixed
+        ``reward_scale`` (roughly the completion-reward magnitude) and clip: a
+        full route completion saturates near ``+1``, an outpost discovery lands
+        around ``+0.3``, and small per-step penalties / proximity shaping stay
+        small but keep their sign and ordering.
+        """
+        scale = self.config.reward_scale
+        if scale <= 0:
             return 0.0
-        normalized = 2.0 * (reward - min_reward) / (max_reward - min_reward) - 1.0
+        normalized = reward / scale
         return max(-1.0, min(normalized, 1.0))
 
     def calculate_route_efficiency(

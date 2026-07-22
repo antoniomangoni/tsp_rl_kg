@@ -296,6 +296,10 @@ class RewardConfig:
 
     # Normalisation
     normalisation_scale: float = 100.0
+    # Fixed scale used to normalise each per-step reward into [-1, 1].
+    # Chosen so a full route completion maps to ~+1; per-step penalties and
+    # proximity shaping stay small but keep their sign/ordering.
+    reward_scale: float = 100.0
 
 
 @dataclass
