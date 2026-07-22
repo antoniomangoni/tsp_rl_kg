@@ -10,9 +10,6 @@ from typing import Annotated, Any
 
 import numpy as np
 import typer
-from click.core import ParameterSource
-from click.exceptions import ClickException
-from click.exceptions import Exit as ClickExit
 from loguru import logger
 
 from tsp_rl_kg.config import (
@@ -35,6 +32,15 @@ app = typer.Typer(
     help="Play, train, or simulate the TSP RL knowledge-graph environment.",
 )
 
+# ``typer`` vendors its own copy of click, so ``app()`` raises exceptions from
+# typer's bundled click, which do not subclass the standalone ``click`` package.
+# Derive the base classes from typer's own hierarchy so they are caught
+# regardless of which click typer bundles.
+ClickExit = typer.Exit
+ClickException = next(
+    base for base in typer.BadParameter.__mro__ if base.__name__ == "ClickException"
+)
+
 
 def _load_cli_config(
     config_path: Path | None,
@@ -53,16 +59,6 @@ def _load_cli_config(
 
 def _filter_config_fields(data: dict[str, Any], field_names: set[str]) -> dict[str, Any]:
     return {key: value for key, value in data.items() if key in field_names}
-
-
-def _cli_override_if_explicit(
-    ctx: typer.Context,
-    parameter_name: str,
-    value: Any,
-) -> Any | None:
-    if ctx.get_parameter_source(parameter_name) is ParameterSource.COMMANDLINE:
-        return value
-    return None
 
 
 def _default_game_manager_config(
@@ -503,7 +499,6 @@ def cli(
     ),
 )
 def play(
-    ctx: typer.Context,
     config: Annotated[
         Path | None,
         typer.Option("--config", help="Load play settings from a JSON or TOML file."),
@@ -528,12 +523,16 @@ def play(
         ),
     ] = None,
     human_control: Annotated[
-        bool,
+        bool | None,
         typer.Option(
             "--human/--random-actions",
-            help="Choose keyboard-controlled play or random autoplay.",
+            help=(
+                "Choose keyboard-controlled play (--human) or random autoplay "
+                "(--random-actions). When neither is given, the config or the "
+                "keyboard-control default applies."
+            ),
         ),
-    ] = True,
+    ] = None,
     max_steps: Annotated[
         int | None,
         typer.Option(help="Optional max number of play-loop steps before auto-stop."),
@@ -547,7 +546,7 @@ def play(
         screen_size=screen_size,
         vision_range=vision_range,
         headless=headless,
-        human_mode=_cli_override_if_explicit(ctx, "human_control", human_control),
+        human_mode=human_control,
         max_steps=max_steps,
     )
     _validate_play_config(play_config)
