@@ -5,7 +5,7 @@ Owns graph construction, indexing, projection policies, and node/edge feature en
 
 ## Main identifiers
 - `DefaultGridConstitution`, `GraphConstitution` (`constitution.py`): graph build strategy contract + default implementation.
-- `ProjectionPolicy`, `KHopProjection`, `FullGraphProjection`, `CompletenessProjection` (`projection.py`).
+- `ProjectionPolicy`, `KHopProjection`, `FullGraphProjection` (`projection.py`).
 - `FeatureEncoder` protocol and concrete encoders `RawIntEncoder`, `OneHotEncoder`, `EmbeddingLookupEncoder` (`feature_encoder.py`).
 - `Graph_Manager` (`graph_idx_manager.py`): coordinate/z-level to node/edge index bookkeeping.
 - `build_feature_encoder(...)`: config-driven encoder factory.
@@ -33,3 +33,6 @@ Owns graph construction, indexing, projection policies, and node/edge feature en
 - `tests/test_projection.py`
 - `tests/test_feature_encoder.py`
 - `tests/test_semantic_schema.py`
+
+Policy subgraphs contain remembered terrain/entity nodes for known tiles plus the player.
+Indices are compact and local; knowledge completeness is a seeded initial prior, not a hop radius.

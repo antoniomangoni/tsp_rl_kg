@@ -76,7 +76,7 @@ class DefaultGridConstitution:
                 raw = int(terrain_array[x, y])
                 return feature_encoder.encode_terrain(raw)
             elif z_level == self.ENTITY_Z:
-                raw = 0 if (x, y) == player_pos else int(entity_array[x, y])
+                raw = int(entity_array[x, y])
                 return feature_encoder.encode_entity(raw)
             elif z_level == self.PLAYER_Z:
                 return feature_encoder.encode_player()
@@ -136,8 +136,8 @@ class DefaultGridConstitution:
         gm.player_edge_reverse_idx = r_idx
 
         # --- verify ---
-        assert torch.all(graph.x[:, 0] >= 0), "Some nodes are uninitialized."
+        assert gm.node_idx == num_nodes and torch.isfinite(graph.x).all()
         assert torch.all(graph.edge_index >= 0), "Some edges are uninitialized."
-        assert torch.all(graph.edge_attr[:, 0] >= 0), "Some edge attributes are uninitialized."
+        assert gm.current_edge_idx == num_edges and torch.isfinite(graph.edge_attr).all()
 
         return graph, gm

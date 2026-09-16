@@ -27,8 +27,13 @@ class KHopProjection:
             node_idx=player_node_idx,
             num_hops=self._distance,
             edge_index=edge_index,
+            relabel_nodes=True,
+            num_nodes=graph.num_nodes,
         )
         return Data(
+            world_node_ids=(
+                graph.world_node_ids[subset] if graph.get("world_node_ids") is not None else subset
+            ),
             x=graph.x[subset],
             edge_index=sub_edge_index,
             edge_attr=graph.edge_attr[edge_mask],
@@ -44,23 +49,8 @@ class FullGraphProjection:
 
     def project(self, graph: Data, edge_index: torch.Tensor, player_node_idx: int) -> Data:
         return Data(
+            world_node_ids=graph.get("world_node_ids"),
             x=graph.x,
             edge_index=graph.edge_index,
             edge_attr=graph.edge_attr,
         )
-
-
-class CompletenessProjection:
-    """Compute a k-hop distance from a completeness fraction and delegate to KHopProjection."""
-
-    def __init__(self, completeness: float, vision_range: int, grid_width: int):
-        completeness = min(completeness, 1.0)
-        self._distance = max(int(completeness * grid_width), vision_range)
-        self._inner = KHopProjection(self._distance)
-
-    @property
-    def distance(self) -> int:
-        return self._distance
-
-    def project(self, graph: Data, edge_index: torch.Tensor, player_node_idx: int) -> Data:
-        return self._inner.project(graph, edge_index, player_node_idx)

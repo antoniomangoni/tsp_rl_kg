@@ -73,9 +73,7 @@ class TestPlaceRockTerrainConsistency:
 
 
 class TestKgCompletenessPropagation:
-    def test_different_completeness_gives_different_distance(
-        self, headless_environment: Environment
-    ):
+    def test_different_completeness_gives_nested_priors(self, headless_environment: Environment):
         """Different completion values should yield different graph distances."""
         kg_low = KnowledgeGraph(
             environment=headless_environment,
@@ -87,7 +85,7 @@ class TestKgCompletenessPropagation:
             vision_range=1,
             completion=1.0,
         )
-        assert kg_high.distance >= kg_low.distance
+        assert (kg_low.state.prior_tiles <= kg_high.state.prior_tiles).all()
 
 
 # ===========================================================================

@@ -7,6 +7,7 @@ class Terrain:
     _headless = False
 
     def __init__(self, x, y, tile_size, entity_prob):
+        self._headless = type(self)._headless
         self.grid_x = x
         self.grid_y = y
         self.tile_size = tile_size

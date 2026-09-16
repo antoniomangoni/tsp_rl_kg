@@ -124,4 +124,11 @@ def test_observation_space_matches_encode_output(encoder: PaddedPyGObservationEn
 
 def test_observation_space_keys(encoder: PaddedPyGObservationEncoder):
     space = encoder.observation_space()
-    assert set(space.spaces.keys()) == {"vision", "node_features", "edge_attr", "edge_index"}
+    assert set(space.spaces.keys()) == {
+        "vision",
+        "node_features",
+        "edge_attr",
+        "edge_index",
+        "num_nodes",
+        "num_edges",
+    }

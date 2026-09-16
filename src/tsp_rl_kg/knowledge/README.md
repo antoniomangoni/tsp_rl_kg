@@ -29,3 +29,11 @@ Owns the runtime knowledge graph view over environment state. It translates muta
 - `tests/test_knowledge_graph.py`
 - `tests/test_state_sync.py`
 - `tests/test_projection.py`
+
+## Initial prior semantics (v1)
+
+`KnowledgeState` remembers terrain and non-player entity values. A seeded, nested fraction
+of pristine tiles is initially known; sensing and direct actions add or refresh knowledge.
+Unseen mutations remain unknown. Visual discovery is independent of this prior.
+Every episode restores its immutable `WorldTemplate`; the prior depends on the run seed
+and template fingerprint. The player is an occupancy overlay with a dedicated graph node.

@@ -26,3 +26,11 @@ Owns observation packaging from simulation state into fixed-shape tensors/spaces
 ## Tests
 - `tests/test_observation_encoder.py`
 - `tests/test_custom_env.py`
+
+## Observation schema v2
+
+`num_nodes` and `num_edges` are integer arrays of shape `(1,)` identifying valid prefixes.
+Only these prefixes enter GAT and pooling; padding is never inferred from feature values.
+The pure NumPy semantic renderer supplies normalized channel-first RGB in both display
+modes, including terrain, entity and player markers. Tiny tiles use at least two pixels
+per axis to keep overlay markers distinct. Old checkpoints require fresh training.

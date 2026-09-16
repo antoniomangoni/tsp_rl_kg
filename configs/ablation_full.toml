@@ -4,7 +4,7 @@
 # It sweeps KG completeness {0.25, 0.5, 0.75, 1.0} against a vision-only baseline
 # across two seeds, on a world small enough that per-environment TSP/Dijkstra
 # construction stays cheap but large enough for completeness to change the
-# observed k-hop subgraph radius meaningfully.
+# fraction of initially known map tiles meaningfully.
 #
 # Run (expect this to take a while - run in the background / overnight):
 #   uv run tsp-study --config configs/ablation_full.toml

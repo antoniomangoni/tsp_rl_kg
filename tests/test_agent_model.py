@@ -22,6 +22,8 @@ BATCH_SIZE = 2
 def _make_observation_space(vision_shape: tuple[int, int, int] = VISION_SHAPE) -> gym.spaces.Dict:
     return gym.spaces.Dict(
         {
+            "num_nodes": gym.spaces.Box(1, MAX_NODES, shape=(1,), dtype=np.int64),
+            "num_edges": gym.spaces.Box(0, MAX_EDGES, shape=(1,), dtype=np.int64),
             "vision": gym.spaces.Box(low=0.0, high=1.0, shape=vision_shape, dtype=np.float32),
             "node_features": gym.spaces.Box(
                 low=-1.0,
@@ -50,6 +52,8 @@ def _make_observations(
 ) -> dict[str, torch.Tensor]:
     generator = torch.Generator().manual_seed(42)
     return {
+        "num_nodes": torch.full((BATCH_SIZE, 1), MAX_NODES),
+        "num_edges": torch.full((BATCH_SIZE, 1), MAX_EDGES),
         "vision": torch.rand((BATCH_SIZE, *vision_shape), generator=generator),
         "node_features": torch.rand(
             (BATCH_SIZE, MAX_NODES, NUM_NODE_FEATURES),

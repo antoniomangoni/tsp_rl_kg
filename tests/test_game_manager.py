@@ -29,7 +29,9 @@ def test_start_game_logs_human_controls(monkeypatch, tmp_path):
         def count_discovered_tiles(_grid):
             return 0
 
-    monkeypatch.setattr(game_manager, "init_knowledge_graph", lambda projection: None)
+    monkeypatch.setattr(
+        game_manager, "init_knowledge_graph", lambda projection, completeness, seed: None
+    )
     monkeypatch.setattr(
         "tsp_rl_kg.game_world.game_manager.PlayRecorder",
         DummyRecorder,

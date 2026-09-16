@@ -1,6 +1,5 @@
 import gymnasium as gym
 import numpy as np
-import pygame
 from loguru import logger
 from torch_geometric.data import Data
 
@@ -13,8 +12,9 @@ from tsp_rl_kg.config import (
     SimulationManagerConfig,
 )
 from tsp_rl_kg.game_world.agent import Agent
-from tsp_rl_kg.graph.projection import CompletenessProjection
+from tsp_rl_kg.knowledge.state import validate_completeness
 from tsp_rl_kg.observation.encoder import PaddedPyGObservationEncoder
+from tsp_rl_kg.observation.semantic_vision import render_semantic_vision
 from tsp_rl_kg.rl.reward import RewardCalculator, manhattan_distance
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
 
@@ -31,8 +31,11 @@ class CustomEnv(gym.Env):
         game_managers: list | None = None,
         ablation_config: AblationConfig | None = None,
         kg_completeness: float = 0.5,
+        seed: int = 0,
+        evaluation: bool = False,
     ):
         super(CustomEnv, self).__init__()
+        super().reset(seed=seed)
         logger.info("Initializing CustomEnv")
 
         self._ablation_config = ablation_config if ablation_config is not None else AblationConfig()
@@ -92,7 +95,12 @@ class CustomEnv(gym.Env):
         self.num_actions = self._model_args.num_actions
         self.num_tiles = self._gm_config.num_tiles
         self.screen_size = self._gm_config.screen_size
-        self.kg_completeness = kg_completeness
+        self.kg_completeness = validate_completeness(kg_completeness)
+        self._seed = seed
+        self.evaluation = evaluation
+        self.early_stop = False
+        self.training_complete = False
+        self._pending_curriculum = False
         self.vision_range = self._gm_config.vision_range
         self.step_count = 0
         self.max_episode_steps = self._episode_config.max_episode_steps
@@ -121,7 +129,9 @@ class CustomEnv(gym.Env):
         self.max_nodes = self.kg.graph_manager.max_nodes
         self.max_edges = self.kg.graph_manager.max_edges
 
-        self.vision_pixel_side_size = (2 * self.vision_range + 1) * self.current_gm.tile_size
+        self.vision_pixel_side_size = (2 * self.vision_range + 1) * max(
+            2, self.current_gm.tile_size
+        )
         vision_shape = (3, self.vision_pixel_side_size, self.vision_pixel_side_size)
 
         self.encoder = PaddedPyGObservationEncoder(
@@ -138,14 +148,15 @@ class CustomEnv(gym.Env):
 
     def set_kg_completeness(self, completeness):
         logger.info(f"Setting KG completeness to {completeness} using SimulationManager")
-        self.kg_completeness = completeness
+        self.kg_completeness = validate_completeness(completeness)
 
     def set_current_game_manager(self):
         logger.info(f"Setting current game manager to index {self.current_game_index}")
 
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
-        projection = CompletenessProjection(self.kg_completeness, self.vision_range, self.num_tiles)
-        self.current_gm.start_game(projection=projection)
+        self.current_gm.start_game(
+            self.kg_completeness, seed=self._seed, record=False, restore=True
+        )
         self.environment = self.current_gm.environment
         self.agent_controler: Agent = self.current_gm.agent_controler
         self.agent_controler.reset_agent()
@@ -165,6 +176,7 @@ class CustomEnv(gym.Env):
         logger.info("Current game manager set successfully")
 
     def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
         logger.info("Resetting environment")
         self.episode_step = 0
         self.total_reward = 0
@@ -174,12 +186,24 @@ class CustomEnv(gym.Env):
         self.best_distance_to_unvisited = float("inf")
 
         if seed is not None:
-            np.random.seed(seed)
+            self._seed = seed
+            self.current_game_index = -1
             self.action_space.seed(seed)
 
         # Update the game manager
-        if self._ablation_config.disable_curriculum:
-            self.current_game_index = np.random.randint(
+        if self._pending_curriculum and not self.evaluation:
+            self.training_complete = self.simulation_manager.advance_curriculum() < 0
+            self._pending_curriculum = False
+        if options and "world_index" in options:
+            self.current_game_index = int(options["world_index"])
+            if not 0 <= self.current_game_index < self.simulation_manager.number_of_environments:
+                raise ValueError("world_index is outside the world pool")
+        elif self.evaluation:
+            self.current_game_index = (
+                self.current_game_index + 1
+            ) % self.simulation_manager.number_of_environments
+        elif self._ablation_config.disable_curriculum:
+            self.current_game_index = self.np_random.integers(
                 0, self.simulation_manager.number_of_environments
             )
         else:
@@ -245,8 +269,10 @@ class CustomEnv(gym.Env):
         # Determine if the episode was successful (all outposts visited)
         success = all_visited
 
-        if terminated or truncated:
+        if (terminated or truncated) and not self.evaluation:
             self.simulation_manager.add_episode_performance(self.total_reward, success)
+            if not self._ablation_config.disable_curriculum:
+                self._pending_curriculum = self.simulation_manager.should_advance_curriculum()
 
         observation = self._get_observation()
         info = {
@@ -256,6 +282,8 @@ class CustomEnv(gym.Env):
             "energy_spent": self.agent_controler.energy_spent,
             "outposts_visited": len(self._reward_calculator.outposts_visited),
             "total_reward": self.total_reward,
+            "kg_completeness": self.kg_completeness,
+            "known_tile_fraction": self.kg.state.known_fraction,
         }
 
         logger.debug(
@@ -313,61 +341,20 @@ class CustomEnv(gym.Env):
         logger.debug("Observation retrieved")
         return self.encoder.encode(subgraph, vision)
 
-    def get_clamped_surface(self):
-        x = (self.agent_controler.agent.grid_x - self.vision_range) * self.current_gm.tile_size
-        y = (self.agent_controler.agent.grid_y - self.vision_range) * self.current_gm.tile_size
-        width = height = self.vision_pixel_side_size
-        surface_rect = pygame.Rect(x, y, width, height)
-        surface_rect.clamp_ip(self.current_gm.renderer.surface.get_rect())
-        return self.current_gm.renderer.surface.subsurface(surface_rect)
-
     def _get_vision(self):
-        if self.current_gm.headless:
-            return self._get_vision_headless()
-        vision_surface = self.get_clamped_surface()
-        vision_array = pygame.surfarray.array3d(vision_surface).astype(np.float16)
-        vision_array = np.transpose(vision_array, (2, 0, 1))  # Change from (H, W, C) to (C, H, W)
-        return vision_array
+        return render_semantic_vision(self.environment, self.vision_range, self.kg.visible_tiles)
 
     def _get_vision_headless(self):
-        """Build vision array from terrain colours without pygame surfaces."""
-        env = self.environment
-        agent_x = self.agent_controler.agent.grid_x
-        agent_y = self.agent_controler.agent.grid_y
-        vr = self.vision_range
-        ts = self.current_gm.tile_size
-        side = self.vision_pixel_side_size
-        view_tiles = 2 * vr + 1
-
-        # Clamp viewport origin to stay within map bounds (matches pygame clamp_ip)
-        view_x = max(0, min(agent_x - vr, env.width - view_tiles))
-        view_y = max(0, min(agent_y - vr, env.height - view_tiles))
-
-        vision = np.zeros((side, side, 3), dtype=np.uint8)
-
-        for dx in range(view_tiles):
-            for dy in range(view_tiles):
-                gx = view_x + dx
-                gy = view_y + dy
-                if 0 <= gx < env.width and 0 <= gy < env.height:
-                    if not env.discovered_grid[gx, gy]:
-                        continue  # leave as black (0, 0, 0)
-                    terrain = env.terrain_object_grid[gx, gy]
-                    colour = terrain.colour if terrain.colour else (0, 0, 0)
-                    px = dx * ts
-                    py = dy * ts
-                    vision[px : px + ts, py : py + ts] = colour
-
-        return np.transpose(vision, (2, 0, 1)).astype(np.float16)
+        return self._get_vision()
 
     def close(self):
         self.current_gm.end_game()
-        self.simulation_manager.save_data(self.kg_completeness)
 
     def get_metrics(self):
         rc = self._reward_calculator
         return {
             "performance": self.get_episode_performance(),
+            "known_tile_fraction": self.kg.state.known_fraction,
             "game_manager_index": self.current_game_index,
             "best_route_energy": rc.best_route_energy,
             "curriculum_level": self.simulation_manager.current_curriculum_index,

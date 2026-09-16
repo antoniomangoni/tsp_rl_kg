@@ -20,6 +20,8 @@ class DummyDictEnv(gym.Env):
         super().__init__()
         self.observation_space = gym.spaces.Dict(
             {
+                "num_nodes": gym.spaces.Box(1, 8, shape=(1,), dtype=np.int64),
+                "num_edges": gym.spaces.Box(0, 12, shape=(1,), dtype=np.int64),
                 "vision": gym.spaces.Box(low=0.0, high=1.0, shape=(3, 32, 32), dtype=np.float32),
                 "node_features": gym.spaces.Box(
                     low=-1.0,
@@ -46,6 +48,8 @@ class DummyDictEnv(gym.Env):
 
     def _observation(self) -> dict[str, np.ndarray]:
         return {
+            "num_nodes": np.array([8], dtype=np.int64),
+            "num_edges": np.array([12], dtype=np.int64),
             "vision": np.zeros((3, 32, 32), dtype=np.float32),
             "node_features": np.zeros((8, 4), dtype=np.float32),
             "edge_attr": np.zeros((12, 2), dtype=np.float32),

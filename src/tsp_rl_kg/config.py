@@ -1,7 +1,18 @@
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum
+
+OBSERVATION_SCHEMA_VERSION = 2
+KNOWLEDGE_SEMANTICS = "initial_prior_v1"
+
+
+def validate_completeness(value: float) -> float:
+    value = float(value)
+    if not math.isfinite(value) or not 0 <= value <= 1:
+        raise ValueError("kg_completeness must be finite and in [0, 1]")
+    return value
 
 
 class RLBackend(str, Enum):
@@ -411,6 +422,8 @@ class TrainingConfig:
     total_timesteps: int = 100_000
     kg_completeness: float = 0.5
     seeds: list[int] = field(default_factory=lambda: [42, 123, 456])
+    observation_schema_version: int = field(default=OBSERVATION_SCHEMA_VERSION, init=False)
+    knowledge_semantics: str = field(default=KNOWLEDGE_SEMANTICS, init=False)
 
     def __post_init__(self) -> None:
         if isinstance(self.game_manager, dict):
@@ -442,6 +455,7 @@ class TrainingConfig:
         if isinstance(self.ablation, dict):
             self.ablation = AblationConfig(**self.ablation)
 
+        self.kg_completeness = validate_completeness(self.kg_completeness)
         self._synchronise_algorithm_config()
 
     def _synchronise_algorithm_config(self) -> None:

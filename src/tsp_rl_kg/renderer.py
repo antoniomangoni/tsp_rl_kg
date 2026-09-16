@@ -77,6 +77,9 @@ class Renderer:
             terrain_tile = self.environment.terrain_object_grid[x, y]
             if self.environment.discovered_grid[x, y] and terrain_tile.entity_on_tile is not None:
                 self.surface.blit(terrain_tile.entity_on_tile.image, rect.topleft)
+            player = self.environment.player
+            if (x, y) == (player.grid_x, player.grid_y):
+                self.surface.blit(player.image, rect.topleft)
 
         # Finally, update the display only for the dirty rects
         dirty_rects = [

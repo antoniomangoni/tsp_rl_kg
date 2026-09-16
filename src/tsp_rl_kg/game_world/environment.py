@@ -7,6 +7,7 @@ from loguru import logger
 from tsp_rl_kg.game_world.entities import (
     BaseEntity,
     Entity,
+    Fish,
     MossyRock,
     Outpost,
     Player,
@@ -46,6 +47,7 @@ class Environment:
         tile_size: int = 50,
         number_of_outposts: int = 3,
         headless: bool = False,
+        template=None,
     ):
         self.headless = headless
 
@@ -85,10 +87,31 @@ class Environment:
             "Snow": [],
         }
 
-        self.initialize_environment()
-        self.add_outposts()
-
-        self.player = self.init_player()
+        if template is None:
+            self.initialize_environment()
+            self.add_outposts()
+            self.player = self.init_player()
+        else:
+            entity_types = {1: Fish, 2: Tree, 3: MossyRock, 4: SnowyRock, 5: Outpost, 6: WoodPath}
+            for (x, y), code in np.ndenumerate(self.heightmap):
+                tile = self.terrain_definitions[int(code)]["class"](x, y, tile_size, 0)
+                self.terrain_object_grid[x, y] = tile
+                self.terrain_index_grid[x, y] = code
+                entity_id = template.entities[x][y]
+                if entity_id:
+                    entity = entity_types[entity_id](x, y, tile_size)
+                    self.entity_group.add(entity)
+                    self.entity_index_grid[x, y] = entity_id
+                    if entity_id == 6:
+                        tile.add_path(entity)
+                    else:
+                        tile.add_entity(entity)
+                    if entity_id == 5:
+                        tile.passable = True
+                        tile.energy_requirement = 0
+            self.outpost_locations = list(template.outposts)
+            self.player = Player(*template.spawn, tile_size)
+            self.entity_group.add(self.player, layer=2)
 
         self.discovered_grid = np.zeros((self.width, self.height), dtype=bool)
 
@@ -102,7 +125,7 @@ class Environment:
             if non_five_coords.size == 0:
                 return None  # No available coordinates
             coord = random.choice(non_five_coords)
-            entity = self.terrain_object_grid[coord[0], coord[1]].get_entity()
+            entity = self.terrain_object_grid[coord[0], coord[1]].entity_on_tile
             if entity:
                 self.delete_entity(entity)
             return coord.tolist()
@@ -230,9 +253,6 @@ class Environment:
             self.terrain_object_grid[location[0], location[1]].remove_entity()
         player = Player(location[0], location[1], self.tile_size)
         self.entity_group.add(player, layer=2)
-        # The player is tracked separately via environment.player, but the grid also marks the
-        # live player position for rendering and state-export convenience.
-        self.entity_index_grid[location[0], location[1]] = player.id
         return player
 
     def update_terrain_passability(self, x, y, entity):
@@ -247,12 +267,7 @@ class Environment:
         if not self.is_move_valid(new_x, new_y):
             return current_x, current_y
 
-        self.terrain_object_grid[current_x, current_y].remove_entity()
-        self.entity_index_grid[current_x, current_y] = 0
         entity.move(dx, dy)
-        self.terrain_object_grid[new_x, new_y].add_entity(entity)
-        self.entity_index_grid[new_x, new_y] = entity.id
-        # We never remove the entity from the entity_group, so no need to re-add it
         self.environment_changed(current_x, current_y, new_x, new_y)
         return new_x, new_y
 

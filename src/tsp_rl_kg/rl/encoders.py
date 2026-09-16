@@ -132,6 +132,11 @@ class HybridEncoder(nn.Module):
         if model_config is None:
             model_config = AgentModelConfig()
 
+        if not {"num_nodes", "num_edges"}.issubset(observation_space.spaces):
+            raise ValueError(
+                "Observation schema v2 requires num_nodes/num_edges; fresh training is required"
+            )
+
         self.disable_vision = model_config.disable_vision
         self.disable_graph = model_config.disable_graph
         self.vision_params = model_config.to_vision_params()
@@ -177,31 +182,49 @@ class HybridEncoder(nn.Module):
         self,
         observations: dict[str, torch.Tensor],
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        nodes, edges, attrs, memberships = [], [], [], []
+        offset = 0
         batch_size = observations["node_features"].shape[0]
-        num_nodes = observations["node_features"].shape[1]
-
-        x = observations["node_features"].view(batch_size * num_nodes, -1).to(torch_dtype)
-        edge_index = observations["edge_index"].long()
-        edge_index = edge_index + (
-            torch.arange(batch_size, device=edge_index.device) * num_nodes
-        ).view(-1, 1, 1)
-        edge_index = edge_index.view(2, -1)
-
-        num_edges = observations["edge_attr"].shape[1]
-        edge_attr = observations["edge_attr"].reshape(batch_size * num_edges, -1).to(torch_dtype)
-        batch = torch.arange(batch_size, device=x.device).repeat_interleave(num_nodes)
-
-        return x, edge_index, batch, edge_attr
+        for i in range(batch_size):
+            raw_n = observations["num_nodes"][i].item()
+            raw_e = observations["num_edges"][i].item()
+            if not (float(raw_n).is_integer() and float(raw_e).is_integer()):
+                raise ValueError("Graph counts must be finite integers")
+            n, e = int(raw_n), int(raw_e)
+            if (
+                not 1 <= n <= observations["node_features"].shape[1]
+                or not 0 <= e <= observations["edge_attr"].shape[1]
+            ):
+                raise ValueError("Invalid graph counts for padded observation")
+            x = observations["node_features"][i, :n].to(torch_dtype)
+            raw_index = observations["edge_index"][i, :, :e]
+            if not torch.isfinite(raw_index).all() or not torch.equal(
+                raw_index, raw_index.long().to(raw_index.dtype)
+            ):
+                raise ValueError("Graph edge indices must be finite integers")
+            index = raw_index.long()
+            if e and (index.min() < 0 or index.max() >= n):
+                raise ValueError("Graph edge references an invalid local node")
+            nodes.append(x)
+            edges.append(index + offset)
+            attrs.append(observations["edge_attr"][i, :e].to(torch_dtype))
+            memberships.append(torch.full((n,), i, device=x.device, dtype=torch.long))
+            offset += n
+        return torch.cat(nodes), torch.cat(edges, dim=1), torch.cat(memberships), torch.cat(attrs)
 
     def forward(self, observations: dict[str, torch.Tensor]) -> torch.Tensor:
-        vision_features = self.vision_processor(observations["vision"])
-        if self.disable_vision:
-            vision_features = torch.zeros_like(vision_features)
-
-        x, edge_index, batch, edge_attr = self._prepare_graph_batch(observations)
-        graph_features = self.graph_processor(x, edge_index, batch, edge_attr=edge_attr)
+        reference = observations["vision"]
+        shape = (reference.shape[0], self.vision_processor.output_dim)
+        vision_features = (
+            reference.new_zeros(shape) if self.disable_vision else self.vision_processor(reference)
+        )
         if self.disable_graph:
-            graph_features = torch.zeros_like(graph_features)
+            graph_features = reference.new_zeros(
+                (reference.shape[0], self.graph_processor.output_dim)
+            )
+        else:
+            x, edge_index, batch, edge_attr = self._prepare_graph_batch(observations)
+            graph_features = self.graph_processor(x, edge_index, batch, edge_attr=edge_attr)
 
         combined = torch.cat((vision_features, graph_features), dim=1)
         combined = self.dropout(combined)

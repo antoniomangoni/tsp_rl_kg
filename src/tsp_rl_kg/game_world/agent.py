@@ -61,6 +61,12 @@ class Agent:
             self.energy_spent += self.action_energy_cost
         else:
             raise ValueError(f"Invalid action: {action}")
+        radius = (
+            self.vision_range * self._scout_vision_multiplier
+            if action is ActionType.SCOUT
+            else self.vision_range
+        )
+        self.kg.sense(radius)
 
     def reset_energy_spent(self):
         self.energy_spent = 0
@@ -75,17 +81,9 @@ class Agent:
         """Looking at the environment is a deliberate action."""
         """ Adding a terrain node automatically adds the corresponding entity node"""
 
-        discovered_now = 0
-        vision = int(self.vision_range * self._scout_vision_multiplier)
-
-        for y in range(self.agent.grid_y - vision, self.agent.grid_y + vision + 1):
-            for x in range(self.agent.grid_x - vision, self.agent.grid_x + vision + 1):
-                if self.environment.within_bounds(x, y):
-                    newly_discovered = self.environment.discover_coordinate(x, y)
-                    if newly_discovered:
-                        discovered_now += 1
-
-        return discovered_now
+        before = int(self.environment.discovered_grid.sum())
+        self.kg.sense(self.vision_range * self._scout_vision_multiplier)
+        return int(self.environment.discovered_grid.sum()) - before
 
     def build_path(self):
         if (self.agent.grid_x, self.agent.grid_y) in self.environment.outpost_locations:

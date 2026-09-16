@@ -11,7 +11,8 @@ from tsp_rl_kg.game_world.agent import Agent
 from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.game_world.heightmap_generator import HeightmapGenerator
 from tsp_rl_kg.game_world.play_recorder import PlayRecorder
-from tsp_rl_kg.graph.projection import CompletenessProjection, ProjectionPolicy
+from tsp_rl_kg.game_world.world_template import WorldTemplate
+from tsp_rl_kg.graph.projection import ProjectionPolicy
 from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
 from tsp_rl_kg.renderer import Renderer
 from tsp_rl_kg.rl.target import Target_Manager
@@ -104,14 +105,18 @@ class GameManager:
         self.agent = self.agent_controler.agent
 
         self.target_manager = Target_Manager(self.environment)
+        self.world_template = WorldTemplate.capture(self.environment)
 
-    def init_knowledge_graph(self, projection: ProjectionPolicy):
+    def init_knowledge_graph(self, projection=None, completeness=0.5, seed=0):
         self.kg_class = KnowledgeGraph(
             self.environment,
             self.vision_range,
             plot=self.plot,
             feature_encoder=self.feature_encoder,
             projection=projection,
+            completion=completeness,
+            seed=seed,
+            template=self.world_template,
         )
         self.agent_controler.get_kg(self.kg_class)
 
@@ -169,21 +174,38 @@ class GameManager:
         # self.renderer.render_heatmap(self.target_manager.min_path_length, bool_heatmap=True)
         pygame.display.flip()
 
-    def start_game(self, kg_completeness=0.5, projection: ProjectionPolicy | None = None):
+    def start_game(
+        self,
+        kg_completeness=0.5,
+        projection: ProjectionPolicy | None = None,
+        *,
+        seed=0,
+        record=True,
+        restore=False,
+    ):
         if not self.headless:
             self.init_pygame()
-        if projection is None:
-            projection = CompletenessProjection(kg_completeness, self.vision_range, self.num_tiles)
-        self.init_knowledge_graph(projection)
+        if restore:
+            self.environment = self.world_template.restore(
+                tile_size=self.tile_size, headless=self.headless
+            )
+            self.agent_controler = Agent(self.environment, self.vision_range)
+            self.agent = self.environment.player
+            self.visited_outposts.clear()
+            self.route_start_energy = 0
+        self.init_knowledge_graph(projection, kg_completeness, seed)
         if self.human_mode and not self.use_random_human_actions:
             for line in self.HUMAN_CONTROL_LINES:
                 logger.info(line)
-        self.recorder = PlayRecorder(self._config)
-        self.recorder.write_run_start(
-            player_pos=(self.agent.grid_x, self.agent.grid_y),
-            discovered_tiles=PlayRecorder.count_discovered_tiles(self.environment.discovered_grid),
-        )
-        logger.info(f"Play recorder initialised at {self.recorder.paths.run_dir}")
+        self.recorder = None
+        if record:
+            self.recorder = PlayRecorder(self._config)
+            self.recorder.write_run_start(
+                player_pos=(self.agent.grid_x, self.agent.grid_y),
+                discovered_tiles=PlayRecorder.count_discovered_tiles(
+                    self.environment.discovered_grid
+                ),
+            )
         if not self.headless:
             self.initialise_rendering()
 

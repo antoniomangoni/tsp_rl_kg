@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from tsp_rl_kg.game_world.environment import Environment
 from tsp_rl_kg.graph.projection import (
-    CompletenessProjection,
     FullGraphProjection,
     KHopProjection,
     ProjectionPolicy,
@@ -18,32 +17,6 @@ from tsp_rl_kg.knowledge.knowledge_graph import KnowledgeGraph
 
 def test_khop_protocol_conformance():
     assert isinstance(KHopProjection(distance=2), ProjectionPolicy)
-
-
-def test_completeness_protocol_conformance():
-    assert isinstance(CompletenessProjection(0.5, 1, 10), ProjectionPolicy)
-
-
-# ---------------------------------------------------------------------------
-# CompletenessProjection distance property
-# ---------------------------------------------------------------------------
-
-
-class TestCompletenessProjectionDistance:
-    def test_distance_property(self):
-        proj = CompletenessProjection(completeness=0.5, vision_range=1, grid_width=10)
-        assert proj.distance == max(int(0.5 * 10), 1)
-        assert proj.distance == 5
-
-    def test_distance_clamped_to_vision_range(self):
-        proj = CompletenessProjection(completeness=0.01, vision_range=3, grid_width=10)
-        # int(0.01 * 10) = 0, but vision_range=3 is the floor
-        assert proj.distance == 3
-
-    def test_completeness_capped_at_one(self):
-        proj = CompletenessProjection(completeness=2.0, vision_range=1, grid_width=10)
-        assert proj.distance == max(int(1.0 * 10), 1)
-        assert proj.distance == 10
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +92,6 @@ class TestProjectionIntegration:
             projection=proj,
         )
         assert kg.projection is proj
-        assert kg.distance == 1
         subgraph = kg.get_subgraph()
         assert subgraph.num_nodes > 0
 

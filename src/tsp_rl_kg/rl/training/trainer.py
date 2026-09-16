@@ -64,6 +64,7 @@ class Trainer:
             episode_config=config.episode,
             ablation_config=config.ablation,
             kg_completeness=self.current_kg_completeness,
+            seed=seed or 0,
         )
 
         logger.info("Creating environment")
