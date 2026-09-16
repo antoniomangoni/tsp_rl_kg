@@ -34,7 +34,7 @@ Exit gate: all four example experiments produce successful seeds; injected failu
 
 ## Phase 3 — Add integration tests
 
-Status: pending.
+Status: implemented. Validation: 9 CPU integration tests passed in 33.42 seconds (281 unit tests deselected), including all real study experiments, model updates/reload, logging boundary and MLflow failure status. Wheel import works; sprite checks are completed with phase 4.
 
 - Execute the small study in temporary storage with local MLflow; check experiments, seeds, metrics and models.
 - Exercise PPO/DQN updates, save/reload, prediction, periodic evaluation, curriculum transitions and DQN logging boundary.
