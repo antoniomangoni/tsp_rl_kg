@@ -68,3 +68,27 @@ def _get_nested_value(data: Mapping[str, Any], path: tuple[str, ...]) -> Any | N
             return None
         current = current[key]
     return current
+
+
+def merge_training_config(base: Mapping[str, Any], overrides: Mapping[str, Any]) -> ConfigMapping:
+    """Merge training settings without carrying hyperparameters across algorithms."""
+    from dataclasses import asdict
+
+    from tsp_rl_kg.config import AlgorithmConfig
+
+    base = copy.deepcopy(dict(base))
+    overrides = copy.deepcopy(dict(overrides))
+    override = overrides.pop("algorithm_config", overrides.get("algorithm"))
+    if override is not None:
+        previous = AlgorithmConfig(**base.get("algorithm", {}))
+        selected = AlgorithmConfig(
+            backend=override.get("backend", previous.backend),
+            algorithm=override.get("algorithm", previous.algorithm),
+            policy_name=previous.policy_name,
+            verbose=previous.verbose,
+            tensorboard_run_name=previous.tensorboard_run_name,
+        )
+        if (selected.backend, selected.algorithm) != (previous.backend, previous.algorithm):
+            base["algorithm"] = asdict(selected)
+        overrides["algorithm"] = override
+    return merge_nested_dicts(base, overrides)

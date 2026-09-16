@@ -7,6 +7,7 @@ from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
+from uuid import uuid4
 
 import numpy as np
 import typer
@@ -23,7 +24,12 @@ from tsp_rl_kg.config import (
     TrainingConfig,
     default_algorithm_hyperparameters,
 )
-from tsp_rl_kg.utils.config_files import find_mapping_section, load_config_file, merge_nested_dicts
+from tsp_rl_kg.utils.config_files import (
+    find_mapping_section,
+    load_config_file,
+    merge_nested_dicts,
+    merge_training_config,
+)
 from tsp_rl_kg.utils.logger import configure_logging
 
 app = typer.Typer(
@@ -275,7 +281,7 @@ def _build_training_config(
     default_config = _default_training_config()
     if loaded_config is not None:
         config = TrainingConfig.from_dict(
-            merge_nested_dicts(default_config.to_dict(), loaded_config)
+            merge_training_config(default_config.to_dict(), loaded_config)
         )
     else:
         config = default_config
@@ -321,7 +327,7 @@ def _build_training_config(
 def _create_results_directory(prefix: str) -> str:
     os.makedirs("results", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = os.path.join("results", f"{prefix}_{timestamp}")
+    results_dir = os.path.join("results", f"{prefix}_{timestamp}_{uuid4().hex[:12]}")
     os.makedirs(results_dir, exist_ok=True)
     logger.info(f"Created results directory: {results_dir}")
     return results_dir

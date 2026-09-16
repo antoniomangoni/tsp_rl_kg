@@ -26,6 +26,7 @@ class TrainingMetrics:
         self.efficiency = []
         self.improvement = []
         self.gap = []
+        self.known_fractions = []
         self.num_actions = num_actions
         self.action_counts = [[] for _ in range(num_actions)]
 
@@ -35,6 +36,7 @@ class TrainingMetrics:
         if len(padded_action_counts) < self.num_actions:
             padded_action_counts.extend([0] * (self.num_actions - len(padded_action_counts)))
 
+        self.known_fractions.append(float(metrics.get("known_tile_fraction", 0.0)))
         self.steps.append(step)
         self.performances.append(float(metrics.get("performance", 0.0)))
         self.game_manager_indices.append(int(metrics.get("game_manager_index", 0)))
@@ -85,6 +87,7 @@ class TrainingMetrics:
         df = pd.DataFrame(
             {
                 "Step": self.steps,
+                "Known Tile Fraction": self.known_fractions,
                 "Performance": self.performances,
                 "Game Manager Index": self.game_manager_indices,
                 "Best Route Energy": self.best_route_energies,

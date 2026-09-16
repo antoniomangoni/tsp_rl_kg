@@ -175,6 +175,9 @@ class CustomEnv(gym.Env):
             self._reward_calculator.reset_game(list(self.outpost_coords))
         logger.info("Current game manager set successfully")
 
+    def begin_evaluation(self):
+        self.current_game_index = -1
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         logger.info("Resetting environment")
@@ -356,7 +359,8 @@ class CustomEnv(gym.Env):
             "performance": self.get_episode_performance(),
             "known_tile_fraction": self.kg.state.known_fraction,
             "game_manager_index": self.current_game_index,
-            "best_route_energy": rc.best_route_energy,
+            "best_route_energy": rc.best_route_energy if np.isfinite(rc.best_route_energy) else 0.0,
+            "best_route_found": bool(np.isfinite(rc.best_route_energy)),
             "curriculum_level": self.simulation_manager.current_curriculum_index,
             "target_route_energy": self.current_gm.target_manager.target_route_energy,
             "best_efficiency": rc.best_efficiency,

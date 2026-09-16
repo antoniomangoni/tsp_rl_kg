@@ -20,7 +20,7 @@ class CurriculumService:
         env: Any,
         action_counts: Sequence[int],
     ) -> CurriculumDecision:
-        if env.early_stop:
+        if getattr(env, "training_complete", False):
             logger.info("Early stop condition met. Stopping training.")
             return CurriculumDecision(continue_training=False, should_stop=True)
 
@@ -33,6 +33,7 @@ class CurriculumService:
             mlflow.log_metrics(
                 {
                     "training.performance": float(metrics.get("performance", 0.0)),
+                    "training.known_tile_fraction": float(metrics.get("known_tile_fraction", 0.0)),
                     "training.game_manager_index": float(metrics.get("game_manager_index", 0)),
                     "training.best_route_energy": float(metrics.get("best_route_energy", 0.0)),
                     "training.curriculum_level": float(metrics.get("curriculum_level", 0)),
@@ -42,20 +43,6 @@ class CurriculumService:
                     "training.gap": float(metrics.get("gap", 0.0)),
                 },
                 step=step,
-            )
-
-        if env.simulation_manager.should_advance_curriculum():
-            new_index = env.simulation_manager.advance_curriculum()
-            if new_index < 0:
-                logger.info("All curricula completed. Stopping training.")
-                return CurriculumDecision(continue_training=False, should_stop=True)
-
-            logger.info(
-                f"Advancing to curriculum level {env.simulation_manager.current_curriculum_index}"
-            )
-            return CurriculumDecision(
-                continue_training=True,
-                should_reset_environments=True,
             )
 
         return CurriculumDecision()

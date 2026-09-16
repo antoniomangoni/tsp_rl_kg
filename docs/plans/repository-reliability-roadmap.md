@@ -19,7 +19,7 @@ Exit gate: connectivity, isolation, knowledge, reset and visual tests pass; old 
 
 ## Phase 2 — Make experiments fail visibly
 
-Status: pending.
+Status: implemented. Validation: 281 tests pass; real example study: attempted 4, succeeded 4, failed 0; Ruff/Black/isort pass.
 
 - Replace algorithm-specific hyperparameters on algorithm switches. Preserve arbitrary PPO options while synchronizing only legacy fields.
 - Record every attempted seed, status, errors and artifact paths. Preserve successful-result fields; add attempted/succeeded/failed counts and incomplete aggregate labels.
@@ -51,7 +51,7 @@ Status: pending.
 
 - Package sprites and load through package resources.
 - Reconcile README, module docs, diagrams, examples and stale agent guidance. Fix broken links and ignored workflow/plan files.
-- Remove unused timeout and active replay/sequence/world-model settings; reject obsolete config keys with actionable errors. Keep standalone trajectory utilities experimental.
+- Remove unused timeout (completed with phase-2 lifecycle changes) and active replay/sequence/world-model settings; reject obsolete config keys with actionable errors. Keep standalone trajectory utilities experimental.
 - Require uv sync --locked in CI.
 - Handle empty/single/equal-energy world pools and validate configuration relationships.
 - Avoid unrelated renaming/abstraction changes.
@@ -61,3 +61,5 @@ Exit gate: documented commands and installed assets work; obsolete settings cann
 ## Delivery and validation log
 
 Explicitly stage these planning files despite the existing ignore rules; revise the broader rules in phase 4. Keep phase-specific implementation and validation recorded here. Never delete historical experiments, rewrite checkpoints, install tools, or bypass tests to obtain green checks.
+
+Publication: automatic approval review blocked external GitHub pushes/PR creation. Local phase branches and commits are retained; explicit publication approval is required.

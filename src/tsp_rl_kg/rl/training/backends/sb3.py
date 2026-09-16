@@ -23,6 +23,15 @@ SB3_ALGORITHMS = {
 }
 
 
+class FixedWorldEvalCallback(EvalCallback):
+    """Restart the held-out schedule for every periodic comparison."""
+
+    def _on_step(self):
+        if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+            self.eval_env.env_method("begin_evaluation")
+        return super()._on_step()
+
+
 class SB3TrainingBackend:
     def __init__(
         self,
@@ -78,6 +87,7 @@ class SB3TrainingBackend:
                 },
             },
             **self.algorithm_config.hyperparameters,
+            seed=getattr(self.raw_env, "_seed", None),
             device=self.device,
             verbose=self.algorithm_config.verbose,
         )
@@ -97,11 +107,12 @@ class SB3TrainingBackend:
         if output_dir is not None:
             callbacks.insert(
                 0,
-                EvalCallback(
+                FixedWorldEvalCallback(
                     self.eval_env,
                     best_model_save_path=output_dir,
                     log_path=output_dir,
                     eval_freq=self.evaluation_config.eval_freq,
+                    n_eval_episodes=self.evaluation_config.n_eval_episodes,
                     deterministic=self.evaluation_config.deterministic,
                     render=self.evaluation_config.render,
                 ),

@@ -472,8 +472,10 @@ class TrainingConfig:
             and self.algorithm.algorithm == AlgorithmName.PPO
         ):
             merged_hyperparameters = {**default_model_config, **self.algorithm.hyperparameters}
-            self.model_config = ModelConfig(**merged_hyperparameters)
-            self.algorithm.hyperparameters = self.model_config.to_dict()
+            self.model_config = ModelConfig(
+                **{k: merged_hyperparameters[k] for k in default_model_config}
+            )
+            self.algorithm.hyperparameters = merged_hyperparameters
 
     @staticmethod
     def from_dict(d: dict) -> TrainingConfig:

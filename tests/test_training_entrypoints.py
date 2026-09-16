@@ -59,7 +59,7 @@ def test_ablation_study_merges_algorithm_and_config_overrides(monkeypatch, tmp_p
         number_of_environments=8,
         number_of_curricula=2,
     )
-    study = AblationStudy(base_config, kg_completeness_values=[0.5], experiments=[])
+    study = AblationStudy(base_config, kg_completeness_values=[0.5])
 
     experiment_config, kg_completeness, ablation = study._build_experiment_config(
         {
@@ -92,7 +92,7 @@ def test_ablation_study_merges_feature_encoding_overrides(monkeypatch, tmp_path)
         number_of_environments=8,
         number_of_curricula=2,
     )
-    study = AblationStudy(base_config, kg_completeness_values=[0.5], experiments=[])
+    study = AblationStudy(base_config, kg_completeness_values=[0.5])
 
     experiment_config, _, _ = study._build_experiment_config(
         {

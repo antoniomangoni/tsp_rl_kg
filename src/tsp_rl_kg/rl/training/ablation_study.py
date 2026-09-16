@@ -5,6 +5,8 @@ import traceback
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
+from uuid import uuid4
 
 import mlflow
 import numpy as np
@@ -12,6 +14,10 @@ from loguru import logger
 
 from tsp_rl_kg.config import AblationConfig, AlgorithmConfig, TrainingConfig
 from tsp_rl_kg.rl.training.trainer import Trainer
+
+
+class StudyFailedError(RuntimeError):
+    """One or more seeds failed; partial results have been saved."""
 
 
 class AblationStudy:
@@ -33,12 +39,19 @@ class AblationStudy:
         self.results = {}
         self.mlflow_experiment_name = mlflow_experiment_name
         self.mlflow_tracking_uri = mlflow_tracking_uri
-        self.results_dir = self._create_results_directory()
 
         if experiments is not None:
             self.experiments = experiments
         else:
             self.experiments = self._build_default_experiments()
+        if not self.experiments or not self.seeds:
+            raise ValueError("A study requires at least one experiment and one seed")
+        names = [exp.get("name", "") for exp in self.experiments]
+        if len(set(names)) != len(names) or any(
+            not name or Path(name).name != name or name in (".", "..") for name in names
+        ):
+            raise ValueError("Experiment names must be unique safe directory names")
+        self.results_dir = self._create_results_directory()
 
     def _build_default_experiments(self) -> list[dict]:
         """Build default experiment list from kg_completeness_values."""
@@ -59,7 +72,7 @@ class AblationStudy:
 
         # Create a subfolder with the current datetime
         current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        result_dir = os.path.join("results", current_time)
+        result_dir = os.path.join("results", f"{current_time}_{uuid4().hex[:12]}")
         os.makedirs(result_dir, exist_ok=True)
 
         logger.info(f"Created results directory: {result_dir}")
@@ -130,45 +143,35 @@ class AblationStudy:
 
         config_overrides = self._to_plain_value(experiment.get("config_overrides", {}))
 
-        algorithm_override = experiment.get("algorithm")
+        algorithm_override = experiment.get("algorithm", config_overrides.pop("algorithm", None))
         if algorithm_override is not None:
             plain_override = self._to_plain_value(algorithm_override)
-            target_backend = plain_override.get("backend", self.base_config.algorithm.backend)
-            target_algorithm = plain_override.get("algorithm", self.base_config.algorithm.algorithm)
-
-            if (
-                target_backend == self.base_config.algorithm.backend
-                and target_algorithm == self.base_config.algorithm.algorithm
-            ):
-                base_algorithm = self._to_plain_value(self.base_config.algorithm)
-            else:
-                base_algorithm = self._to_plain_value(
-                    AlgorithmConfig(
-                        backend=target_backend,
-                        algorithm=target_algorithm,
-                        policy_name=self.base_config.algorithm.policy_name,
-                        verbose=self.base_config.algorithm.verbose,
-                        tensorboard_run_name=self.base_config.algorithm.tensorboard_run_name,
-                    )
-                )
-
-            merged_algorithm = self._merge_nested_dicts(
-                base_algorithm,
-                plain_override,
+            target = AlgorithmConfig(
+                backend=plain_override.get("backend", self.base_config.algorithm.backend),
+                algorithm=plain_override.get("algorithm", self.base_config.algorithm.algorithm),
+                policy_name=self.base_config.algorithm.policy_name,
+                verbose=self.base_config.algorithm.verbose,
+                tensorboard_run_name=self.base_config.algorithm.tensorboard_run_name,
             )
-            config_overrides = self._merge_nested_dicts(
-                config_overrides,
-                {"algorithm": merged_algorithm},
+            same_algorithm = (target.backend, target.algorithm) == (
+                self.base_config.algorithm.backend,
+                self.base_config.algorithm.algorithm,
             )
+            base_algorithm = self._to_plain_value(
+                self.base_config.algorithm if same_algorithm else target
+            )
+            config_overrides["algorithm"] = self._merge_nested_dicts(base_algorithm, plain_override)
 
         config_overrides = self._merge_nested_dicts(
             config_overrides,
             {"ablation": self._to_plain_value(ablation_config)},
         )
 
-        experiment_config = TrainingConfig.from_dict(
-            self._merge_nested_dicts(self.base_config.to_dict(), config_overrides)
-        )
+        merged = self._merge_nested_dicts(self.base_config.to_dict(), config_overrides)
+        if "algorithm" in config_overrides:
+            merged["algorithm"] = config_overrides["algorithm"]
+        merged["kg_completeness"] = kg_completeness
+        experiment_config = TrainingConfig.from_dict(merged)
         return experiment_config, kg_completeness, ablation_config
 
     def run(self):
@@ -187,20 +190,20 @@ class AblationStudy:
 
             for experiment in self.experiments:
                 experiment_name = experiment["name"]
-                experiment_config, kg_completeness, ablation_config = self._build_experiment_config(
-                    experiment
-                )
-                logger.info(f"Running experiment: {experiment_name}")
-
                 seed_results = []
+                attempts = []
                 for seed in self.seeds:
                     seed_name = f"{experiment_name}_seed_{seed}"
                     logger.info(f"Running {seed_name}")
 
+                    artifact_dir = os.path.join(self.results_dir, seed_name)
+                    os.makedirs(artifact_dir, exist_ok=True)
                     try:
-                        seed_config = copy.deepcopy(experiment_config)
-
                         with mlflow.start_run(run_name=seed_name, nested=True):
+                            experiment_config, kg_completeness, ablation_config = (
+                                self._build_experiment_config(experiment)
+                            )
+                            seed_config = copy.deepcopy(experiment_config)
                             self._log_mlflow_params(
                                 {
                                     "experiment.name": experiment_name,
@@ -232,28 +235,49 @@ class AblationStudy:
                                 results_dir=self.results_dir,
                                 feature_encoder=self.feature_encoder,
                             )
-                            trainer.setup(seed_config, seed=seed)
-                            trainer.env_manager.set_kg_completeness(trainer.env, kg_completeness)
-                            trainer.env_manager.set_kg_completeness(
-                                trainer.eval_env, kg_completeness
-                            )
-
-                            result = trainer.run(seed_name)
-                            seed_results.append({"seed": seed, "result": result})
-                            self._log_result_metrics(result)
+                            try:
+                                trainer.setup(seed_config, seed=seed)
+                                result = trainer.run(seed_name)
+                                self._log_result_metrics(result)
+                            finally:
+                                trainer.close()
+                        seed_results.append({"seed": seed, "result": result})
+                        attempts.append(
+                            {"seed": seed, "status": "succeeded", "artifact_dir": artifact_dir}
+                        )
 
                         logger.info(f"{seed_name} completed")
                     except Exception as e:
                         logger.error(f"An error occurred during {seed_name}: {str(e)}")
-                        logger.error(traceback.format_exc())
+                        error = traceback.format_exc()
+                        logger.error(error)
+                        error_path = os.path.join(artifact_dir, "error.txt")
+                        Path(error_path).write_text(error, encoding="utf-8")
+                        attempts.append(
+                            {
+                                "seed": seed,
+                                "status": "failed",
+                                "error": str(e),
+                                "error_path": error_path,
+                                "artifact_dir": artifact_dir,
+                            }
+                        )
 
                 self.results[experiment_name] = {
                     "seed_results": seed_results,
                     "aggregated": self._aggregate_seed_results(seed_results),
+                    "attempts": attempts,
+                    "attempted": len(attempts),
+                    "succeeded": len(seed_results),
+                    "failed": len(attempts) - len(seed_results),
+                    "incomplete": len(seed_results) != len(self.seeds),
+                    "status": "succeeded" if len(seed_results) == len(self.seeds) else "failed",
                 }
-                logger.info(f"Experiment {experiment_name} completed")
-
-            self._save_results()
+                self._save_results()
+            if any(result["failed"] for result in self.results.values()):
+                raise StudyFailedError(
+                    f"Study has failed seeds; partial results: {self.results_dir}"
+                )
         logger.info("Ablation Study completed")
 
     def _aggregate_seed_results(self, seed_results):
@@ -291,6 +315,17 @@ class AblationStudy:
         with open(results_file, "w") as f:
             json.dump(self.results, f, indent=4)
         logger.info(f"Ablation study results saved to {results_file}")
+        counts = {
+            key: sum(result[key] for result in self.results.values())
+            for key in ("attempted", "succeeded", "failed")
+        }
+        counts["expected"] = len(self.experiments) * len(self.seeds)
+        counts["status"] = (
+            "failed"
+            if counts["failed"]
+            else ("succeeded" if counts["attempted"] == counts["expected"] else "running")
+        )
+        Path(self.results_dir, "study_summary.json").write_text(json.dumps(counts, indent=2))
 
         # Save individual experiment results
         for experiment_name, result in self.results.items():

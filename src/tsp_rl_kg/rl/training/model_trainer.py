@@ -79,7 +79,7 @@ class ModelTrainer:
             raise RuntimeError("Training backend has not been created")
         return self.backend
 
-    def train(self, total_timesteps, output_dir: str, timeout=3600):
+    def train(self, total_timesteps, output_dir: str):
         logger.info("Starting model training")
         backend = self._require_backend()
 
@@ -133,5 +133,7 @@ class ModelTrainer:
     def evaluate_model(self, eval_env, n_eval_episodes=10):
         logger.info("Starting final model evaluation")
         backend = self._require_backend()
-        metrics = self.evaluator.evaluate(backend, eval_env, n_eval_episodes)
+        metrics = self.evaluator.evaluate(
+            backend, eval_env, n_eval_episodes, deterministic=self.evaluation_config.deterministic
+        )
         return float(metrics["mean_reward"]), float(metrics["std_reward"])

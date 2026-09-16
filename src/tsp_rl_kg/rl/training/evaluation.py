@@ -15,17 +15,21 @@ class EpisodeEvaluator:
         backend: TrainingBackend,
         env,
         n_episodes: int,
+        *,
+        deterministic: bool = True,
     ) -> MetricsDict:
         episode_rewards: list[float] = []
         episode_lengths: list[int] = []
 
+        if hasattr(env.unwrapped, "begin_evaluation"):
+            env.unwrapped.begin_evaluation()
         for _ in range(n_episodes):
             obs, _ = env.reset()
             done = False
             episode_reward = 0.0
             episode_length = 0
             while not done:
-                action, _ = backend.predict(obs, deterministic=True)
+                action, _ = backend.predict(obs, deterministic=deterministic)
                 obs, reward, terminated, truncated, _ = env.step(action)
                 episode_reward += reward
                 episode_length += 1

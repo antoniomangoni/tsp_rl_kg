@@ -26,6 +26,7 @@ class DummySimulationManager:
 class DummyEnv:
     def __init__(self, *, early_stop=False, should_advance=False, new_index=1):
         self.early_stop = early_stop
+        self.training_complete = early_stop
         self.simulation_manager = DummySimulationManager(
             should_advance=should_advance,
             new_index=new_index,
@@ -44,7 +45,7 @@ class DummyEnv:
         }
 
 
-def test_curriculum_service_records_metrics_and_requests_reset():
+def test_curriculum_service_records_metrics_without_mid_step_reset():
     metrics_sink = TrainingMetrics(num_actions=3)
     service = CurriculumService(metrics_sink)
     env = DummyEnv(should_advance=True, new_index=2)
@@ -52,7 +53,7 @@ def test_curriculum_service_records_metrics_and_requests_reset():
     decision = service.on_step(10, env, [1, 2, 3])
 
     assert decision.continue_training is True
-    assert decision.should_reset_environments is True
+    assert decision.should_reset_environments is False
     assert decision.should_stop is False
     assert metrics_sink.steps == [10]
     assert metrics_sink.performances == [10.0]
@@ -74,7 +75,7 @@ def test_curriculum_service_stops_on_early_stop():
 
 def test_curriculum_service_stops_when_all_curricula_complete():
     service = CurriculumService(TrainingMetrics(num_actions=2))
-    env = DummyEnv(should_advance=True, new_index=-1)
+    env = DummyEnv(early_stop=True, should_advance=True, new_index=-1)
 
     decision = service.on_step(12, env, [0, 0])
 

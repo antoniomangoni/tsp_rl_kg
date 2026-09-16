@@ -26,7 +26,7 @@ from tsp_rl_kg.utils.config_files import (
     find_list_section,
     find_mapping_section,
     load_config_file,
-    merge_nested_dicts,
+    merge_training_config,
 )
 from tsp_rl_kg.utils.logger import configure_logging
 
@@ -115,7 +115,7 @@ def _create_ablation_study_from_external_config(config_path: Path) -> dict[str, 
         or study_config
     )
     base_config = TrainingConfig.from_dict(
-        merge_nested_dicts(default_base_config.to_dict(), base_config_data)
+        merge_training_config(default_base_config.to_dict(), base_config_data)
     )
 
     study_kwargs: dict[str, Any] = {"base_config": base_config}

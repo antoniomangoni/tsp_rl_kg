@@ -31,8 +31,28 @@ class Trainer:
         self.results_dir = results_dir
         self._feature_encoder_override = feature_encoder
         self.feature_encoder = feature_encoder
+        self._closed = False
 
     def setup(self, config: TrainingConfig | dict, seed: int | None = None):
+        try:
+            self._setup(config, seed)
+        except BaseException:
+            self.close()
+            raise
+
+    def close(self):
+        if self._closed:
+            return
+        self._closed = True
+        for name in ("env", "eval_env"):
+            env = getattr(self, name, None)
+            if env is not None:
+                try:
+                    env.close()
+                except Exception:
+                    logger.exception(f"Failed to close {name}")
+
+    def _setup(self, config: TrainingConfig | dict, seed: int | None = None):
         if isinstance(config, dict):
             config = TrainingConfig.from_dict(config)
         self.config = config
@@ -133,19 +153,23 @@ class Trainer:
         mlflow.log_params(params)
 
     def run(self, experiment_name):
+        try:
+            return self._run(experiment_name)
+        finally:
+            self.close()
+
+    def _run(self, experiment_name):
         # Create a subdirectory for this experiment within the results directory
         experiment_dir = os.path.join(self.results_dir, experiment_name)
         os.makedirs(experiment_dir, exist_ok=True)
         self._log_run_context(experiment_name)
 
         profiler = cProfile.Profile()
-        profiler.enable()
-
-        self.model_trainer.train(
-            total_timesteps=self.config.total_timesteps,
-            output_dir=experiment_dir,
-            timeout=3600,
-        )
+        with profiler:
+            self.model_trainer.train(
+                total_timesteps=self.config.total_timesteps,
+                output_dir=experiment_dir,
+            )
 
         # Save metrics
         metrics_file = os.path.join(experiment_dir, f"{experiment_name}_metrics.csv")
@@ -167,16 +191,15 @@ class Trainer:
             n_eval_episodes=self.config.evaluation.n_eval_episodes,
         )
 
+        for label, env in (("train", self.env), ("eval", self.eval_env)):
+            env.simulation_manager.save_data(
+                self.current_kg_completeness,
+                static_file_path=os.path.join(experiment_dir, label, "static_data.csv"),
+                game_data_file_path=os.path.join(experiment_dir, label, "game_data.csv"),
+            )
+
         if mlflow.active_run():
             mlflow.log_artifacts(experiment_dir, artifact_path="training_outputs")
-
-        logger.info("Closing environments")
-        self.env_manager.set_kg_completeness(self.env, self.current_kg_completeness)
-        self.env.close()
-        self.env_manager.set_kg_completeness(self.eval_env, self.current_kg_completeness)
-        self.eval_env.close()
-        logger.info("Environments closed successfully")
-
         logger.info("Training and evaluation completed.")
 
         return {

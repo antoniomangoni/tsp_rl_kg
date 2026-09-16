@@ -53,10 +53,6 @@ class CurriculumCallback(BaseCallback):
 
             self.action_counts = np.zeros(len(self.action_counts), dtype=int)
 
-            if decision.should_reset_environments:
-                self.training_env.reset()
-                self.eval_env.reset()
-
             if decision.should_stop:
                 self.should_stop = True
                 return False
@@ -68,7 +64,12 @@ class CurriculumCallback(BaseCallback):
 
     def print_weight_statistics(self):
         logger.info("Weight Statistics:")
-        agent_model = self.model.policy.features_extractor
+        policy = self.model.policy
+        agent_model = (
+            policy.q_net.features_extractor
+            if hasattr(policy, "q_net")
+            else policy.features_extractor
+        )
 
         # Vision Processor
         self.print_module_statistics(agent_model.vision_processor, "Vision Processor")
