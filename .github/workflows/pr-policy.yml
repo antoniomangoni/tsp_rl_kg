@@ -1,0 +1,50 @@
+name: Pull Request Policy
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - opened
+      - ready_for_review
+      - reopened
+      - synchronize
+  pull_request_review:
+    branches:
+      - main
+    types:
+      - dismissed
+      - edited
+      - submitted
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  maintainer-approval-policy:
+    name: maintainer-approval-policy
+    if: ${{ github.event.pull_request.base.ref == 'main' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Enforce maintainer approval policy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: uv run python scripts/check_pr_policy.py

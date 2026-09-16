@@ -321,7 +321,7 @@ def _build_training_config(
         config.simulation_manager.min_episodes_per_curriculum = min_episodes_per_curriculum
         config.curriculum.min_episodes_per_curriculum = min_episodes_per_curriculum
 
-    return config
+    return TrainingConfig.from_dict(config.to_dict())
 
 
 def _create_results_directory(prefix: str) -> str:

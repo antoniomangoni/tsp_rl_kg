@@ -47,7 +47,7 @@ Exit gate: regressions are detected without external services, long training or 
 
 ## Phase 4 — Finish housekeeping
 
-Status: pending.
+Status: implemented. Validation: full suite 312 passed in 36.54 seconds; Ruff, Black/isort, Markdown-link and whitespace checks pass. Built-wheel sprite loading works outside the checkout; locked offline sync succeeds.
 
 - Package sprites and load through package resources.
 - Reconcile README, module docs, diagrams, examples and stale agent guidance. Fix broken links and ignored workflow/plan files.
@@ -63,3 +63,19 @@ Exit gate: documented commands and installed assets work; obsolete settings cann
 Explicitly stage these planning files despite the existing ignore rules; revise the broader rules in phase 4. Keep phase-specific implementation and validation recorded here. Never delete historical experiments, rewrite checkpoints, install tools, or bypass tests to obtain green checks.
 
 Publication: automatic approval review blocked external GitHub pushes/PR creation. Local phase branches and commits are retained; explicit publication approval is required.
+
+### Final local validation
+
+- `pytest tests -q`: 312 passed, including 9 integration tests. The supplied small study
+  completes all four expected experiment seeds; failure cases preserve diagnostics.
+- `ruff check .`: passed. Black and isort were verified in-process across all 79 source,
+  test and script Python files because the formatter CLI process pool stalled in this sandbox.
+- `uv lock --check --offline`: passed. `uv sync --locked --offline --no-build-isolation`
+  succeeded with a writable temporary uv cache; no dependencies were added.
+- Tracked Markdown links and `git diff --check`: passed. Packaging coverage builds and
+  inspects a wheel, imports it outside the checkout, and loads sprites at two sizes.
+- Third-party PyTorch/PyG Python 3.14 deprecation warnings and SB3 progress-bar warnings
+  remain; there are no test failures or claims of improved learning.
+
+Delivery branches are `codex/reliability-phase-1` through `codex/reliability-phase-4`,
+stacked on the original cleanup branch. Publication remains pending explicit approval.

@@ -75,7 +75,7 @@ def build_base_config(
             performance_threshold=0.85,
         ),
         total_timesteps=total_timesteps,
-        seeds=seeds or [42, 123, 456],
+        seeds=[42, 123, 456] if seeds is None else seeds,
     )
 
 
@@ -146,7 +146,10 @@ def _create_ablation_study_from_external_config(config_path: Path) -> dict[str, 
 def build_default_experiments(
     kg_completeness_values: list[float] | None = None,
 ) -> list[dict]:
-    kg_completeness_values = kg_completeness_values or DEFAULT_KG_COMPLETENESS_VALUES
+    if kg_completeness_values is None:
+        kg_completeness_values = DEFAULT_KG_COMPLETENESS_VALUES
+    if not kg_completeness_values:
+        raise ValueError("kg_completeness_values must not be empty")
 
     return [
         *[

@@ -33,3 +33,11 @@ Owns the grid-world simulation: terrain generation, entities, action semantics, 
 - `tests/test_environment.py`
 - `tests/test_state_sync.py`
 - `tests/test_custom_env.py`
+
+## Episode restoration and display
+
+`WorldTemplate` captures immutable terrain/entity IDs, spawn and outposts before play.
+Training reconstructs mutable state from this template each episode. Player occupancy is
+an overlay, so movement preserves paths and other underlying entities. Rendering mode is
+per instance; sprites load through package resources and are cached by asset and size.
+Human display and recording are separate from the canonical NumPy policy observation.

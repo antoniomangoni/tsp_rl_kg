@@ -38,12 +38,16 @@ def test_wheel_import_and_cli_outside_checkout(tmp_path):
     (wheel,) = (build / "dist").glob("*.whl")
     installed = tmp_path / "installed"
     with zipfile.ZipFile(wheel) as archive:
+        assert "tsp_rl_kg/assets/pixel_art/player.png" in archive.namelist()
         archive.extractall(installed)
     code = """
 import pathlib, sys
 sys.path.insert(0, sys.argv[1])
 import tsp_rl_kg
 assert pathlib.Path(tsp_rl_kg.__file__).is_relative_to(sys.argv[1])
+from tsp_rl_kg.game_world.entities import Player
+assert Player(0, 0, 8).image.get_size() == (8, 8)
+assert Player(0, 0, 16).image.get_size() == (16, 16)
 from tsp_rl_kg.main import main
 assert main(["--help"]) == 0
 """

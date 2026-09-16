@@ -256,7 +256,13 @@ class CurriculumConfig:
     performance_threshold: float = 0.85
 
     def __post_init__(self) -> None:
-        if self.performance_threshold < 0 or self.performance_threshold > 1:
+        if self.min_episodes_per_curriculum < 1:
+            raise ValueError("min_episodes_per_curriculum must be positive")
+        if (
+            not math.isfinite(self.performance_threshold)
+            or self.performance_threshold < 0
+            or self.performance_threshold > 1
+        ):
             raise ValueError(
                 f"performance_threshold must be in [0, 1], got {self.performance_threshold}"
             )
@@ -349,6 +355,28 @@ class AgentModelConfig:
     disable_vision: bool = False
     disable_graph: bool = False
 
+    def __post_init__(self):
+        if not 1 <= self.vision_num_conv_layers <= len(self.vision_conv_channels):
+            raise ValueError("vision_num_conv_layers must match available channels")
+        if not 1 <= self.graph_num_gat_layers <= len(self.graph_gat_heads):
+            raise ValueError("graph_num_gat_layers must match available heads")
+        if not self.vision_fc_dims or not self.graph_fc_dims:
+            raise ValueError("Vision and graph FC dimensions must not be empty")
+        if any(
+            dim < 1
+            for dim in [
+                *self.vision_conv_channels,
+                *self.graph_gat_heads,
+                *self.vision_fc_dims,
+                *self.graph_fc_dims,
+                self.features_dim,
+                self.gat_hidden_dim,
+            ]
+        ):
+            raise ValueError("Model dimensions must be positive")
+        if not math.isfinite(self.dropout) or not 0 <= self.dropout < 1:
+            raise ValueError("dropout must be finite and in [0, 1)")
+
     def to_vision_params(self) -> dict:
         return {
             "num_conv_layers": self.vision_num_conv_layers,
@@ -411,9 +439,6 @@ class TrainingConfig:
     model_config: ModelConfig = field(default_factory=ModelConfig)
     algorithm: AlgorithmConfig = field(default_factory=AlgorithmConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
-    replay: ReplayConfig = field(default_factory=ReplayConfig)
-    sequence: SequenceConfig = field(default_factory=SequenceConfig)
-    world_model: WorldModelConfig = field(default_factory=WorldModelConfig)
     curriculum: CurriculumConfig = field(default_factory=CurriculumConfig)
     episode: EpisodeConfig = field(default_factory=EpisodeConfig)
     agent_model: AgentModelConfig = field(default_factory=AgentModelConfig)
@@ -438,12 +463,6 @@ class TrainingConfig:
             self.algorithm = AlgorithmConfig(**self.algorithm)
         if isinstance(self.evaluation, dict):
             self.evaluation = EvaluationConfig(**self.evaluation)
-        if isinstance(self.replay, dict):
-            self.replay = ReplayConfig(**self.replay)
-        if isinstance(self.sequence, dict):
-            self.sequence = SequenceConfig(**self.sequence)
-        if isinstance(self.world_model, dict):
-            self.world_model = WorldModelConfig(**self.world_model)
         if isinstance(self.curriculum, dict):
             self.curriculum = CurriculumConfig(**self.curriculum)
         if isinstance(self.episode, dict):
@@ -455,6 +474,17 @@ class TrainingConfig:
         if isinstance(self.ablation, dict):
             self.ablation = AblationConfig(**self.ablation)
 
+        if self.total_timesteps < 1:
+            raise ValueError("total_timesteps must be positive")
+        if not self.seeds:
+            raise ValueError("Training requires at least one seed")
+        if any(
+            not isinstance(seed, int) or isinstance(seed, bool) or seed < 0 or seed > 2**32 - 1
+            for seed in self.seeds
+        ) or len(set(self.seeds)) != len(self.seeds):
+            raise ValueError("seeds must be unique integers in [0, 2**32-1]")
+        if self.model_args.num_actions != 11:
+            raise ValueError("Training uses exactly the 11 actions in ActionType")
         self.kg_completeness = validate_completeness(self.kg_completeness)
         self._synchronise_algorithm_config()
 
@@ -480,6 +510,20 @@ class TrainingConfig:
     @staticmethod
     def from_dict(d: dict) -> TrainingConfig:
         """Construct from the legacy nested-dict format for backwards compatibility."""
+        obsolete = {
+            "replay",
+            "sequence",
+            "world_model",
+            "replay_config",
+            "sequence_config",
+            "world_model_config",
+        }.intersection(d)
+        if obsolete:
+            raise ValueError(
+                f"Unsupported experimental training settings: {sorted(obsolete)}. "
+                "Remove these keys; configure DQN replay through algorithm.hyperparameters. "
+                "Trajectory utilities remain standalone and experimental."
+            )
         game_manager_data = d.get("game_manager", d.get("game_manager_args", {}))
         simulation_manager_data = d.get(
             "simulation_manager",
@@ -489,9 +533,6 @@ class TrainingConfig:
         model_config_data = d.get("model_config", {})
         algorithm_data = d.get("algorithm", d.get("algorithm_config"))
         evaluation_data = d.get("evaluation", d.get("evaluation_config", {}))
-        replay_data = d.get("replay", d.get("replay_config", {}))
-        sequence_data = d.get("sequence", d.get("sequence_config", {}))
-        world_model_data = d.get("world_model", d.get("world_model_config", {}))
         curriculum_data = d.get("curriculum", d.get("curriculum_config", {}))
         episode_data = d.get("episode", d.get("episode_config", {}))
         agent_model_data = d.get("agent_model", d.get("agent_model_config", {}))
@@ -512,9 +553,6 @@ class TrainingConfig:
             model_config=model_config,
             algorithm=algorithm,
             evaluation=EvaluationConfig(**evaluation_data),
-            replay=ReplayConfig(**replay_data),
-            sequence=SequenceConfig(**sequence_data),
-            world_model=WorldModelConfig(**world_model_data),
             curriculum=CurriculumConfig(**curriculum_data),
             episode=EpisodeConfig(**episode_data),
             agent_model=AgentModelConfig(**agent_model_data),

@@ -37,7 +37,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
 
       - name: Run pre-commit
         run: uv run pre-commit run --all-files --show-diff-on-failure
@@ -60,7 +60,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --locked
 
       - name: Run unit tests
         run: uv run pytest tests/ -v -m "not integration"

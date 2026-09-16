@@ -341,9 +341,9 @@ class TestTrainingConfig:
         assert "simulation_manager" in d
         assert "algorithm" in d
         assert "evaluation" in d
-        assert "replay" in d
-        assert "sequence" in d
-        assert "world_model" in d
+        assert "replay" not in d
+        assert "sequence" not in d
+        assert "world_model" not in d
         assert "feature_encoding" in d
         assert d["game_manager"]["num_tiles"] == 32
         assert d["feature_encoding"]["strategy"] == "one_hot"

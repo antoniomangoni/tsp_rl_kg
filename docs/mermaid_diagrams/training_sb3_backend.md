@@ -9,7 +9,7 @@ flowchart TD
     LEARN["model.learn(...)"]
     CB["CurriculumCallback"]
     CURR["CurriculumService"]
-    EVCB["EvalCallback\n(optional when output_dir set)"]
+    EVCB["FixedWorldEvalCallback\n(optional when output_dir set)"]
     MET["collect_metrics()"]
 
     SB3B --> MON

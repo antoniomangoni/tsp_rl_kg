@@ -169,9 +169,6 @@ Pipfile.lock
 # Conda
 .conda/
 
-.github/
-docs/specs/
-docs/plans/
 
 mlflow.db
 mlruns/

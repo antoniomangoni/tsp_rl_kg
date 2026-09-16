@@ -45,14 +45,19 @@ class SimulationManager:
         self.feature_encoder = feature_encoder
 
         if game_managers is not None:
-            self.game_managers = game_managers
+            self.game_managers = sorted(
+                game_managers, key=lambda gm: gm.target_manager.target_route_energy
+            )
             self.number_of_environments = len(game_managers)
         else:
             self.number_of_environments = number_of_environments
             self.game_managers = []
             self.create_games(self.number_of_environments, plot)
-        number_of_curricula = min(max(1, number_of_curricula), number_of_environments // 2)
-        self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula + 1)
+        self.number_of_environments = len(self.game_managers)
+        if not self.number_of_environments:
+            raise ValueError("Simulation requires at least one valid world")
+        number_of_curricula = min(max(1, number_of_curricula), self.number_of_environments)
+        self.curriculum_indices, step_size = self.get_curriculum(number_of_curricula)
         self.logger.info(f"Curriculum indices: {self.curriculum_indices}, Step size: {step_size}")
         self.step_size = round(step_size, 2)
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
@@ -80,12 +85,25 @@ class SimulationManager:
             self.create_plots(energy_values, self.curriculum_indices)
 
     def create_games(self, number_of_games, plot):
-        for _ in range(number_of_games):
-            game_manager = GameManager(
-                config=self._gm_config, plot=plot, feature_encoder=self.feature_encoder
-            )
+        for _ in range(max(20, number_of_games * 20)):
+            if len(self.game_managers) >= number_of_games:
+                return
+            try:
+                game_manager = GameManager(
+                    config=self._gm_config, plot=plot, feature_encoder=self.feature_encoder
+                )
+            except ValueError as error:
+                if "outposts" not in str(error):
+                    raise
+                continue
             if len(game_manager.environment.outpost_locations) >= 3:
                 self.insert_game_manager_sorted(game_manager)
+        if len(self.game_managers) == number_of_games:
+            return
+        raise ValueError(
+            f"Could not generate {number_of_games} valid worlds with three outposts; "
+            "increase num_tiles or adjust generation settings"
+        )
 
     def insert_game_manager_sorted(self, game_manager):
         energy = game_manager.target_manager.target_route_energy
@@ -109,6 +127,8 @@ class SimulationManager:
             f"Current curriculum index: {self.current_curriculum_index}, "
             f"Current curriculum episodes: {self.current_curriculum_episodes}"
         )
+        if self.current_curriculum_index + 1 >= len(self.curriculum_indices):
+            return False
         next_index = self.curriculum_indices[self.current_curriculum_index + 1]
         if next_index < self.number_of_environments:
             return self.game_managers[next_index]
@@ -116,17 +136,17 @@ class SimulationManager:
             return False
 
     def get_curriculum(self, number_of_curricula):
-        energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
-        min_energy, max_energy = min(energy_values), max(energy_values)
-        step_size = (max_energy - min_energy) / number_of_curricula
-        simulation_indices = []
-        for step in range(number_of_curricula):
-            target_energy = min_energy + step * step_size
-            closest_index = np.abs(np.array(energy_values) - target_energy).argmin()
-            if closest_index not in simulation_indices:
-                simulation_indices.append(closest_index)
-        simulation_indices.pop()  # Remove the last index to avoid the highest energy value
-        return simulation_indices, step_size
+        if not self.game_managers:
+            raise ValueError("Cannot create a curriculum from an empty world pool")
+        number_of_curricula = min(max(1, number_of_curricula), len(self.game_managers))
+        energies = np.array([gm.target_manager.target_route_energy for gm in self.game_managers])
+        if energies.min() == energies.max():
+            return [0], 0.0
+        # Rank partitions include every retained world, even when energy values tie.
+        indices = [
+            int(part[0]) for part in np.array_split(np.arange(len(energies)), number_of_curricula)
+        ]
+        return indices, float((energies.max() - energies.min()) / number_of_curricula)
 
     def should_advance_curriculum(self):
         if self.current_curriculum_episodes < self.min_episodes_per_curriculum:

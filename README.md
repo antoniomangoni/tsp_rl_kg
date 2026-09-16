@@ -32,11 +32,9 @@ flowchart TD
       MT["training.ModelTrainer"]
       BE["training.backends (TrainingBackend)"]
       EV["training.EpisodeEvaluator"]
-      TS["training.trajectory_store"]
       ENV --> SIM
       TR --> ENV
       TR --> MT --> BE --> EV
-      BE -. optional world-model data .-> TS
     end
 
     subgraph KGObsPkg["knowledge graph"]
@@ -141,6 +139,41 @@ uv run tsp train --config configs/train_namespaced.json
 uv run tsp-study --config configs/ablation.toml
 ```
 
+## Observation and experiment reliability
+
+`kg_completeness` is the fraction of tiles initially known to the knowledge graph.
+Priors use a seeded world-specific permutation, so smaller fractions are subsets of larger
+ones. Local sensing updates remembered terrain and entities. Completeness never expands
+visual discovery; full completeness is initial knowledge, not permanent omniscience.
+Every episode restores the pristine world. Headless and displayed training use the same
+semantic RGB policy image; sprites and HUD are only for human display.
+
+Observation schema 2 adds explicit node/edge counts and uses compact graph batches.
+Saved configurations record `knowledge_semantics="initial_prior_v1"`. Older checkpoints
+require fresh training; historical artifacts remain available as legacy results.
+
+Evaluation uses a reproducible held-out world pool. Studies retain per-seed diagnostics,
+write partial results and return nonzero if any seed fails. Check `study_summary.json`
+and each experiment's results for attempted/succeeded/failed counts and incomplete
+aggregates. Run directories have unique identifiers; training creates no play recordings.
+
+Standalone trajectory, sequence and model-update utilities are experimental and are not
+connected to active training. Obsolete `replay`, `sequence`, and `world_model` configuration
+sections are rejected. Configure DQN replay through `algorithm.hyperparameters`.
+
+The bounded example is `uv run tsp-study --config configs/ablation.toml`.
+For local CPU checks (no external tracking service required):
+
+```bash
+MPLBACKEND=Agg SDL_VIDEODRIVER=dummy OMP_NUM_THREADS=1 uv run pytest tests/ -v
+uv run ruff check .
+uv run black --check .
+uv run isort --check-only .
+```
+
+See the [reliability roadmap](docs/plans/repository-reliability-roadmap.md) and
+[graph semantics contract](docs/specs/g21-graph-semantics.md).
+
 ## Configuration Shapes (Concise)
 
 Both CLIs accept JSON or TOML.
@@ -183,7 +216,6 @@ Detailed architecture diagrams are maintained in `docs/mermaid_diagrams/` and al
   - [`src/tsp_rl_kg/rl/training/backends/README.md`](src/tsp_rl_kg/rl/training/backends/README.md)
   - [`src/tsp_rl_kg/utils/README.md`](src/tsp_rl_kg/utils/README.md)
 - Mermaid diagrams:
-  - [`docs/mermaid_diagrams/system_overview.md`](docs/mermaid_diagrams/system_overview.md)
   - [`docs/mermaid_diagrams/training_backend_protocols.md`](docs/mermaid_diagrams/training_backend_protocols.md)
   - [`docs/mermaid_diagrams/training_sb3_backend.md`](docs/mermaid_diagrams/training_sb3_backend.md)
   - [`docs/mermaid_diagrams/training_orchestration.md`](docs/mermaid_diagrams/training_orchestration.md)
@@ -205,13 +237,13 @@ All changes to `main` must go through a pull request. Direct pushes to `main` ar
 Before opening a pull request, bootstrap the repository and run the same checks that CI enforces:
 
 ```bash
-uv sync
+uv sync --locked
 uv run pre-commit install
 uv run pre-commit run --all-files --show-diff-on-failure
 uv run pytest tests/ -v
 ```
 
-Create a topic branch from `main` for each change using one of these prefixes: `feature/`, `fix/`, `chore/`, `docs/`, `refactor/`, or `test/`.
+Create a topic branch from `main` for each change using one of these prefixes: `codex/`, `feature/`, `fix/`, `chore/`, `docs/`, `refactor/`, or `test/`.
 
 Maintainer-authored pull requests may merge once all required checks pass. Pull requests authored by anyone else require an approving review from `@antoniomangoni` before merge.
 

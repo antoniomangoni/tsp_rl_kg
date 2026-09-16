@@ -5,8 +5,6 @@ import pygame
 from loguru import logger
 
 from tsp_rl_kg.game_world.entities import (
-    BaseEntity,
-    Entity,
     Fish,
     MossyRock,
     Outpost,
@@ -51,11 +49,6 @@ class Environment:
     ):
         self.headless = headless
 
-        # Propagate headless flag to Entity and Terrain classes
-        BaseEntity._headless = headless
-        Entity._headless = headless
-        Terrain._headless = headless
-
         self.heightmap = heightmap
         self.terrain_index_grid = np.zeros_like(self.heightmap)
         self.entity_index_grid = np.zeros_like(self.heightmap)
@@ -94,12 +87,14 @@ class Environment:
         else:
             entity_types = {1: Fish, 2: Tree, 3: MossyRock, 4: SnowyRock, 5: Outpost, 6: WoodPath}
             for (x, y), code in np.ndenumerate(self.heightmap):
-                tile = self.terrain_definitions[int(code)]["class"](x, y, tile_size, 0)
+                tile = self.terrain_definitions[int(code)]["class"](
+                    x, y, tile_size, 0, headless=self.headless
+                )
                 self.terrain_object_grid[x, y] = tile
                 self.terrain_index_grid[x, y] = code
                 entity_id = template.entities[x][y]
                 if entity_id:
-                    entity = entity_types[entity_id](x, y, tile_size)
+                    entity = entity_types[entity_id](x, y, tile_size, headless=self.headless)
                     self.entity_group.add(entity)
                     self.entity_index_grid[x, y] = entity_id
                     if entity_id == 6:
@@ -110,7 +105,7 @@ class Environment:
                         tile.passable = True
                         tile.energy_requirement = 0
             self.outpost_locations = list(template.outposts)
-            self.player = Player(*template.spawn, tile_size)
+            self.player = Player(*template.spawn, tile_size, headless=self.headless)
             self.entity_group.add(self.player, layer=2)
 
         self.discovered_grid = np.zeros((self.width, self.height), dtype=bool)
@@ -137,7 +132,7 @@ class Environment:
         return random.choice(self.less_suitable_terrain_locations[key])
 
     def get_terrain_colour_map(self):
-        terrain = Terrain(0, 0, self.tile_size, 0)
+        terrain = Terrain(0, 0, self.tile_size, 0, headless=self.headless)
         map = {}
         for terrain_code, _value in self.terrain_definitions.items():
             map[terrain_code] = terrain.set_colour(terrain_code)
@@ -151,7 +146,9 @@ class Environment:
                 terrain_class = terrain_info["class"]
                 entity_prob = terrain_info["entity_prob"]
                 # Instantiate the terrain with its corresponding properties
-                self.terrain_object_grid[x, y] = terrain_class(x, y, self.tile_size, entity_prob)
+                self.terrain_object_grid[x, y] = terrain_class(
+                    x, y, self.tile_size, entity_prob, headless=self.headless
+                )
                 # Add entity to terrain if entity_prob is met
                 self.init_entity(self.terrain_object_grid[x, y], x, y)
 
@@ -161,7 +158,7 @@ class Environment:
     def init_entity(self, terrain, x, y):
         if random.random() < terrain.entity_prob:
             entity_type = terrain.entity_type
-            entity = entity_type(x, y, self.tile_size)
+            entity = entity_type(x, y, self.tile_size, headless=self.headless)
             self.entity_group.add(entity)
             self.entity_index_grid[x, y] = entity.id
             self.terrain_object_grid[x, y].add_entity(entity)
@@ -198,7 +195,7 @@ class Environment:
         )
 
         for x, y in selected_locations:
-            outpost = Outpost(x, y, self.tile_size)
+            outpost = Outpost(x, y, self.tile_size, headless=self.headless)
             self.entity_group.add(outpost)
             self.terrain_object_grid[x, y].add_entity(outpost)
             self.terrain_object_grid[x, y].passable = True
@@ -251,7 +248,7 @@ class Environment:
         else:
             location = self.get_random_zero_coordinate()
             self.terrain_object_grid[location[0], location[1]].remove_entity()
-        player = Player(location[0], location[1], self.tile_size)
+        player = Player(location[0], location[1], self.tile_size, headless=self.headless)
         self.entity_group.add(player, layer=2)
         return player
 
@@ -310,7 +307,7 @@ class Environment:
         self.changed_tiles.add((x, y))
 
     def place_path(self, x, y):
-        wood_path = WoodPath(x, y, self.tile_size)
+        wood_path = WoodPath(x, y, self.tile_size, headless=self.headless)
         self.entity_group.add(wood_path)
         self.entity_index_grid[x, y] = wood_path.id
         self.terrain_object_grid[x, y].add_path(wood_path)
@@ -320,9 +317,9 @@ class Environment:
         old_tile = self.terrain_object_grid[x, y]
         entity_prob = old_tile.entity_prob
         if fill_type == 0:
-            new_tile = Water(x, y, self.tile_size, entity_prob)
+            new_tile = Water(x, y, self.tile_size, entity_prob, headless=self.headless)
         elif fill_type == 1:
-            new_tile = Plains(x, y, self.tile_size, entity_prob)
+            new_tile = Plains(x, y, self.tile_size, entity_prob, headless=self.headless)
         else:
             return
         # Preserve entity reference from the old tile

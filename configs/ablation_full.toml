@@ -33,8 +33,7 @@ min_episodes_per_curriculum = 3
 [study.base_config.algorithm]
 algorithm = "PPO"
 
-# PPO hyperparameters are synchronised through the legacy ModelConfig, which
-# accepts n_steps / batch_size / learning_rate / gamma.
+# Supported PPO options are forwarded to SB3; legacy ModelConfig fields stay synchronized.
 [study.base_config.algorithm.hyperparameters]
 n_steps = 2048
 batch_size = 64

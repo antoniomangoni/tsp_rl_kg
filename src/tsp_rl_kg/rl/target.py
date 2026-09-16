@@ -12,6 +12,8 @@ class Target_Manager:
         self.terrain_index_grid = environment.terrain_index_grid
         self.entity_index_grid = environment.entity_index_grid
         self.outpost_locations = environment.outpost_locations
+        if len(self.outpost_locations) < 2:
+            raise ValueError("Route calculation requires at least two outposts")
 
         self.energy_req_grid = self.get_energy_grid()
 

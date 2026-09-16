@@ -1,7 +1,7 @@
 # `tsp_rl_kg.knowledge`
 
 ## Purpose / ownership
-Owns the runtime knowledge graph view over environment state. It translates mutable world arrays into graph tensors and keeps player-centric graph state synchronized with world evolution.
+Owns the runtime knowledge graph view over environment state. It translates remembered observations into graph tensors, refreshing only sensed or directly affected tiles.
 
 ## Main identifiers
 - `KnowledgeGraph` (`knowledge_graph.py`): central class for graph ownership, player-edge rewiring, node feature refresh, discovery updates, and optional visualization.
@@ -17,7 +17,7 @@ Owns the runtime knowledge graph view over environment state. It translates muta
 
 ## Extension points
 - Plug in custom `GraphConstitution` builders.
-- Plug in custom `ProjectionPolicy` for partial observability.
+- Use explicit full-graph or k-hop projections for diagnostics; training extracts the induced known graph.
 - Plug in custom feature encoders implementing graph encoding protocol.
 
 ## Cross-links

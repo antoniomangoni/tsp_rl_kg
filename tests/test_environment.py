@@ -161,11 +161,8 @@ class TestHeadlessMode:
         assert isinstance(headless_environment.entity_group, _HeadlessEntityGroup)
 
     def test_headless_flag_propagated(self, headless_environment: Environment):
-        from tsp_rl_kg.game_world.entities import Entity
-        from tsp_rl_kg.game_world.terrains import Terrain
-
-        assert Entity._headless is True
-        assert Terrain._headless is True
+        assert headless_environment.player._headless is True
+        assert all(tile._headless for tile in headless_environment.terrain_object_grid.flat)
 
 
 # ---------------------------------------------------------------------------

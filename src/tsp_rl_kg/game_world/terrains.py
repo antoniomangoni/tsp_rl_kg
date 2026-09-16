@@ -4,10 +4,8 @@ from tsp_rl_kg.game_world.entities import Fish, MossyRock, SnowyRock, Tree, Wood
 
 
 class Terrain:
-    _headless = False
-
-    def __init__(self, x, y, tile_size, entity_prob):
-        self._headless = type(self)._headless
+    def __init__(self, x, y, tile_size, entity_prob, *, headless=False):
+        self._headless = headless
         self.grid_x = x
         self.grid_y = y
         self.tile_size = tile_size
@@ -74,8 +72,8 @@ class Terrain:
 
 
 class DeepWater(Terrain):
-    def __init__(self, x, y, tile_size, entity_prob):
-        super().__init__(x, y, tile_size, entity_prob)
+    def __init__(self, x, y, tile_size, entity_prob, *, headless=False):
+        super().__init__(x, y, tile_size, entity_prob, headless=headless)
         self.name = "Deep Water"
         self.elevation = 0
         self.colour = self.set_colour(self.elevation)
@@ -86,8 +84,8 @@ class DeepWater(Terrain):
 
 
 class Water(Terrain):
-    def __init__(self, x, y, tile_size, entity_prob):
-        super().__init__(x, y, tile_size, entity_prob)
+    def __init__(self, x, y, tile_size, entity_prob, *, headless=False):
+        super().__init__(x, y, tile_size, entity_prob, headless=headless)
         self.name = "Water"
         self.elevation = 1
         self.colour = self.set_colour(self.elevation)
@@ -98,8 +96,8 @@ class Water(Terrain):
 
 
 class Plains(Terrain):
-    def __init__(self, x, y, tile_size, entity_prob):
-        super().__init__(x, y, tile_size, entity_prob)
+    def __init__(self, x, y, tile_size, entity_prob, *, headless=False):
+        super().__init__(x, y, tile_size, entity_prob, headless=headless)
         self.name = "Plains"
         self.elevation = 2
         self.colour = self.set_colour(self.elevation)
@@ -110,8 +108,8 @@ class Plains(Terrain):
 
 
 class Hills(Terrain):
-    def __init__(self, x, y, tile_size, entity_prob):
-        super().__init__(x, y, tile_size, entity_prob)
+    def __init__(self, x, y, tile_size, entity_prob, *, headless=False):
+        super().__init__(x, y, tile_size, entity_prob, headless=headless)
         self.name = "Hills"
         self.elevation = 3
         self.colour = self.set_colour(self.elevation)
@@ -122,8 +120,8 @@ class Hills(Terrain):
 
 
 class Mountains(Terrain):
-    def __init__(self, x, y, tile_size, entity_prob):
-        super().__init__(x, y, tile_size, entity_prob)
+    def __init__(self, x, y, tile_size, entity_prob, *, headless=False):
+        super().__init__(x, y, tile_size, entity_prob, headless=headless)
         self.name = "Mountains"
         self.elevation = 4
         self.colour = self.set_colour(self.elevation)
@@ -134,8 +132,8 @@ class Mountains(Terrain):
 
 
 class Snow(Terrain):
-    def __init__(self, x, y, tile_size, entity_prob):
-        super().__init__(x, y, tile_size, entity_prob)
+    def __init__(self, x, y, tile_size, entity_prob, *, headless=False):
+        super().__init__(x, y, tile_size, entity_prob, headless=headless)
         self.name = "Snow"
         self.elevation = 5
         self.colour = self.set_colour(self.elevation)

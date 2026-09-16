@@ -36,3 +36,24 @@ Owns experiment orchestration and training lifecycle: environment creation, back
 - `tests/test_evaluation.py`
 - `tests/test_trajectory_store.py`
 - `tests/test_curriculum_controller.py`
+
+## Reliability contract
+
+World generation uses separate reproducible training/evaluation seed streams and verifies
+that the pools are disjoint. Periodic and final evaluation restart a fixed world schedule.
+Curriculum transitions happen at episode reset; callbacks never reset an environment while
+SB3 holds its previous observation. Trainer setup and execution both clean up on failure.
+
+Each study/run has a unique directory. Every seed attempt has a status, artifact directory,
+and error details when it fails. Successful seeds alone contribute to aggregates, which
+are marked incomplete after any failure. Partial results are written before a study-level
+exception; MLflow retains failed child runs and marks the parent failed.
+
+`trajectory_store.py`, `sequence_sampler.py`, their protocol types, and the standalone
+replay/sequence/world-model config classes are experimental utilities. Active TrainingConfig
+rejects these unused sections. Supported algorithm parameters are forwarded to SB3;
+DQN replay settings belong in `algorithm.hyperparameters`.
+
+Regression coverage: `tests/test_experiment_reliability.py`,
+`tests/test_training_integration.py`, and `tests/test_packaging.py`. Integration tests
+use temporary local MLflow storage and bounded CPU runs.
