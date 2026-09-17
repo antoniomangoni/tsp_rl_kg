@@ -69,7 +69,8 @@ def test_build_status_includes_resources_and_route_scores(monkeypatch, tmp_path)
     resource_max = game_manager.agent_controler.resource_max
     assert fields["Wood"] == f"2/{resource_max}"
     assert fields["Stone"] == f"1/{resource_max}"
-    assert fields["Best route"] == game_manager.target_manager.target_route_energy
+    assert fields["Target route"] == game_manager.target_manager.target_route_energy
+    assert "Best route" not in fields, "world target energy must not read as a personal best"
     assert fields["Current route"] == 0
 
 

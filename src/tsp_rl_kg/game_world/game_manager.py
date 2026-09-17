@@ -144,7 +144,7 @@ class GameManager:
             {
                 "Wood": f"{agent.wood}/{agent.resource_max}",
                 "Stone": f"{agent.stone}/{agent.resource_max}",
-                "Best route": self.target_manager.target_route_energy,
+                "Target route": self.target_manager.target_route_energy,
                 "Current route": current_route_energy,
             },
         ]

@@ -264,3 +264,37 @@ class TestRenderHeatmap:
         renderer.render_heatmap(max_intensity=1.0, bool_heatmap=False)
 
         assert np.array_equal(pygame.surfarray.array3d(renderer.surface), before)
+
+
+# ---------------------------------------------------------------------------
+# HUD status rows
+# ---------------------------------------------------------------------------
+
+
+class TestRenderUi:
+    STATUS_ROWS = [
+        {"X": 1, "Y": 1, "Energy": 0, "Outposts": "0/1"},
+        {"Wood": "0/5", "Stone": "0/5", "Target route": 12.5, "Current route": 0},
+    ]
+
+    @staticmethod
+    def hud_band(renderer: Renderer) -> np.ndarray:
+        rect = pygame.Rect(0, renderer.hud_top, renderer.window_width, Renderer.HUD_HEIGHT)
+        return pygame.surfarray.array3d(renderer.surface.subsurface(rect)).copy()
+
+    def test_draws_status_rows_into_hud_band(self, renderer: Renderer):
+        renderer.render_ui(self.STATUS_ROWS)
+
+        band = self.hud_band(renderer)
+        is_background = (band == np.array(Renderer.HUD_BACKGROUND_COLOUR)).all(axis=-1)
+        assert is_background.any(), "HUD band should be painted with the HUD background"
+        assert not is_background.all(), "status text should be visible on the HUD band"
+
+    def test_leaves_game_area_untouched(self, renderer: Renderer):
+        game_rect = pygame.Rect(0, 0, renderer.game_area_width, renderer.game_area_height)
+        before = pygame.surfarray.array3d(renderer.surface.subsurface(game_rect)).copy()
+
+        renderer.render_ui(self.STATUS_ROWS)
+
+        after = pygame.surfarray.array3d(renderer.surface.subsurface(game_rect))
+        assert np.array_equal(after, before)
