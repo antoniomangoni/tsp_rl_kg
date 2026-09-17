@@ -201,3 +201,23 @@ class TestDiscoveredGrid:
         """Radius extending beyond grid edges should not raise."""
         headless_environment.init_discovered_area((0, 0), 10)
         assert headless_environment.discovered_grid.all()
+
+
+# ---------------------------------------------------------------------------
+# Change tracking for the renderer's dirty-rect pass
+# ---------------------------------------------------------------------------
+
+
+class TestChangeTracking:
+    def test_starts_clean(self, headless_environment: Environment):
+        assert headless_environment.changed_tiles == set()
+        assert headless_environment.environment_changed_flag is False
+
+    def test_repeated_changes_to_one_tile_are_deduplicated(self, headless_environment: Environment):
+        headless_environment.single_environment_changed(2, 2)
+        headless_environment.discover_coordinate(2, 2)
+        headless_environment.environment_changed(2, 2, 2, 3)
+
+        assert isinstance(headless_environment.changed_tiles, set)
+        assert headless_environment.changed_tiles == {(2, 2), (2, 3)}
+        assert headless_environment.environment_changed_flag is True

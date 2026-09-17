@@ -1,0 +1,3 @@
+we should add the rest of the player status in the UI, such as how much wood and stone it currently has out of the total it can carry, the game worlds best route score, the current routes score.
+
+paths disappear after we place them. to test we should make the player start with wood (or make it collect wood nearby), place a path and then move, then check if it still there. the problem is either it did not change the game state or the rendering is making a mistake.
