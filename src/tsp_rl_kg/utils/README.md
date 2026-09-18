@@ -5,7 +5,7 @@ Owns reusable support utilities for logging, config file loading/merging, and he
 
 ## Main identifiers
 - `configure_logging`, `InterceptHandler` (`logger.py`).
-- `load_config_file`, `merge_nested_dicts`, `find_mapping_section`, `find_list_section` (`config_files.py`).
+- `load_config_file`, `merge_training_config`, `merge_nested_dicts`, `find_mapping_section`, `find_list_section` (`config_files.py`).
 - `time_function` decorator (`helper_functions.py`).
 
 ## Inputs / outputs and neighboring package interactions

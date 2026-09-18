@@ -47,7 +47,7 @@ flowchart TD
       KG --> PROJ --> OE
     end
 
-    subgraph ModelPkg["rl.agent_model (HybridEncoder)"]
+    subgraph ModelPkg["rl.encoders (HybridEncoder) via agent_model.AgentModel"]
       CNN["VisionEncoder\n(CNN)"]
       GAT["GraphEncoder\n(GAT)"]
       FUSION["fusion FC"]
@@ -103,6 +103,19 @@ Shared helpers: JSON/TOML config loading, generic utilities, and logging setup.
 
 ## Running the Project
 
+Use Python 3.14 or newer and `uv`. From the repository root, install the locked
+runtime and development dependencies, then inspect the command help:
+
+```bash
+uv sync --locked
+uv run tsp --help
+uv run tsp train --help
+uv run tsp-study --help
+```
+
+Run the examples below from the repository root so the relative config and output
+paths resolve as shown. Interactive play requires a graphical display.
+
 Installed console scripts (from `pyproject.toml`):
 
 - `tsp = tsp_rl_kg.main:main`
@@ -117,12 +130,22 @@ Short aliases are preferred below; the legacy long names remain available.
 ```bash
 uv run tsp
 uv run tsp play --random-actions
-uv run tsp simulate
+uv run tsp simulate --headless
 ```
 
 `play` opens a keyboard-controlled session by default. Controls: `WASD` move, `Q` scout,
 `E` build path, `R` place rock, and `IJKL` collect from adjacent tiles. Use
-`--random-actions` for autoplay.
+`--random-actions` for autoplay. A bounded headless session is:
+
+```bash
+uv run tsp play --random-actions --headless --max-steps 20
+```
+
+The HUD shows wood/stone capacity, target route energy, and current route energy.
+`Target route` is the generated world's reference route, not the player's best run.
+Play writes telemetry under `results/play_<timestamp>/`; visible sessions also save
+frames. `simulate` exports `game_world.npy`, `terrain_dict.json`, and
+`entity_dict.json` in the current directory, replacing those files on subsequent runs.
 
 ### RL training via main CLI (`tsp`)
 
@@ -133,11 +156,25 @@ uv run tsp train --config configs/train.json
 uv run tsp train --config configs/train_namespaced.json
 ```
 
+The JSON examples are eight-timestep smoke runs. `tsp train` uses only the first
+configured seed; use `tsp-study` to run every seed. Add `--benchmark` for a vision-only
+run and a `results/benchmark_<timestamp>.json` summary.
+
 ### Ablation study CLI (`tsp-study`)
 
 ```bash
 uv run tsp-study --config configs/ablation.toml
 ```
+
+The bounded example runs four experiments with one seed each: PPO, vision-only,
+DQN, and raw-integer graph features. It checks the pipeline, not learning quality.
+`configs/ablation_full.toml` is the longer research sweep: five experiments, two
+seeds, and 150,000 requested timesteps per seed. Running `tsp-study` without a
+config also starts a large study (3,000 worlds, three seeds, 100,000 timesteps per
+run); use the bounded example for setup checks.
+
+See [training outputs and tracking](src/tsp_rl_kg/rl/training/README.md#outputs-and-tracking)
+for saved models, metrics, and failure diagnostics.
 
 ## Observation and experiment reliability
 
@@ -174,23 +211,32 @@ uv run isort --check-only .
 See the [reliability roadmap](docs/plans/repository-reliability-roadmap.md) and
 [graph semantics contract](docs/specs/g21-graph-semantics.md).
 
-## Configuration Shapes (Concise)
+## Configuration files and precedence
 
-Both CLIs accept JSON or TOML.
+Both CLIs accept JSON or TOML. The loader checks mapping sections in the order
+below. It uses the first matching mapping; if it is empty or none matches, it
+falls back to the root object.
 
-- `tsp` (`src/tsp_rl_kg/main.py`; legacy `tsp-rl-kg`) loads training config from the first matching mapping among:
-  - root object
-  - `train`
-  - `training`
-  - `main.train`
-  - `base_config`
-- `tsp-study` (`src/tsp_rl_kg/rl/training/run.py`; legacy `tsp-rl-kg-study`) loads study config from the first matching mapping among:
-  - root object
-  - `ablation`
-  - `study`
-  - `run`
+| Command | Mapping lookup order |
+| --- | --- |
+| `tsp train` | `main.train`, `train`, `training`, `base_config` |
+| `tsp play` | `main.play`, `play`, `base_config` |
+| `tsp simulate` | `main.simulate`, `simulate`, `base_config` |
+| `tsp-study` | `ablation`, `study`, `run` |
 
-Within study config, the base training config can be provided under `base_config` (or `training` / `training_config`).
+Training settings merge into command defaults; explicit CLI options override the
+loaded settings. A study looks for `base_config`, `training`, then `training_config`
+inside the selected study mapping, with the same root fallback behavior. Study
+and main-CLI defaults differ, so use the supplied examples as starting points.
+
+For study experiments, use `algorithm`, `ablation`, and `kg_completeness` for those
+settings, and `config_overrides` for other nested training changes. Switching
+algorithms resets inherited algorithm-specific hyperparameters before merging
+the new options. DQN replay options belong in `algorithm.hyperparameters`.
+
+The configuration dataclasses and validation live in
+[`config.py`](src/tsp_rl_kg/config.py); runnable examples are in
+[`configs/`](configs/).
 
 ## Architecture Diagrams
 
@@ -240,7 +286,8 @@ Before opening a pull request, bootstrap the repository and run the same checks 
 uv sync --locked
 uv run pre-commit install
 uv run pre-commit run --all-files --show-diff-on-failure
-uv run pytest tests/ -v
+MPLBACKEND=Agg SDL_VIDEODRIVER=dummy OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES="" uv run pytest tests/ -v -m "not integration"
+MPLBACKEND=Agg SDL_VIDEODRIVER=dummy OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 CUDA_VISIBLE_DEVICES="" uv run pytest tests/ -v -m integration
 ```
 
 Create a topic branch from `main` for each change using one of these prefixes: `codex/`, `feature/`, `fix/`, `chore/`, `docs/`, `refactor/`, or `test/`.

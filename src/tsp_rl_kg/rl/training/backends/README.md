@@ -23,7 +23,7 @@ Owns backend abstraction contracts and concrete algorithm backend adapters used 
 
 ## Cross-links
 - [Training module](../README.md)
-- [Top-level package interface](../../../README.md)
+- [Top-level package overview](../../../README.md)
 
 ## Tests
 - `tests/test_training_backends.py`

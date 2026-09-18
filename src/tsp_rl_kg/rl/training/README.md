@@ -57,3 +57,39 @@ DQN replay settings belong in `algorithm.hyperparameters`.
 Regression coverage: `tests/test_experiment_reliability.py`,
 `tests/test_training_integration.py`, and `tests/test_packaging.py`. Integration tests
 use temporary local MLflow storage and bounded CPU runs.
+
+## Outputs and tracking
+
+Paths are relative to the current working directory. The CLIs log the generated
+results directory when a run starts.
+
+| Workflow | Output location | Contents |
+| --- | --- | --- |
+| `tsp train` | `results/manual_<timestamp>_<id>/manual_<algorithm>/` | Final model ZIP, metrics CSV, profiler report, train/eval simulation CSVs |
+| `tsp train --benchmark` | Same training layout, plus `results/benchmark_<timestamp>.json` | Vision-only run summary with evaluation metrics and artifact paths |
+| `tsp-study` | `results/<timestamp>_<id>/` | Base config, study summary, combined and per-experiment results |
+| Each study seed | `<study-dir>/<experiment>_seed_<seed>/` | Model, metrics, profiling, simulation exports, or failure diagnostics |
+
+Training writes `<experiment>_metrics.csv`, `profile_stats.txt`, and
+`<backend>_custom_env_<experiment>.zip`. Simulation exports are scoped to
+`train/` and `eval/`, each containing `static_data.csv` and `game_data.csv`.
+Periodic evaluation can also create `best_model.zip` and `evaluations.npz` when
+its configured interval is reached.
+
+For studies, start with `study_summary.json` and `ablation_study_results.json`.
+Per-experiment `<experiment>_results.json` files include every seed attempt,
+error details, success counts, and the `incomplete` flag. The study also writes
+`base_config.json`; successful seed results contain the resolved configuration.
+A nonzero exit after seed failures can still leave useful successful artifacts.
+
+Studies create an MLflow parent run and nested seed runs. Set
+`mlflow_experiment_name` and optionally `mlflow_tracking_uri` in the selected
+study mapping. For example, local SQLite tracking can be configured with
+`mlflow_tracking_uri = "sqlite:///mlflow.db"` in `[study]`. When omitted, the
+study uses MLflow's configured tracking URI. Plain `tsp train` does not create
+an MLflow run; trainer logging occurs only if a run is already active.
+
+Use `configs/ablation.toml` from the repository root for a bounded pipeline
+check. The full sweep in `configs/ablation_full.toml` is intended for research
+runs. Integration coverage uses temporary local tracking and does not require
+an external MLflow service.

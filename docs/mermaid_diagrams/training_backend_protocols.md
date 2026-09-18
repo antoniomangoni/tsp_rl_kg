@@ -83,6 +83,11 @@ classDiagram
     TransitionCollector --> TransitionCollectionStats
 ```
 
+Trajectory, sequence, collector, and model-update contracts are experimental. Active
+SB3 training uses the backend, evaluator, curriculum, and metrics contracts.
+The concrete `EpisodeEvaluator.evaluate()` additionally accepts a keyword-only
+`deterministic` option; that option is not declared in the current protocol.
+
 Related diagrams:
 - [SB3 backend internals](training_sb3_backend.md)
 - [Training orchestration](training_orchestration.md)

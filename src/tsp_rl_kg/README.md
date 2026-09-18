@@ -7,11 +7,11 @@ This top-level package owns the end-to-end integration of:
 - RL environment/model/training orchestration (`rl`), and
 - shared utilities/config wiring (`utils`, `config`).
 
-It also re-exports backend protocol identifiers so downstream code can depend on stable interfaces without importing deep module paths.
+Backend protocol contracts are exported by `tsp_rl_kg.rl.training.backends`; the top-level `tsp_rl_kg.__init__` is empty.
 
 ## Main identifiers
-- `TrainingBackend`, `Evaluator`, `CurriculumController`, `MetricsSink` (protocol contracts re-exported in `__init__.py`).
-- `Transition`, `TransitionCollectionStats`, `SequenceBatch`, `TrajectoryStore` (typed training data contracts).
+- `TrainingBackend`, `Evaluator`, `CurriculumController`, `MetricsSink` (protocol contracts exported by `rl.training.backends`).
+- `Transition`, `TransitionCollectionStats`, `SequenceBatch`, `TrajectoryStore` (experimental training data contracts exported by `rl.training.backends`; not used by active SB3 training).
 
 ## Inputs / outputs and neighboring package interactions
 - **Inputs:** typed config objects (`tsp_rl_kg.config`), world state from `game_world`, and graph tensors from `knowledge`/`graph`.
