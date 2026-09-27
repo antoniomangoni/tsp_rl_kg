@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
 
-from tsp_rl_kg.config import GameManagerConfig, SimulationManagerConfig
+from tsp_rl_kg.config import CurriculumConfig, GameManagerConfig, SimulationManagerConfig
 from tsp_rl_kg.game_world.game_manager import GameManager
 
 
@@ -23,7 +23,11 @@ class SimulationManager:
         plot: bool = False,
         feature_encoder=None,
         game_managers: list[GameManager] | None = None,
+        curriculum_config: CurriculumConfig | None = None,
+        rng=None,
     ):
+        self.rng = rng if rng is not None else np.random.default_rng()
+        self.curriculum_config = curriculum_config or CurriculumConfig()
         # Accept either a GameManagerConfig or a legacy dict
         if isinstance(game_manager_config, dict):
             gm_dict = {
@@ -39,7 +43,6 @@ class SimulationManager:
         if sim_config is not None:
             number_of_environments = sim_config.number_of_environments
             number_of_curricula = sim_config.number_of_curricula
-            min_episodes_per_curriculum = sim_config.min_episodes_per_curriculum
 
         self.logger = logger
         self.feature_encoder = feature_encoder
@@ -63,15 +66,21 @@ class SimulationManager:
         energy_values = [gm.target_manager.target_route_energy for gm in self.game_managers]
 
         self.current_curriculum_index = 0
-        self.min_episodes_per_curriculum = min_episodes_per_curriculum
+        self.min_episodes_per_curriculum = self.curriculum_config.min_episodes_per_curriculum
         self.current_curriculum_episodes = 0
-        self.performance_window = deque(maxlen=100)
-        self.performance_threshold = 0.6  # 70% of max possible reward for current level
+        self.performance_window = deque(maxlen=self.curriculum_config.window_size)
+        self.performance_threshold = (
+            self.curriculum_config.performance_threshold
+        )  # 70% of max possible reward for current level
         self.max_performance = max(
             gm.target_manager.target_route_energy for gm in self.game_managers
         )
-        self.success_rate_threshold = 0.5  # New threshold for task completion rate
-        self.success_window = deque(maxlen=100)  # New window to track task completion
+        self.success_rate_threshold = (
+            self.curriculum_config.success_rate_threshold
+        )  # New threshold for task completion rate
+        self.success_window = deque(
+            maxlen=self.curriculum_config.window_size
+        )  # New window to track task completion
 
         # Plateau detection
         self.plateau_threshold = 50  # Number of episodes to detect a plateau
@@ -90,24 +99,30 @@ class SimulationManager:
                 return
             try:
                 game_manager = GameManager(
-                    config=self._gm_config, plot=plot, feature_encoder=self.feature_encoder
+                    config=self._gm_config,
+                    plot=plot,
+                    feature_encoder=self.feature_encoder,
+                    rng=self.rng,
                 )
             except ValueError as error:
                 if "outposts" not in str(error):
                     raise
                 continue
-            if len(game_manager.environment.outpost_locations) >= 3:
+            if (
+                len(game_manager.environment.outpost_locations)
+                == self._gm_config.number_of_outposts
+            ):
                 self.insert_game_manager_sorted(game_manager)
         if len(self.game_managers) == number_of_games:
             return
         raise ValueError(
-            f"Could not generate {number_of_games} valid worlds with three outposts; "
+            f"Could not generate {number_of_games} reachable worlds with the configured outposts; "
             "increase num_tiles or adjust generation settings"
         )
 
     def insert_game_manager_sorted(self, game_manager):
         energy = game_manager.target_manager.target_route_energy
-        if energy > 0:
+        if np.isfinite(energy):
             index = next(
                 (
                     i
@@ -151,46 +166,18 @@ class SimulationManager:
     def should_advance_curriculum(self):
         if self.current_curriculum_episodes < self.min_episodes_per_curriculum:
             return False
-
-        if not self.performance_window or not self.success_window:
-            return False
-
-        avg_performance = sum(self.performance_window) / len(self.performance_window)
-        success_rate = sum(self.success_window) / len(self.success_window)
-
-        current_max = self.game_managers[
-            self.curriculum_indices[self.current_curriculum_index]
-        ].target_manager.target_route_energy
-
-        performance_criterion = avg_performance > self.performance_threshold * current_max
-        success_criterion = success_rate > self.success_rate_threshold
-        plateau_criterion = self.plateau_counter >= self.plateau_threshold
-
-        self.logger.info(
-            f"Curriculum advancement check: Performance: {avg_performance:.2f}, "
-            f"Success rate: {success_rate:.2f}, Plateau counter: {self.plateau_counter}"
+        successful = [
+            p for p, ok in zip(self.performance_window, self.success_window, strict=False) if ok
+        ]
+        return bool(successful) and (
+            np.mean(self.success_window) >= self.success_rate_threshold
+            and np.mean(successful) >= self.performance_threshold
         )
-
-        if performance_criterion and success_criterion:
-            self.logger.info("Advancing curriculum based on performance and success rate.")
-            return True
-        elif plateau_criterion:
-            self.logger.info("Advancing curriculum due to performance plateau.")
-            return True
-
-        return False
 
     def add_episode_performance(self, performance, success):
         self.current_curriculum_episodes += 1
         self.performance_window.append(performance)
-        self.success_window.append(int(success))  # 1 if task completed, 0 otherwise
-
-        # Update plateau detection
-        if performance > self.best_performance:
-            self.best_performance = performance
-            self.plateau_counter = 0
-        else:
-            self.plateau_counter += 1
+        self.success_window.append(int(success))
 
     def get_next_game_in_curriculum(self, current_game_index: int) -> int:
         """Return the next game index within the current curriculum level's range.
@@ -220,8 +207,6 @@ class SimulationManager:
         self.success_window.clear()
         self.plateau_counter = 0
         self.best_performance = float("-inf")
-        self.performance_threshold *= 0.95  # Decrease threshold for harder levels
-        self.success_rate_threshold *= 0.95  # Decrease success rate threshold for harder levels
         self.logger.info(
             f"Advanced to curriculum level {self.current_curriculum_index}. "
             f"New performance threshold: {self.performance_threshold:.2f}, "

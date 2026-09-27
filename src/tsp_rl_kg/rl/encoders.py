@@ -1,262 +1,196 @@
-from __future__ import annotations
+"""Compact, deterministic policy encoders with isolated graph batching."""
 
-import gymnasium as gym
+import math
+
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from loguru import logger
-from torch_geometric.nn import GATConv, global_mean_pool
+from torch import nn
+from torch_geometric.nn import GATConv
+from torch_geometric.utils import softmax
 
 from tsp_rl_kg.config import AgentModelConfig
 
-torch_dtype = torch.float32
-
 
 class VisionEncoder(nn.Module):
-    """Plain torch vision encoder reusable outside any RL backend."""
-
-    def __init__(self, observation_shape, vision_params, output_dim=96):
+    def __init__(self, observation_shape, vision_params, output_dim=64):
         super().__init__()
-
-        self.num_conv_layers = vision_params.get("num_conv_layers", 4)
-        self.conv_channels = vision_params.get("conv_channels", [64, 128, 256, 256])
-        self.fc_dims = vision_params.get("fc_dims", [512])
-
-        channels, _height, _width = observation_shape
-        active_conv_channels = self.conv_channels[: self.num_conv_layers]
-        if not active_conv_channels:
-            raise ValueError("VisionEncoder requires at least one convolutional layer")
-
-        conv_layers = []
-        in_channels = channels
-        for out_channels in active_conv_channels:
-            conv_layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1))
-            conv_layers.append(nn.BatchNorm2d(out_channels))
-            conv_layers.append(nn.ReLU())
-            conv_layers.append(nn.MaxPool2d(2, 2, ceil_mode=True))
-            in_channels = out_channels
-
-        conv_layers.append(nn.AdaptiveAvgPool2d((4, 4)))
-        conv_layers.append(nn.Flatten())
-        self.cnn = nn.Sequential(*conv_layers)
-
-        last_channels = active_conv_channels[-1]
-        total_conv_size = last_channels * 4 * 4
-
-        fc_layers = []
-        in_dim = total_conv_size
-        for out_dim in self.fc_dims:
-            fc_layers.append(nn.Linear(in_dim, out_dim))
-            fc_layers.append(nn.ReLU())
-            in_dim = out_dim
-
-        fc_layers.append(nn.Linear(in_dim, output_dim))
-        self.fc = nn.Sequential(*fc_layers)
+        channels, height, width = observation_shape
+        layers = []
+        for output in vision_params["conv_channels"][: vision_params["num_conv_layers"]]:
+            layers.extend([nn.Conv2d(channels, output, 3, padding=1), nn.ReLU()])
+            channels = output
+        self.cnn = nn.Sequential(*layers, nn.Flatten())
+        self.fc = nn.Linear(channels * height * width, output_dim)
         self.output_dim = output_dim
 
-    def forward(self, observations: torch.Tensor) -> torch.Tensor:
-        x = self.cnn(observations)
-        return self.fc(x)
+    def forward(self, observations):
+        return self.fc(self.cnn(observations.float()))
 
 
 class GraphEncoder(nn.Module):
-    """Plain torch geometric encoder reusable outside any RL backend."""
-
     def __init__(
         self,
         num_graph_node_features,
         graph_params,
-        output_dim=96,
-        gat_hidden_dim=48,
+        output_dim=64,
+        gat_hidden_dim=32,
         num_edge_features=0,
     ):
         super().__init__()
-
-        self.num_gat_layers = graph_params.get("num_gat_layers", 3)
-        self.gat_heads = graph_params.get("gat_heads", [4, 2, 2])
-        self.fc_dims = graph_params.get("fc_dims", [192])
-        self.gat_hidden_dim = gat_hidden_dim
-
-        active_heads = self.gat_heads[: self.num_gat_layers]
-        if not active_heads:
-            raise ValueError("GraphEncoder requires at least one GAT layer")
-
-        gat_layers = []
-        in_channels = num_graph_node_features
-        edge_dim = num_edge_features if num_edge_features > 0 else None
-        for heads in active_heads:
-            out_channels = self.gat_hidden_dim * heads
-            gat_layers.append(
+        self.gat = nn.ModuleList()
+        width = num_graph_node_features
+        for heads in graph_params["gat_heads"][: graph_params["num_gat_layers"]]:
+            self.gat.append(
                 GATConv(
-                    in_channels,
-                    self.gat_hidden_dim,
+                    width,
+                    gat_hidden_dim,
                     heads=heads,
-                    edge_dim=edge_dim,
+                    edge_dim=num_edge_features or None,
+                    dropout=0,
                 )
             )
-            in_channels = out_channels
-
-        self.gat = nn.ModuleList(gat_layers)
-        self.fc = nn.Sequential(
-            nn.Linear(in_channels, self.fc_dims[0]),
-            nn.ReLU(),
-            nn.Linear(self.fc_dims[0], output_dim),
-        )
+            width = gat_hidden_dim * heads
+        # Include raw relative geometry so it cannot be washed out by local aggregation.
+        width += 5
+        self.query = nn.Linear(width, width)
+        self.key = nn.Linear(width, width)
+        self.fc = nn.Sequential(nn.Linear(width * 2, output_dim), nn.ReLU())
         self.output_dim = output_dim
 
-    def forward(
-        self,
-        x: torch.Tensor,
-        edge_index: torch.Tensor,
-        batch: torch.Tensor,
-        edge_attr: torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        for gat_layer in self.gat:
-            x = F.relu(gat_layer(x, edge_index, edge_attr=edge_attr))
-
-        x = global_mean_pool(x, batch)
-        return self.fc(x)
+    def forward(self, x, edge_index, batch, edge_attr=None):
+        geometry = x[:, -5:]
+        players = geometry[:, 2] > 0.5
+        for layer in self.gat:
+            x = torch.relu(layer(x, edge_index, edge_attr=edge_attr))
+        x = torch.cat([x, geometry], dim=1)
+        # Exactly one explicitly marked player in each sample.
+        anchors = x[players]
+        if not torch.equal(
+            torch.bincount(batch[players], minlength=int(batch.max()) + 1),
+            torch.ones(int(batch.max()) + 1, device=batch.device, dtype=torch.long),
+        ):
+            raise ValueError("Graph must contain one player per sample")
+        scores = (self.key(x) * self.query(anchors)[batch]).sum(-1) / math.sqrt(x.shape[1])
+        weights = softmax(scores, batch)
+        pooled = torch.zeros_like(anchors).index_add(0, batch, weights[:, None] * x)
+        return self.fc(torch.cat([anchors, pooled], dim=1))
 
 
 class HybridEncoder(nn.Module):
-    """Backend-neutral hybrid encoder for vision and graph observations."""
-
-    def __init__(
-        self,
-        observation_space: gym.spaces.Dict,
-        features_dim: int = 192,
-        model_config: AgentModelConfig | None = None,
-    ):
+    def __init__(self, observation_space, features_dim=128, model_config=None):
         super().__init__()
-
-        if model_config is None:
-            model_config = AgentModelConfig()
-
-        if not {"num_nodes", "num_edges"}.issubset(observation_space.spaces):
-            raise ValueError(
-                "Observation schema v2 requires num_nodes/num_edges; fresh training is required"
+        config = model_config or AgentModelConfig()
+        required = {"num_nodes", "num_edges", "status", "path_queries"}
+        if not required.issubset(observation_space.spaces):
+            raise ValueError("Observation schema v4 required; fresh training is required")
+        self.disable_vision, self.disable_graph = config.disable_vision, config.disable_graph
+        self.use_path_queries = config.use_path_queries and not self.disable_graph
+        self.vision_params, self.graph_params = config.to_vision_params(), config.to_graph_params()
+        self.fc_dims = config.fusion_dims
+        self.dropout_p = 0
+        self.dropout = nn.Identity()
+        self.vision_processor = (
+            None
+            if self.disable_vision
+            else VisionEncoder(observation_space["vision"].shape, self.vision_params, 64)
+        )
+        self.graph_processor = (
+            None
+            if self.disable_graph
+            else GraphEncoder(
+                observation_space["node_features"].shape[1],
+                self.graph_params,
+                64,
+                config.gat_hidden_dim,
+                observation_space["edge_attr"].shape[1],
             )
-
-        self.disable_vision = model_config.disable_vision
-        self.disable_graph = model_config.disable_graph
-        self.vision_params = model_config.to_vision_params()
-        self.graph_params = model_config.to_graph_params()
-
-        first_fc_dim = self.vision_params["fc_dims"][-1] + self.graph_params["fc_dims"][-1]
-        self.fc_dims = [first_fc_dim, first_fc_dim, first_fc_dim // 2, features_dim]
-        self.dropout_p = model_config.dropout
-
-        vision_shape = observation_space.spaces["vision"].shape
-        num_node_features = observation_space.spaces["node_features"].shape[1]
-        num_edge_features = observation_space.spaces["edge_attr"].shape[1]
-
-        self.vision_processor = VisionEncoder(
-            vision_shape,
-            vision_params=self.vision_params,
-            output_dim=features_dim,
         )
-        self.graph_processor = GraphEncoder(
-            num_node_features,
-            graph_params=self.graph_params,
-            output_dim=features_dim,
-            gat_hidden_dim=model_config.gat_hidden_dim,
-            num_edge_features=num_edge_features,
+        self.status_processor = nn.Sequential(
+            nn.Linear(observation_space["status"].shape[0], 32), nn.ReLU()
         )
-
-        combined_input_size = self.vision_processor.output_dim + self.graph_processor.output_dim
-
-        fc_layers = []
-        in_dim = combined_input_size
-        for out_dim in self.fc_dims:
-            fc_layers.append(nn.Linear(in_dim, out_dim))
-            fc_layers.append(nn.ReLU())
-            in_dim = out_dim
-
-        fc_layers.append(nn.Linear(in_dim, features_dim))
-        self.fc = nn.Sequential(*fc_layers)
-        self.dropout = nn.Dropout(p=self.dropout_p)
-
+        self.query_processor = (
+            nn.Sequential(
+                nn.Flatten(),
+                nn.Linear(math.prod(observation_space["path_queries"].shape), 32),
+                nn.ReLU(),
+            )
+            if self.use_path_queries
+            else None
+        )
+        width = (
+            32
+            + 64 * (not self.disable_vision)
+            + 64 * (not self.disable_graph)
+            + 32 * self.use_path_queries
+        )
+        layers = []
+        for output in [*config.fusion_dims, features_dim]:
+            layers.extend([nn.Linear(width, output), nn.ReLU()])
+            width = output
+        self.fc = nn.Sequential(*layers)
         self._initialize_weights()
 
-    def _prepare_graph_batch(
-        self,
-        observations: dict[str, torch.Tensor],
-    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        nodes, edges, attrs, memberships = [], [], [], []
-        offset = 0
-        batch_size = observations["node_features"].shape[0]
-        for i in range(batch_size):
-            raw_n = observations["num_nodes"][i].item()
-            raw_e = observations["num_edges"][i].item()
-            if not (float(raw_n).is_integer() and float(raw_e).is_integer()):
-                raise ValueError("Graph counts must be finite integers")
-            n, e = int(raw_n), int(raw_e)
-            if (
-                not 1 <= n <= observations["node_features"].shape[1]
-                or not 0 <= e <= observations["edge_attr"].shape[1]
-            ):
-                raise ValueError("Invalid graph counts for padded observation")
-            x = observations["node_features"][i, :n].to(torch_dtype)
-            raw_index = observations["edge_index"][i, :, :e]
-            if not torch.isfinite(raw_index).all() or not torch.equal(
-                raw_index, raw_index.long().to(raw_index.dtype)
-            ):
-                raise ValueError("Graph edge indices must be finite integers")
-            index = raw_index.long()
-            if e and (index.min() < 0 or index.max() >= n):
-                raise ValueError("Graph edge references an invalid local node")
-            nodes.append(x)
-            edges.append(index + offset)
-            attrs.append(observations["edge_attr"][i, :e].to(torch_dtype))
-            memberships.append(torch.full((n,), i, device=x.device, dtype=torch.long))
-            offset += n
-        return torch.cat(nodes), torch.cat(edges, dim=1), torch.cat(memberships), torch.cat(attrs)
-
-    def forward(self, observations: dict[str, torch.Tensor]) -> torch.Tensor:
-        reference = observations["vision"]
-        shape = (reference.shape[0], self.vision_processor.output_dim)
-        vision_features = (
-            reference.new_zeros(shape) if self.disable_vision else self.vision_processor(reference)
+    def _prepare_graph_batch(self, observations):
+        nodes = observations["node_features"]
+        counts = observations["num_nodes"].reshape(-1)
+        edge_counts = observations["num_edges"].reshape(-1)
+        raw_edges = observations["edge_index"]
+        if not (
+            torch.isfinite(counts).all()
+            and torch.isfinite(edge_counts).all()
+            and (counts == counts.long()).all()
+            and (edge_counts == edge_counts.long()).all()
+            and (counts >= 1).all()
+            and (counts <= nodes.shape[1]).all()
+            and (edge_counts >= 0).all()
+            and (edge_counts <= raw_edges.shape[2]).all()
+        ):
+            raise ValueError("Invalid graph counts for padded observation")
+        counts, edge_counts = counts.long(), edge_counts.long()
+        node_mask = torch.arange(nodes.shape[1], device=nodes.device)[None, :] < counts[:, None]
+        edge_mask = (
+            torch.arange(raw_edges.shape[2], device=nodes.device)[None, :] < edge_counts[:, None]
         )
-        if self.disable_graph:
-            graph_features = reference.new_zeros(
-                (reference.shape[0], self.graph_processor.output_dim)
-            )
-        else:
-            x, edge_index, batch, edge_attr = self._prepare_graph_batch(observations)
-            graph_features = self.graph_processor(x, edge_index, batch, edge_attr=edge_attr)
+        real_edges = raw_edges.permute(0, 2, 1)[edge_mask]
+        edge_members = torch.arange(len(counts), device=nodes.device)[:, None].expand_as(edge_mask)[
+            edge_mask
+        ]
+        if not (
+            torch.isfinite(real_edges).all()
+            and (real_edges == real_edges.long()).all()
+            and (real_edges >= 0).all()
+            and (real_edges < counts[edge_members, None]).all()
+        ):
+            raise ValueError("Graph edge references an invalid local node")
+        offsets = counts.cumsum(0) - counts
+        edges = (real_edges.long() + offsets[edge_members, None]).T
+        memberships = torch.arange(len(counts), device=nodes.device)[:, None].expand_as(node_mask)[
+            node_mask
+        ]
+        return (
+            nodes[node_mask].float(),
+            edges,
+            memberships,
+            observations["edge_attr"][edge_mask].float(),
+        )
 
-        combined = torch.cat((vision_features, graph_features), dim=1)
-        combined = self.dropout(combined)
-        return self.fc(combined)
+    def forward(self, observations):
+        features = [self.status_processor(observations["status"].float())]
+        if not self.disable_vision:
+            features.append(self.vision_processor(observations["vision"]))
+        if not self.disable_graph:
+            x, edges, batch, attrs = self._prepare_graph_batch(observations)
+            features.append(self.graph_processor(x, edges, batch, attrs))
+        if self.use_path_queries:
+            features.append(self.query_processor(observations["path_queries"].float()))
+        return self.fc(torch.cat(features, dim=1))
 
-    def _initialize_weights(self) -> None:
+    def _initialize_weights(self):
         for module in self.modules():
             if isinstance(module, (nn.Conv2d, nn.Linear)):
-                nn.init.kaiming_normal_(module.weight, mode="fan_out", nonlinearity="relu")
+                nn.init.kaiming_normal_(module.weight, nonlinearity="relu")
                 if module.bias is not None:
-                    nn.init.constant_(module.bias, 0)
-            elif isinstance(module, nn.BatchNorm2d):
-                nn.init.constant_(module.weight, 1)
-                nn.init.constant_(module.bias, 0)
+                    nn.init.zeros_(module.bias)
 
-    def sanity_check(self, observations: dict[str, torch.Tensor]) -> None:
-        with torch.no_grad():
-            output = self.forward(observations)
-            logger.info(f"Output shape: {output.shape}")
-            logger.info(f"Output mean: {output.mean().item():.4f}")
-            logger.info(f"Output std: {output.std().item():.4f}")
-            vision_mean = self.vision_processor(observations["vision"]).mean().item()
-            logger.info(f"Vision features mean: {vision_mean:.4f}")
-            x, edge_index, batch, edge_attr = self._prepare_graph_batch(observations)
-            graph_mean = (
-                self.graph_processor(
-                    x,
-                    edge_index,
-                    batch,
-                    edge_attr=edge_attr,
-                )
-                .mean()
-                .item()
-            )
-            logger.info(f"Graph features mean: {graph_mean:.4f}")
+    def sanity_check(self, observations):
+        if not torch.isfinite(self(observations)).all():
+            raise ValueError("Nonfinite policy features")

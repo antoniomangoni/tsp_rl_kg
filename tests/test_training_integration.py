@@ -89,7 +89,7 @@ def test_supplied_study_has_every_seed_and_artifact(tmp_path):
         assert experiment["failed"] == 0
         result = experiment["seed_results"][0]["result"]
         assert np.isfinite(result["mean_reward"])
-        assert result["config"]["observation_schema_version"] == 2
+        assert result["config"]["observation_schema_version"] == 4
         assert result["config"]["knowledge_semantics"] == "initial_prior_v1"
         assert Path(result["model_path"]).is_file()
         assert len(Path(result["metrics_file"]).read_text().splitlines()) > 1
@@ -248,3 +248,80 @@ def test_cli_failed_study_returns_nonzero_and_keeps_results(tmp_path):
     assert main(["--config", str(path)]) == 1
     (summary_path,) = tmp_path.glob("results/*/study_summary.json")
     assert json.loads(summary_path.read_text())["failed"] == 1
+
+
+def test_two_workers_emit_terminal_records_and_save_normalization(tmp_path):
+    cfg = small_config()
+    cfg.n_envs = 2
+    cfg.evaluation.final_eval_episodes = 2
+    trainer = Trainer(0.5, results_dir=str(tmp_path))
+    trainer.setup(cfg, seed=42)
+    try:
+        backend = trainer.model_trainer.backend
+        backend.train(16, str(tmp_path / "vector"))
+        records = trainer.model_trainer.metrics.episode_records
+        assert {r["worker"] for r in records} == {0, 1}
+        assert all(r["episode_step"] > 0 for r in records)
+        assert sum(sum(r["action_counts"]) for r in records) <= backend.model.num_timesteps
+        path = tmp_path / "vector/model.zip"
+        backend.save(str(path))
+        assert path.with_suffix(".vecnormalize.pkl").exists()
+        assert (tmp_path / "vector/best_model.vecnormalize.pkl").exists()
+        before = backend.env.ret_rms.mean.copy()
+        obs, _ = trainer.eval_env.reset()
+        expected = backend.predict(obs)[0]
+        backend.load(str(path))
+        np.testing.assert_array_equal(expected, backend.predict(obs)[0])
+        np.testing.assert_array_equal(before, backend.env.ret_rms.mean)
+    finally:
+        trainer.close()
+
+
+def test_active_parameter_counts_match_and_log_probabilities_are_deterministic(tmp_path):
+    counts = []
+    for arm in ("vision", "gnn", "queries"):
+        cfg = small_config()
+        cfg.ablation.disable_graph = arm == "vision"
+        cfg.ablation.use_path_queries = arm == "queries"
+        trainer = Trainer(0.5, results_dir=str(tmp_path / arm))
+        trainer.setup(cfg, seed=42)
+        try:
+            model = trainer.model_trainer.backend.model
+            counts.append(sum(p.numel() for p in model.policy.parameters()))
+            obs, _ = trainer.env.reset()
+            tensor, _ = model.policy.obs_to_tensor(obs)
+            action = torch.tensor([0])
+            model.policy.set_training_mode(True)
+            train_log_prob = model.policy.evaluate_actions(tensor, action)[1]
+            model.policy.set_training_mode(False)
+            eval_log_prob = model.policy.evaluate_actions(tensor, action)[1]
+            torch.testing.assert_close(train_log_prob, eval_log_prob, rtol=0, atol=0)
+        finally:
+            trainer.close()
+    assert max(counts) / min(counts) < 1.1
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="Requires GPU memory validation hardware")
+def test_compact_batch64_fits_six_gib(tmp_path):
+    cfg = small_config()
+    cfg.game_manager.num_tiles = 12
+    cfg.game_manager.screen_size = 480
+    cfg.ablation.use_path_queries = True
+    trainer = Trainer(1, results_dir=str(tmp_path))
+    trainer.device = torch.device("cuda")
+    trainer.setup(cfg, seed=42)
+    try:
+        policy = trainer.model_trainer.backend.model.policy
+        obs, _ = trainer.env.reset()
+        batch = {
+            k: torch.tensor(np.repeat(v[None], 64, axis=0), device="cuda") for k, v in obs.items()
+        }
+        torch.cuda.reset_peak_memory_stats()
+        values, log_probs, entropy = policy.evaluate_actions(
+            batch, torch.zeros(64, device="cuda", dtype=torch.long)
+        )
+        (values.square().mean() - log_probs.mean() - 0.01 * entropy.mean()).backward()
+        torch.cuda.synchronize()
+        assert torch.cuda.max_memory_allocated() < 6 * 1024**3
+    finally:
+        trainer.close()

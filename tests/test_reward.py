@@ -1,406 +1,71 @@
-"""Tests for RewardCalculator in tsp_rl_kg.rl.reward."""
+"""Behavioral regression tests for stationary closed-tour rewards."""
 
-from __future__ import annotations
+from dataclasses import replace
 
+import numpy as np
 import pytest
 
-from tsp_rl_kg.config import RewardConfig
-from tsp_rl_kg.rl.reward import RewardCalculator, manhattan_distance
-
-# ---------------------------------------------------------------------------
-# manhattan_distance utility
-# ---------------------------------------------------------------------------
+from tsp_rl_kg.config import RewardComponent, RewardConfig
+from tsp_rl_kg.rl.episode import efficiency
+from tsp_rl_kg.rl.reward import RewardCalculator, RewardTransition
 
 
-class TestManhattanDistance:
-    def test_same_point(self):
-        assert manhattan_distance((0, 0), (0, 0)) == 0
-
-    def test_horizontal(self):
-        assert manhattan_distance((0, 0), (3, 0)) == 3
-
-    def test_vertical(self):
-        assert manhattan_distance((0, 0), (0, 5)) == 5
-
-    def test_diagonal(self):
-        assert manhattan_distance((1, 2), (4, 6)) == 7
-
-    def test_negative_coordinates(self):
-        assert manhattan_distance((-1, -2), (1, 2)) == 6
+def transition(**changes):
+    return replace(RewardTransition(2, 20, 20, False, False, -0.5, -0.4), **changes)
 
 
-# ---------------------------------------------------------------------------
-# step_penalty
-# ---------------------------------------------------------------------------
+def test_calculate_charges_actual_energy_and_every_step_shaping():
+    calc = RewardCalculator(RewardConfig(), gamma=0.9)
+    assert calc.calculate(transition()) == pytest.approx(-0.02 + 0.9 * -0.4 + 0.5)
+    assert calc.calculate(transition(energy_delta=3, potential_after=-0.5)) == pytest.approx(
+        -0.03 + 0.05
+    )
 
 
-class TestStepPenalty:
-    def test_returns_negative(self, reward_calculator: RewardCalculator):
-        result = reward_calculator.step_penalty(terrain_energy=2.0)
-        assert result < 0
-
-    def test_scales_with_terrain_energy(self, reward_calculator: RewardCalculator):
-        low = reward_calculator.step_penalty(terrain_energy=1.0)
-        high = reward_calculator.step_penalty(terrain_energy=5.0)
-        assert high < low  # Higher energy → larger penalty (more negative)
-
-
-# ---------------------------------------------------------------------------
-# time_penalty
-# ---------------------------------------------------------------------------
+def test_first_arrival_reward_once_and_quality_not_clipped():
+    calc = RewardCalculator(RewardConfig(shaping_weight=0))
+    assert calc.calculate(transition(new_outpost=True)) == pytest.approx(0.98)
+    good = calc.calculate(transition(success=True, episode_energy=20))
+    poor = calc.calculate(transition(success=True, episode_energy=40))
+    assert good == pytest.approx(9.98)
+    assert poor == pytest.approx(4.98)
+    assert good > poor > 1
 
 
-class TestTimePenalty:
-    def test_returns_negative(self, reward_calculator: RewardCalculator):
-        result = reward_calculator.time_penalty(episode_step=100)
-        assert result < 0
-
-    def test_increases_over_episode(self, reward_calculator: RewardCalculator):
-        early = reward_calculator.time_penalty(episode_step=10)
-        late = reward_calculator.time_penalty(episode_step=500)
-        assert late < early  # Later step → larger penalty
+def test_shaping_ablation_is_explicit():
+    calc = RewardCalculator(RewardConfig(), disabled_components=[RewardComponent.PROXIMITY])
+    assert calc.calculate(transition()) == pytest.approx(-0.02)
 
 
-# ---------------------------------------------------------------------------
-# outpost_discovery_reward
-# ---------------------------------------------------------------------------
+def test_terminal_potential_and_truncation_are_distinct():
+    calc = RewardCalculator(RewardConfig(), gamma=0.99)
+    terminal = calc.calculate(transition(success=True, potential_after=0))
+    timeout = calc.calculate(transition(potential_after=-0.4))
+    assert terminal == pytest.approx(10.48)
+    assert timeout == pytest.approx(0.084)
 
 
-class TestOutpostDiscoveryReward:
-    def test_first_outpost_positive(self, reward_calculator: RewardCalculator):
-        reward_calculator.outposts_visited.add((1, 1))
-        result = reward_calculator.outpost_discovery_reward()
-        assert result > 0
-
-    def test_reward_increases_with_more_outposts(self, reward_calculator: RewardCalculator):
-        reward_calculator.outposts_visited.add((1, 1))
-        first = reward_calculator.outpost_discovery_reward()
-        reward_calculator.outposts_visited.add((3, 3))
-        second = reward_calculator.outpost_discovery_reward()
-        assert second > first
+@pytest.mark.parametrize(
+    "reference,energy,expected", [(0, 0, 1), (0, 10, 0), (10, 20, 0.5), (20, 10, 2)]
+)
+def test_efficiency(reference, energy, expected):
+    assert efficiency(reference, energy) == expected
 
 
-# ---------------------------------------------------------------------------
-# completion_reward
-# ---------------------------------------------------------------------------
-
-
-class TestCompletionReward:
-    def test_positive(self, reward_calculator: RewardCalculator):
-        result = reward_calculator.completion_reward(episode_step=100)
-        assert result > 0
-
-    def test_earlier_completion_higher(self, reward_calculator: RewardCalculator):
-        early = reward_calculator.completion_reward(episode_step=50)
-        late = reward_calculator.completion_reward(episode_step=500)
-        assert early > late  # Faster completion → bigger bonus
-
-
-# ---------------------------------------------------------------------------
-# route_improvement_reward
-# ---------------------------------------------------------------------------
-
-
-class TestRouteImprovementReward:
-    def test_improved_route_positive(self, reward_calculator: RewardCalculator):
-        # First route: set a baseline
-        reward_calculator.best_efficiency = 0.0
-        reward_calculator.previous_best_route_energy = float("inf")
-        reward, early_stop = reward_calculator.route_improvement_reward(
-            agent_route_energy=100.0,
-            algorithmic_best_energy=80.0,
+def test_zero_energy_reward_is_finite_and_bounded():
+    calc = RewardCalculator(RewardConfig())
+    for reference in (0, 20):
+        reward = calc.calculate(
+            transition(success=True, episode_energy=0, reference_energy=reference)
         )
-        assert reward > 0
-        assert early_stop is False
-
-    def test_no_improvement_increments_counter(self, reward_calculator: RewardCalculator):
-        # Set a very high best efficiency so no improvement is possible
-        reward_calculator.best_efficiency = 200.0
-        reward, _ = reward_calculator.route_improvement_reward(
-            agent_route_energy=200.0,
-            algorithmic_best_energy=100.0,
-        )
-        assert reward == 0.0
-        assert reward_calculator.num_not_improvement_routes == 1
-
-    def test_early_stop_after_max_no_improvement(self, reward_calculator: RewardCalculator):
-        reward_calculator.best_efficiency = 200.0
-        for _ in range(reward_calculator.config.max_not_improvement_routes):
-            _, early_stop = reward_calculator.route_improvement_reward(
-                agent_route_energy=200.0,
-                algorithmic_best_energy=100.0,
-            )
-        assert early_stop is True
+        assert np.isfinite(reward)
+        assert reward < 21
 
 
-# ---------------------------------------------------------------------------
-# proximity_reward
-# ---------------------------------------------------------------------------
-
-
-class TestProximityReward:
-    def test_closer_positive(self, reward_calculator: RewardCalculator):
-        reward_calculator.previous_min_distance = 10.0
-        result = reward_calculator.proximity_reward(agent_pos=(1, 0))
-        assert result > 0
-
-    def test_farther_negative(self, reward_calculator: RewardCalculator):
-        reward_calculator.previous_min_distance = 1.0
-        # Move far away from all outposts
-        result = reward_calculator.proximity_reward(agent_pos=(0, 0))
-        assert result < 0
-
-    def test_all_visited_returns_zero(self, reward_calculator: RewardCalculator):
-        # Mark all outposts as visited
-        for coord in reward_calculator.outpost_coords:
-            reward_calculator.outposts_visited.add(coord)
-        result = reward_calculator.proximity_reward(agent_pos=(0, 0))
-        assert result == 0.0
-
-    def test_first_measurement_is_zero_not_nan(self, reward_calculator: RewardCalculator):
-        """The initial (inf-baseline) call must emit no shaping, never nan."""
-        assert reward_calculator.previous_min_distance == float("inf")
-        result = reward_calculator.proximity_reward(agent_pos=(0, 0))
-        assert result == 0.0
-        # Baseline recorded so the next measurement can produce a real reward.
-        assert reward_calculator.previous_min_distance != float("inf")
-
-
-# ---------------------------------------------------------------------------
-# circular_behavior_penalty
-# ---------------------------------------------------------------------------
-
-
-class TestCircularBehaviorPenalty:
-    def test_repeated_position_penalty(self, reward_calculator: RewardCalculator):
-        reward_calculator.recent_path.append((2, 2))
-        result = reward_calculator.circular_behavior_penalty(agent_pos=(2, 2))
-        assert result < 0
-
-    def test_new_position_no_penalty(self, reward_calculator: RewardCalculator):
-        result = reward_calculator.circular_behavior_penalty(agent_pos=(2, 2))
-        assert result == 0.0
-
-
-# ---------------------------------------------------------------------------
-# calculate orchestrator
-# ---------------------------------------------------------------------------
-
-
-class TestCalculateOrchestrator:
-    def test_returns_tuple(self, reward_calculator: RewardCalculator):
-        result = reward_calculator.calculate(
-            agent_pos=(0, 0),
-            terrain_energy=2.0,
-            episode_step=10,
-            agent_energy_spent=50.0,
-            algorithmic_best_energy=40.0,
-            reset_energy_callback=lambda: None,
-        )
-        assert isinstance(result, tuple)
-        assert len(result) == 3
-        reward, early_stop, all_visited = result
-        assert isinstance(reward, float)
-        assert isinstance(early_stop, bool)
-        assert isinstance(all_visited, bool)
-
-    def test_reward_is_normalised(self, reward_calculator: RewardCalculator):
-        reward, _, _ = reward_calculator.calculate(
-            agent_pos=(0, 0),
-            terrain_energy=2.0,
-            episode_step=10,
-            agent_energy_spent=50.0,
-            algorithmic_best_energy=40.0,
-            reset_energy_callback=lambda: None,
-        )
-        assert -1.0 <= reward <= 1.0
-
-    def test_step_penalty_produces_negative_normalised_reward(
-        self, reward_calculator: RewardCalculator
-    ):
-        """A bare step with no outpost discovery should yield a negative reward."""
-        reward, _, _ = reward_calculator.calculate(
-            agent_pos=(0, 0),
-            terrain_energy=2.0,
-            episode_step=10,
-            agent_energy_spent=50.0,
-            algorithmic_best_energy=40.0,
-            reset_energy_callback=lambda: None,
-        )
-        assert reward < 0
-
-    def test_all_visited_flag_on_completion(self, reward_calculator: RewardCalculator):
-        """When the agent visits all outposts, all_visited must be True."""
-        # Visit first two outposts manually
-        coords = reward_calculator.outpost_coords
-        for coord in coords[:-1]:
-            reward_calculator.outposts_visited.add(coord)
-
-        # Step onto the last outpost
-        _reward, _early_stop, all_visited = reward_calculator.calculate(
-            agent_pos=coords[-1],
-            terrain_energy=1.0,
-            episode_step=50,
-            agent_energy_spent=30.0,
-            algorithmic_best_energy=25.0,
-            reset_energy_callback=lambda: None,
-        )
-        assert all_visited is True
-        # outposts_visited should be cleared after completion
-        assert len(reward_calculator.outposts_visited) == 0
-
-    def test_all_visited_false_when_incomplete(self, reward_calculator: RewardCalculator):
-        """all_visited must be False when not all outposts are visited."""
-        _reward, _early_stop, all_visited = reward_calculator.calculate(
-            agent_pos=(0, 0),
-            terrain_energy=1.0,
-            episode_step=10,
-            agent_energy_spent=10.0,
-            algorithmic_best_energy=8.0,
-            reset_energy_callback=lambda: None,
-        )
-        assert all_visited is False
-
-
-# ---------------------------------------------------------------------------
-# reset
-# ---------------------------------------------------------------------------
-
-
-class TestReset:
-    def test_reset_clears_episode_state(self, reward_calculator: RewardCalculator):
-        reward_calculator.outposts_visited.add((1, 1))
-        reward_calculator.recent_path.append((2, 2))
-        reward_calculator.previous_min_distance = 5.0
-
-        reward_calculator.reset()
-
-        assert len(reward_calculator.outposts_visited) == 0
-        assert len(reward_calculator.recent_path) == 0
-        assert reward_calculator.previous_min_distance == float("inf")
-
-    def test_reset_game_clears_all(self, reward_calculator: RewardCalculator):
-        reward_calculator.best_route_energy = 100.0
-        reward_calculator.best_efficiency = 50.0
-        reward_calculator.outposts_visited.add((1, 1))
-
-        reward_calculator.reset_game(outpost_coords=[(0, 0), (2, 2)])
-
-        assert reward_calculator.best_route_energy == float("inf")
-        assert reward_calculator.best_efficiency == 0.0
-        assert len(reward_calculator.outposts_visited) == 0
-        assert reward_calculator.outpost_coords == [(0, 0), (2, 2)]
-
-
-# ---------------------------------------------------------------------------
-# Normalisation & efficiency helpers
-# ---------------------------------------------------------------------------
-
-
-class TestEfficiencyHelpers:
-    def test_calculate_route_efficiency(self, reward_calculator: RewardCalculator):
-        eff = reward_calculator.calculate_route_efficiency(
-            agent_route_energy=100.0,
-            algorithmic_best_energy=80.0,
-        )
-        assert eff == pytest.approx(80.0)  # (80/100) * 100
-
-    def test_calculate_route_efficiency_zero_algo(self, reward_calculator: RewardCalculator):
-        with pytest.raises(ValueError, match="cannot be zero"):
-            reward_calculator.calculate_route_efficiency(
-                agent_route_energy=100.0,
-                algorithmic_best_energy=0.0,
-            )
-
-    def test_interpret_efficiency_perfect(self, reward_calculator: RewardCalculator):
-        result = reward_calculator.interpret_efficiency(100.0)
-        assert "Matching" in result
-
-    def test_interpret_efficiency_imperfect(self, reward_calculator: RewardCalculator):
-        result = reward_calculator.interpret_efficiency(80.0)
-        assert "away" in result
-
-
-# ---------------------------------------------------------------------------
-# Per-step reward normalisation (regression guards for the scale-mismatch bug)
-# ---------------------------------------------------------------------------
-
-
-class TestNormalisation:
-    """The reward passed to ``_normalize_reward`` is a *single step*.
-
-    The old implementation divided the span by ``penalty_per_step *
-    max_episode_steps`` (~-8000 with production defaults), which pinned nearly
-    every step near ``+0.95`` regardless of behaviour. These tests use the
-    production episode length (where the bug bit) to guard against a regression.
-    """
-
-    @staticmethod
-    def _production_calculator() -> RewardCalculator:
-        return RewardCalculator(
-            config=RewardConfig(),
-            outpost_coords=[(1, 1), (3, 3), (4, 0)],
-            max_episode_steps=2048 * 8,
-        )
-
-    def test_survival_step_is_not_rewarded(self):
-        """A neutral survival step must not score high (old bug: ~+0.95)."""
-        calc = self._production_calculator()
-        reward, _, _ = calc.calculate(
-            agent_pos=(0, 0),  # not an outpost
-            terrain_energy=2.0,
-            episode_step=10,
-            agent_energy_spent=50.0,
-            algorithmic_best_energy=40.0,
-            reset_energy_callback=lambda: None,
-        )
-        assert reward <= 0.0
-
-    def test_output_is_clipped_to_unit_range_on_completion(self):
-        calc = self._production_calculator()
-        # Skip the (infinite) first-route improvement branch so the raw reward
-        # is a large-but-finite completion payout.
-        calc.best_efficiency = 1e9
-        coords = calc.outpost_coords
-        for coord in coords[:-1]:
-            calc.outposts_visited.add(coord)
-
-        reward, _, all_visited = calc.calculate(
-            agent_pos=coords[-1],
-            terrain_energy=1.0,
-            episode_step=50,
-            agent_energy_spent=30.0,
-            algorithmic_best_energy=25.0,
-            reset_energy_callback=lambda: None,
-        )
-        assert all_visited is True
-        assert -1.0 <= reward <= 1.0
-        assert reward == pytest.approx(1.0)  # completion saturates the scale
-
-    def test_survival_trajectory_scores_below_outpost_progress(self):
-        """A long survival trajectory must not out-score a single outpost step."""
-        survival = self._production_calculator()
-        survival_total = 0.0
-        for step in range(1, 31):
-            reward, _, _ = survival.calculate(
-                agent_pos=(0, 0),  # stay put on a non-outpost tile
-                terrain_energy=2.0,
-                episode_step=step,
-                agent_energy_spent=float(step),
-                algorithmic_best_energy=40.0,
-                reset_energy_callback=lambda: None,
-            )
-            survival_total += reward
-
-        progress = self._production_calculator()
-        outpost_reward, _, _ = progress.calculate(
-            agent_pos=progress.outpost_coords[0],  # discover an outpost
-            terrain_energy=2.0,
-            episode_step=1,
-            agent_energy_spent=1.0,
-            algorithmic_best_energy=40.0,
-            reset_energy_callback=lambda: None,
-        )
-
-        assert survival_total < 0.0
-        assert outpost_reward > survival_total
+@pytest.mark.parametrize(
+    "field,value",
+    [("penalty_per_step", 1), ("shaping_weight", -1), ("completion_reward", float("inf"))],
+)
+def test_invalid_weights_rejected(field, value):
+    with pytest.raises(ValueError):
+        RewardConfig(**{field: value})

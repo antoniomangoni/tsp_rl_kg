@@ -12,16 +12,18 @@ from tsp_rl_kg.rl.encoders import HybridEncoder
 
 MAX_NODES = 8
 MAX_EDGES = 12
-NUM_NODE_FEATURES = 4
+NUM_NODE_FEATURES = 9
 NUM_EDGE_FEATURES = 2
-VISION_SHAPE = (3, 32, 32)
-SMALL_VISION_SHAPE = (3, 12, 12)
+VISION_SHAPE = (15, 5, 5)
+SMALL_VISION_SHAPE = (15, 1, 1)
 BATCH_SIZE = 2
 
 
 def _make_observation_space(vision_shape: tuple[int, int, int] = VISION_SHAPE) -> gym.spaces.Dict:
     return gym.spaces.Dict(
         {
+            "status": gym.spaces.Box(0, 1, shape=(11,), dtype=np.float32),
+            "path_queries": gym.spaces.Box(-1, 1, shape=(3, 6), dtype=np.float32),
             "num_nodes": gym.spaces.Box(1, MAX_NODES, shape=(1,), dtype=np.int64),
             "num_edges": gym.spaces.Box(0, MAX_EDGES, shape=(1,), dtype=np.int64),
             "vision": gym.spaces.Box(low=0.0, high=1.0, shape=vision_shape, dtype=np.float32),
@@ -51,7 +53,9 @@ def _make_observations(
     vision_shape: tuple[int, int, int] = VISION_SHAPE,
 ) -> dict[str, torch.Tensor]:
     generator = torch.Generator().manual_seed(42)
-    return {
+    observations = {
+        "status": torch.zeros(BATCH_SIZE, 11),
+        "path_queries": torch.zeros(BATCH_SIZE, 3, 6),
         "num_nodes": torch.full((BATCH_SIZE, 1), MAX_NODES),
         "num_edges": torch.full((BATCH_SIZE, 1), MAX_EDGES),
         "vision": torch.rand((BATCH_SIZE, *vision_shape), generator=generator),
@@ -70,6 +74,10 @@ def _make_observations(
             generator=generator,
         ),
     }
+
+    observations["node_features"][:, :, -3] = 0
+    observations["node_features"][:, 0, -3] = 1
+    return observations
 
 
 def test_hybrid_encoder_core_output_shape():

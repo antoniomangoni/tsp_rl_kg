@@ -1,5 +1,3 @@
-from typing import Any
-
 import numpy as np
 import torch.nn as nn
 from loguru import logger
@@ -31,35 +29,15 @@ class CurriculumCallback(BaseCallback):
         )  # Use unwrapped to access num_envs
 
     def _on_step(self) -> bool:
-        # Update action counts based on the actions taken
-        actions = self.locals["actions"]
-        if isinstance(actions, np.ndarray):
-            self.action_counts += np.bincount(actions, minlength=len(self.action_counts))
-        else:
-            self.action_counts[actions] += 1
-
-        if self.n_calls % self.step_interval == 0:
-            logger.info(f"Step {self.n_calls}")
-
-            training_env: Any = self.training_env
-            env: Any = training_env.envs[0] if hasattr(training_env, "envs") else training_env
-            unwrapped_env: Any = env.unwrapped
-
-            decision = self.controller.on_step(
-                self.n_calls,
-                unwrapped_env,
-                self.action_counts.tolist(),
-            )
-
-            self.action_counts = np.zeros(len(self.action_counts), dtype=int)
-
-            if decision.should_stop:
-                self.should_stop = True
-                return False
-
-            if self.n_calls % self.print_weight_stats_freq == 0:
-                self.print_weight_statistics()
-
+        # SB3 infos retain terminal records even though vector environments auto-reset.
+        for worker, (done, info) in enumerate(
+            zip(self.locals["dones"], self.locals["infos"], strict=False)
+        ):
+            if done and "episode_record" in info:
+                record = dict(info["episode_record"], worker=worker)
+                self.controller.on_episode(self.num_timesteps, record)
+        if self.n_calls % self.print_weight_stats_freq == 0:
+            self.print_weight_statistics()
         return True
 
     def print_weight_statistics(self):

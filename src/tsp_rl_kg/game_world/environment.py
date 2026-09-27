@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 import pygame
 from loguru import logger
@@ -46,7 +44,9 @@ class Environment:
         number_of_outposts: int = 3,
         headless: bool = False,
         template=None,
+        rng=None,
     ):
+        self.rng = rng if rng is not None else np.random.default_rng()
         self.headless = headless
 
         self.heightmap = heightmap
@@ -113,23 +113,26 @@ class Environment:
         self.environment_changed_flag = False
         self.changed_tiles: set[tuple[int, int]] = set()
 
+    def _choice(self, values):
+        return values[int(self.rng.integers(len(values)))]
+
     def get_random_zero_coordinate(self):
         zero_coords = np.argwhere(self.entity_index_grid == 0)
         if zero_coords.size == 0:
             non_five_coords = np.argwhere(self.entity_index_grid != 5)
             if non_five_coords.size == 0:
                 return None  # No available coordinates
-            coord = random.choice(non_five_coords)
+            coord = self._choice(non_five_coords)
             entity = self.terrain_object_grid[coord[0], coord[1]].entity_on_tile
             if entity:
                 self.delete_entity(entity)
             return coord.tolist()
-        return random.choice(zero_coords).tolist()
+        return self._choice(zero_coords).tolist()
 
     def get_random_less_suitable_location(self):
         keys = list(self.less_suitable_terrain_locations.keys())
-        key = random.choice(keys)
-        return random.choice(self.less_suitable_terrain_locations[key])
+        key = self._choice(keys)
+        return self._choice(self.less_suitable_terrain_locations[key])
 
     def get_terrain_colour_map(self):
         terrain = Terrain(0, 0, self.tile_size, 0, headless=self.headless)
@@ -156,7 +159,7 @@ class Environment:
                 raise ValueError(f"Invalid terrain code: {terrain_code}")
 
     def init_entity(self, terrain, x, y):
-        if random.random() < terrain.entity_prob:
+        if self.rng.random() < terrain.entity_prob:
             entity_type = terrain.entity_type
             entity = entity_type(x, y, self.tile_size, headless=self.headless)
             self.entity_group.add(entity)
@@ -190,9 +193,14 @@ class Environment:
                 self.suitable_terrain_locations["Mountains"]
                 + self.suitable_terrain_locations["Snow"]
             )
-        selected_locations = random.sample(
-            possible_locations, min(len(possible_locations), self.number_of_outposts)
-        )
+        selected_locations = [
+            possible_locations[i]
+            for i in self.rng.choice(
+                len(possible_locations),
+                min(len(possible_locations), self.number_of_outposts),
+                replace=False,
+            )
+        ]
 
         for x, y in selected_locations:
             outpost = Outpost(x, y, self.tile_size, headless=self.headless)
@@ -231,7 +239,7 @@ class Environment:
             )
             > 0
         ):
-            location = random.choice(
+            location = self._choice(
                 self.suitable_terrain_locations["Plains"] + self.suitable_terrain_locations["Hills"]
             )
         elif (
@@ -241,7 +249,7 @@ class Environment:
             )
             > 0
         ):
-            location = random.choice(
+            location = self._choice(
                 self.suitable_terrain_locations["Mountains"]
                 + self.suitable_terrain_locations["Snow"]
             )

@@ -96,9 +96,4 @@ def graph_manager() -> Graph_Manager:
 
 @pytest.fixture
 def reward_calculator(sample_reward_config: RewardConfig) -> RewardCalculator:
-    outpost_coords = [(1, 1), (3, 3), (4, 0)]
-    return RewardCalculator(
-        config=sample_reward_config,
-        outpost_coords=outpost_coords,
-        max_episode_steps=1000,
-    )
+    return RewardCalculator(config=sample_reward_config)

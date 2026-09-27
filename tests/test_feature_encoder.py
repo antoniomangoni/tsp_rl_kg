@@ -281,14 +281,16 @@ def test_graph_encoder_accepts_embedding_lookup_dimension(tmp_path):
 
     feature_encoder = EmbeddingLookupEncoder(embedding_path, schema_path)
     graph_encoder = GraphEncoder(
-        num_graph_node_features=feature_encoder.node_dim,
+        num_graph_node_features=feature_encoder.node_dim + 5,
         graph_params={"num_gat_layers": 2, "gat_heads": [2, 2], "fc_dims": [32]},
         output_dim=16,
         gat_hidden_dim=8,
         num_edge_features=feature_encoder.edge_dim,
     )
 
-    x = torch.rand((6, feature_encoder.node_dim))
+    x = torch.rand((6, feature_encoder.node_dim + 5))
+    x[:, -3] = 0
+    x[0, -3] = 1
     edge_index = torch.tensor(
         [[0, 1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 0]],
         dtype=torch.long,

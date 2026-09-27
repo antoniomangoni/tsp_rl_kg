@@ -1,201 +1,153 @@
+"""Closed-tour navigation with separate task, sensed, and prior-knowledge state."""
+
+from dataclasses import replace
+
 import gymnasium as gym
 import numpy as np
-from loguru import logger
-from torch_geometric.data import Data
+import torch
 
 from tsp_rl_kg.config import (
     AblationConfig,
+    CurriculumConfig,
     EpisodeConfig,
     GameManagerConfig,
     ModelArgs,
     RewardConfig,
     SimulationManagerConfig,
 )
-from tsp_rl_kg.game_world.agent import Agent
 from tsp_rl_kg.knowledge.state import validate_completeness
 from tsp_rl_kg.observation.encoder import PaddedPyGObservationEncoder
-from tsp_rl_kg.observation.semantic_vision import render_semantic_vision
-from tsp_rl_kg.rl.reward import RewardCalculator, manhattan_distance
+from tsp_rl_kg.observation.semantic_vision import compact_semantic_vision
+from tsp_rl_kg.rl.episode import EpisodeState, efficiency, sensing_memory
+from tsp_rl_kg.rl.pathfinding import remembered_grid, shortest_paths
+from tsp_rl_kg.rl.reward import RewardCalculator, RewardTransition
 from tsp_rl_kg.rl.simulation_manager import SimulationManager
+
+
+def typed(value, cls):
+    return cls(**value) if isinstance(value, dict) else value or cls()
 
 
 class CustomEnv(gym.Env):
     def __init__(
         self,
-        game_manager_args: GameManagerConfig | dict,
-        simulation_manager_args: SimulationManagerConfig | dict,
-        model_args: ModelArgs | dict,
+        game_manager_args,
+        simulation_manager_args,
+        model_args,
         feature_encoder=None,
         plot=False,
-        episode_config: EpisodeConfig | None = None,
-        game_managers: list | None = None,
-        ablation_config: AblationConfig | None = None,
-        kg_completeness: float = 0.5,
-        seed: int = 0,
-        evaluation: bool = False,
+        episode_config=None,
+        game_managers=None,
+        ablation_config=None,
+        kg_completeness=0.5,
+        seed=0,
+        evaluation=False,
+        reward_config=None,
+        curriculum_config=None,
+        gamma=0.99,
+        world_seed=None,
     ):
-        super(CustomEnv, self).__init__()
+        super().__init__()
         super().reset(seed=seed)
-        logger.info("Initializing CustomEnv")
-
-        self._ablation_config = ablation_config if ablation_config is not None else AblationConfig()
-
-        # Normalize to typed configs
-        if isinstance(game_manager_args, dict):
-            gm_dict = {
-                k: v
-                for k, v in game_manager_args.items()
-                if k in GameManagerConfig.__dataclass_fields__
-            }
-            gm_dict.setdefault("headless", True)
-            self._gm_config = GameManagerConfig(**gm_dict)
-        else:
-            self._gm_config = game_manager_args
-
-        if not self._gm_config.headless:
-            logger.warning(
-                "CustomEnv created with headless=False - training will require a display server."
-            )
-
-        if isinstance(simulation_manager_args, dict):
-            self._sim_config = SimulationManagerConfig(
-                **{
-                    k: v
-                    for k, v in simulation_manager_args.items()
-                    if k in SimulationManagerConfig.__dataclass_fields__
-                }
-            )
-        else:
-            self._sim_config = simulation_manager_args
-
-        if isinstance(model_args, dict):
-            self._model_args = ModelArgs(
-                **{k: v for k, v in model_args.items() if k in ModelArgs.__dataclass_fields__}
-            )
-        else:
-            self._model_args = model_args
-
-        # Reward system
-        self._reward_config = RewardConfig()
-        self._reward_calculator: RewardCalculator | None = None  # created after first game set
-
-        # Episode limits
-        if episode_config is None:
-            episode_config = EpisodeConfig()
-        self._episode_config = episode_config
-
-        self.agent_steps = 0
-        self.current_reward = 0
-        self.game_worlds_trained_in = 0
-        self.max_game_worlds_trained_in = min(
-            self._episode_config.max_game_worlds_trained_in,
-            self._sim_config.number_of_environments // 2,
-        )
-
+        self._gm_config = typed(game_manager_args, GameManagerConfig)
+        self._sim_config = typed(simulation_manager_args, SimulationManagerConfig)
+        self._model_args = typed(model_args, ModelArgs)
+        self._episode_config = typed(episode_config, EpisodeConfig)
+        self._ablation_config = typed(ablation_config, AblationConfig)
+        self._reward_config = typed(reward_config, RewardConfig)
+        self._seed = seed
+        self.kg_completeness = validate_completeness(kg_completeness)
+        self.evaluation = evaluation
         self.num_actions = self._model_args.num_actions
         self.num_tiles = self._gm_config.num_tiles
         self.screen_size = self._gm_config.screen_size
-        self.kg_completeness = validate_completeness(kg_completeness)
-        self._seed = seed
-        self.evaluation = evaluation
-        self.early_stop = False
+        self.vision_range = self._gm_config.vision_range
+        self.max_episode_steps = self._episode_config.max_episode_steps
+        self.max_steps_without_progress = self._episode_config.max_steps_without_progress
         self.training_complete = False
         self._pending_curriculum = False
-        self.vision_range = self._gm_config.vision_range
-        self.step_count = 0
-        self.max_episode_steps = self._episode_config.max_episode_steps
-
-        # Progress tracking is initialised before the first game manager so reward setup
-        # can safely depend on episode limits.
-        self.steps_without_progress = 0
-        self.max_steps_without_progress = self._episode_config.max_steps_without_progress
-        self.best_distance_to_unvisited = float("inf")
-        self.episode_step = 0
-        self.total_reward = 0
-
         self.simulation_manager = SimulationManager(
             self._gm_config,
             sim_config=self._sim_config,
             plot=plot,
             feature_encoder=feature_encoder,
             game_managers=game_managers,
+            curriculum_config=curriculum_config or CurriculumConfig(),
+            rng=np.random.default_rng(seed if world_seed is None else world_seed),
         )
-
-        self.current_game_index = self.simulation_manager.curriculum_indices[
-            0
-        ]  # Start with the first curriculum
+        # Starting outpost depends on the world/run seed, never on completeness.
+        for gm in self.simulation_manager.game_managers:
+            template = gm.world_template
+            rng = np.random.default_rng(
+                np.random.SeedSequence([seed, int(template.terrain_fingerprint[:8], 16)])
+            )
+            spawn = template.outposts[int(rng.integers(len(template.outposts)))]
+            gm.world_template = replace(template, spawn=spawn)
+        self._reward_calculator = RewardCalculator(
+            self._reward_config,
+            gamma=gamma,
+            disabled_components=self._ablation_config.disable_reward_components,
+        )
+        self.current_game_index = 0
         self.set_current_game_manager()
-
         self.max_nodes = self.kg.graph_manager.max_nodes
         self.max_edges = self.kg.graph_manager.max_edges
-
-        self.vision_pixel_side_size = (2 * self.vision_range + 1) * max(
-            2, self.current_gm.tile_size
-        )
-        vision_shape = (3, self.vision_pixel_side_size, self.vision_pixel_side_size)
-
         self.encoder = PaddedPyGObservationEncoder(
-            max_nodes=self.max_nodes,
-            max_edges=self.max_edges,
-            num_node_features=self.kg.graph.num_node_features,
-            num_edge_features=self.kg.graph.num_edge_features,
-            vision_shape=vision_shape,
+            self.max_nodes,
+            self.max_edges,
+            self.kg.graph.num_node_features + 5,
+            self.kg.graph.num_edge_features + 2,
+            (15, 2 * self.vision_range + 1, 2 * self.vision_range + 1),
+            status_dim=2 * len(self.outpost_coords) + 5,
+            num_outposts=len(self.outpost_coords),
         )
         self.observation_space = self.encoder.observation_space()
-
-        self.action_space = gym.spaces.Discrete(self.num_actions)
-        logger.info("CustomEnv initialized successfully")
+        self.action_space = gym.spaces.Discrete(self.num_actions, seed=seed)
 
     def set_kg_completeness(self, completeness):
-        logger.info(f"Setting KG completeness to {completeness} using SimulationManager")
         self.kg_completeness = validate_completeness(completeness)
 
     def set_current_game_manager(self):
-        logger.info(f"Setting current game manager to index {self.current_game_index}")
-
         self.current_gm = self.simulation_manager.game_managers[self.current_game_index]
         self.current_gm.start_game(
             self.kg_completeness, seed=self._seed, record=False, restore=True
         )
         self.environment = self.current_gm.environment
-        self.agent_controler: Agent = self.current_gm.agent_controler
+        self.agent_controler = self.current_gm.agent_controler
         self.agent_controler.reset_agent()
         self.kg = self.current_gm.kg_class
-        self.outpost_coords = self.environment.outpost_locations
+        self.outpost_coords = tuple(self.environment.outpost_locations)
+        start = self.current_gm.world_template.spawn
+        self.episode = EpisodeState(self.outpost_coords, start)
+        self.sensed = sensing_memory(self.environment, self._seed, self.current_gm.world_template)
+        self.sensed.observe(self.environment, self.kg.visible_tiles)
+        self.episode.best_distance = self.episode.distance(self.sensed, start)
+        self.total_reward = 0.0
+        self.early_stop = False
 
-        # (Re)initialise reward calculator for this game world
-        if self._reward_calculator is None:
-            self._reward_calculator = RewardCalculator(
-                self._reward_config,
-                list(self.outpost_coords),
-                self.max_episode_steps,
-                disabled_components=list(self._ablation_config.disable_reward_components),
-            )
-        else:
-            self._reward_calculator.reset_game(list(self.outpost_coords))
-        logger.info("Current game manager set successfully")
+    @property
+    def episode_step(self):
+        return self.episode.steps
+
+    @property
+    def steps_without_progress(self):
+        return self.episode.no_progress
+
+    @property
+    def best_distance_to_unvisited(self):
+        return self.episode.best_distance
 
     def begin_evaluation(self):
         self.current_game_index = -1
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        logger.info("Resetting environment")
-        self.episode_step = 0
-        self.total_reward = 0
-        self.early_stop = False
-        self.step_count = 0
-        self.steps_without_progress = 0
-        self.best_distance_to_unvisited = float("inf")
-
         if seed is not None:
             self._seed = seed
             self.current_game_index = -1
             self.action_space.seed(seed)
-
-        # Update the game manager
         if self._pending_curriculum and not self.evaluation:
-            self.training_complete = self.simulation_manager.advance_curriculum() < 0
+            self.simulation_manager.advance_curriculum()
             self._pending_curriculum = False
         if options and "world_index" in options:
             self.current_game_index = int(options["world_index"])
@@ -206,164 +158,153 @@ class CustomEnv(gym.Env):
                 self.current_game_index + 1
             ) % self.simulation_manager.number_of_environments
         elif self._ablation_config.disable_curriculum:
-            self.current_game_index = self.np_random.integers(
-                0, self.simulation_manager.number_of_environments
+            self.current_game_index = int(
+                self.np_random.integers(self.simulation_manager.number_of_environments)
             )
         else:
             self.current_game_index = self.simulation_manager.get_next_game_in_curriculum(
                 self.current_game_index
             )
-        if self.current_game_index >= self.simulation_manager.number_of_environments:
-            self.early_stop = True
-            logger.info("All environments completed. Ending simulation.")
-            return self._get_observation(), {}
         self.set_current_game_manager()
-
-        observation = self._get_observation()
-
-        assert self.observation_space["vision"].contains(observation["vision"]), (
-            f"Vision data out of bounds: "
-            f"min={observation['vision'].min()}, "
-            f"max={observation['vision'].max()}"
-        )
-
-        return observation, {}  # Return observation and an empty info dict
-
-    def _calculate_reward(self) -> tuple[float, bool, bool]:
-        agent_pos = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        terrain_energy = self.current_gm.target_manager.energy_req_grid[agent_pos]
-        agent_energy_spent = self.agent_controler.energy_spent
-        algorithmic_best_energy = self.current_gm.target_manager.target_route_energy
-
-        reward, early_stop, all_visited = self._reward_calculator.calculate(
-            agent_pos=agent_pos,
-            terrain_energy=terrain_energy,
-            episode_step=self.episode_step,
-            agent_energy_spent=agent_energy_spent,
-            algorithmic_best_energy=algorithmic_best_energy,
-            reset_energy_callback=self.agent_controler.reset_energy_spent,
-        )
-        return reward, early_stop, all_visited
-
-    def get_episode_performance(self):
-        return self.total_reward
+        return self._get_observation(), {}
 
     def step(self, action):
-        self.episode_step += 1
-
-        # Convert action to integer if it's a numpy array
-        if isinstance(action, np.ndarray):
-            action = action.item()
-
-        prev_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        self.agent_controler.agent_action(action)
-        new_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-
-        self.current_gm.rerender()
-        reward, early_stop, all_visited = self._calculate_reward()
-        if early_stop:
-            self.early_stop = True
-        self.total_reward += reward
-
-        # Check termination conditions
-        terminated = self._check_termination()
-        truncated = self.episode_step >= self.max_episode_steps
-
-        # Determine if the episode was successful (all outposts visited)
-        success = all_visited
-
-        if (terminated or truncated) and not self.evaluation:
-            self.simulation_manager.add_episode_performance(self.total_reward, success)
-            if not self._ablation_config.disable_curriculum:
-                self._pending_curriculum = self.simulation_manager.should_advance_curriculum()
-
-        observation = self._get_observation()
-        info = {
-            "episode_step": self.episode_step,
-            "prev_position": prev_position,
-            "new_position": new_position,
-            "energy_spent": self.agent_controler.energy_spent,
-            "outposts_visited": len(self._reward_calculator.outposts_visited),
-            "total_reward": self.total_reward,
-            "kg_completeness": self.kg_completeness,
-            "known_tile_fraction": self.kg.state.known_fraction,
-        }
-
-        logger.debug(
-            f"Step complete. Reward: {reward}, "
-            f"Total Reward: {self.total_reward}, "
-            f"Terminated: {terminated}, "
-            f"Truncated: {truncated}, Info: {info}"
+        if self.episode.done:
+            raise RuntimeError("Episode is complete; call reset before step")
+        action = int(np.asarray(action).item())
+        if not self.action_space.contains(action):
+            raise ValueError("Invalid action")
+        agent = self.agent_controler
+        previous = (agent.agent.grid_x, agent.agent.grid_y)
+        phi_before = self.episode.potential(self.sensed, previous)
+        energy_before = agent.energy_spent
+        known_before = self.sensed.known_tiles.sum()
+        agent.agent_action(action)
+        position = (agent.agent.grid_x, agent.agent.grid_y)
+        self.sensed.observe(self.environment, self.kg.visible_tiles)
+        new_visit = self.episode.update(
+            position,
+            agent.energy_spent,
+            action,
+            self.sensed.known_tiles.sum() > known_before,
+            self.sensed,
         )
-
-        if terminated or truncated:
-            visited = len(self._reward_calculator.outposts_visited)
-            total = len(self.outpost_coords)
-            logger.info(
-                f"Episode ended. Total steps: {self.episode_step}, "
-                f"Total reward: {self.total_reward}, "
-                f"Outposts visited: {visited}/{total}"
+        terminated = self.episode.success
+        truncated = not terminated and (
+            self.episode.steps >= self.max_episode_steps
+            or self.episode.no_progress >= self.max_steps_without_progress
+        )
+        self.episode.done = terminated or truncated
+        reward = self._reward_calculator.calculate(
+            RewardTransition(
+                agent.energy_spent - energy_before,
+                self.episode.energy,
+                self.current_gm.target_manager.target_route_energy,
+                new_visit,
+                terminated,
+                phi_before,
+                self.episode.potential(self.sensed, position),
             )
-
-        return observation, reward, terminated, truncated, info
-
-    def _check_termination(self):
-        # Check if all outposts are visited
-        if self.early_stop:
-            logger.info("Early stop condition reached. Terminating episode.")
-            return True
-
-        # Check for no progress
-        current_position = (self.agent_controler.agent.grid_x, self.agent_controler.agent.grid_y)
-        unvisited_outposts = set(self.outpost_coords) - self._reward_calculator.outposts_visited
-        if unvisited_outposts:
-            current_min_distance = min(
-                manhattan_distance(current_position, outpost) for outpost in unvisited_outposts
-            )
-
-            if current_min_distance < self.best_distance_to_unvisited:
-                self.best_distance_to_unvisited = current_min_distance
-                self.steps_without_progress = 0
-            else:
-                self.steps_without_progress += 1
-
-            if self.steps_without_progress >= self.max_steps_without_progress:
-                logger.info(
-                    f"No progress made for "
-                    f"{self.max_steps_without_progress} steps. "
-                    f"Terminating episode."
+        )
+        self.total_reward += reward
+        info = self.get_metrics()
+        info.update(prev_position=previous, new_position=position)
+        if self.episode.done:
+            reason = (
+                "success"
+                if terminated
+                else (
+                    "step_limit" if self.episode.steps >= self.max_episode_steps else "no_progress"
                 )
-                return True
-
-        return False
+            )
+            info["termination_reason"] = reason
+            info["episode_record"] = dict(info)
+            if not self.evaluation:
+                self.simulation_manager.add_episode_performance(info["efficiency"], terminated)
+                if not self._ablation_config.disable_curriculum:
+                    self._pending_curriculum = self.simulation_manager.should_advance_curriculum()
+        self.current_gm.rerender()
+        return self._get_observation(), reward, terminated, truncated, info
 
     def _get_observation(self):
-        logger.debug("Getting observation")
-        vision = self._get_vision()
-        subgraph: Data = self.current_gm.kg_class.get_subgraph()
-        logger.debug("Observation retrieved")
-        return self.encoder.encode(subgraph, vision)
+        graph = self.kg.get_subgraph()
+        ids = graph.world_node_ids.cpu().numpy()
+        coords = self.kg.node_coordinates[ids]
+        levels = self.kg.node_levels[ids]
+        position = np.array(self.kg.player_pos)
+        extra = np.zeros((len(ids), 5), dtype=np.float32)
+        extra[:, :2] = (coords - position) / max(1, self.num_tiles - 1)
+        extra[:, 2] = levels == self.kg.player_z_level
+        for i, (coord, level) in enumerate(zip(coords, levels, strict=False)):
+            p = tuple(coord)
+            if level == self.kg.entity_z_level and self.kg.state.entities[p] == 5:
+                extra[i, 3] = p in self.episode.visited
+                extra[i, 4] = p == self.episode.start
+        graph.x = torch.cat([graph.x, torch.from_numpy(extra)], dim=1)
+        source, dest = graph.edge_index.numpy()
+        directions = coords[dest] - coords[source]
+        graph.edge_attr = torch.cat(
+            [graph.edge_attr, torch.tensor(directions, dtype=torch.float32)], dim=1
+        )
+        return self.encoder.encode(
+            graph,
+            self._get_vision(),
+            self.episode.status(self.agent_controler, self._episode_config),
+            self.path_queries(),
+        )
+
+    def path_queries(self):
+        queries = np.zeros((len(self.outpost_coords), 6), dtype=np.float32)
+        memory = self.kg.state
+        costs, passable = remembered_grid(memory)
+        distances, _ = shortest_paths(costs, passable, self.kg.player_pos)
+        for i, p in enumerate(self.outpost_coords):
+            if not memory.known_tiles[p] or memory.entities[p] != 5:
+                continue
+            reachable = np.isfinite(distances[p])
+            queries[i] = [
+                1,
+                reachable,
+                p in self.episode.visited,
+                (p[0] - self.kg.player_pos[0]) / max(1, self.num_tiles - 1),
+                (p[1] - self.kg.player_pos[1]) / max(1, self.num_tiles - 1),
+                distances[p] / (12 * self.num_tiles**2) if reachable else 0,
+            ]
+        return queries
 
     def _get_vision(self):
-        return render_semantic_vision(self.environment, self.vision_range, self.kg.visible_tiles)
+        return compact_semantic_vision(self.environment, self.vision_range, self.kg.visible_tiles)
 
     def _get_vision_headless(self):
         return self._get_vision()
 
-    def close(self):
-        self.current_gm.end_game()
+    def get_episode_performance(self):
+        return self.total_reward
 
     def get_metrics(self):
-        rc = self._reward_calculator
-        return {
-            "performance": self.get_episode_performance(),
-            "known_tile_fraction": self.kg.state.known_fraction,
-            "game_manager_index": self.current_game_index,
-            "best_route_energy": rc.best_route_energy if np.isfinite(rc.best_route_energy) else 0.0,
-            "best_route_found": bool(np.isfinite(rc.best_route_energy)),
-            "curriculum_level": self.simulation_manager.current_curriculum_index,
-            "target_route_energy": self.current_gm.target_manager.target_route_energy,
-            "best_efficiency": rc.best_efficiency,
-            "improvement": rc.improvement,
-            "gap": rc.gap,
-        }
+        energy = self.current_gm.target_manager.target_route_energy
+        ratio = efficiency(energy, self.episode.energy) if self.episode.success else 0.0
+        return dict(
+            performance=self.total_reward,
+            total_reward=self.total_reward,
+            episode_step=self.episode.steps,
+            energy_spent=self.episode.energy,
+            success=self.episode.success,
+            is_success=self.episode.success,
+            laps=int(self.episode.success),
+            efficiency=ratio,
+            best_efficiency=ratio,
+            best_route_energy=self.episode.energy if self.episode.success else 0.0,
+            best_route_found=self.episode.success,
+            target_route_energy=energy,
+            outposts_visited=len(self.episode.visited),
+            known_tile_fraction=self.kg.state.known_fraction,
+            kg_completeness=self.kg_completeness,
+            action_counts=self.episode.action_counts.tolist(),
+            game_manager_index=self.current_game_index,
+            curriculum_level=self.simulation_manager.current_curriculum_index,
+            world_id=self.current_gm.world_template.fingerprint,
+        )
+
+    def close(self):
+        self.current_gm.end_game()

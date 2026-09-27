@@ -47,6 +47,9 @@ class KnowledgeGraph:
         self.graph, self.graph_manager = self.constitution.build(
             remembered, self.player_pos, self.state.known_tiles, self.feature_encoder
         )
+        ordered = [self.graph_manager.nodeIdx_id_dict[i] for i in range(self.graph.num_nodes)]
+        self.node_coordinates = np.array([coords for coords, _ in ordered])
+        self.node_levels = np.array([level for _, level in ordered])
         self.num_possible_nodes = self.graph.num_nodes
         self.num_possible_edges = self.graph.num_edges
 
@@ -87,6 +90,7 @@ class KnowledgeGraph:
 
     def move_player_node(self, x, y):
         gm = self.graph_manager
+        self.node_coordinates[gm.player_idx] = (x, y)
         self.graph.x[gm.player_idx] = self.feature_encoder.encode_player()
         terrain_idx = gm.get_node_idx((x, y), self.terrain_z_level)
         self.graph.edge_index[:, gm.player_edge_direct_idx] = torch.tensor(
@@ -99,15 +103,15 @@ class KnowledgeGraph:
         self.graph.edge_attr[gm.player_edge_direct_idx] = attr
         self.graph.edge_attr[gm.player_edge_reverse_idx] = attr
         gm.rewire_player_edge(terrain_idx)
-        self.sense()
 
     def get_subgraph(self):
-        selected = [self.graph_manager.player_idx]
-        for idx in range(self.graph.num_nodes):
-            coords, level = self.graph_manager.nodeIdx_id_dict[idx]
-            if level != self.player_z_level and self.state.known_tiles[coords]:
-                selected.append(idx)
-        selected = torch.tensor(sorted(selected), dtype=torch.long)
+        x, y = self.node_coordinates.T
+        known = self.state.known_tiles[x, y]
+        real = (self.node_levels != self.entity_z_level) | (self.state.entities[x, y] != 0)
+        selected = torch.as_tensor(
+            np.flatnonzero((known & real) | (self.node_levels == self.player_z_level)),
+            dtype=torch.long,
+        )
         edges, attrs = subgraph(
             selected,
             self.graph.edge_index.long(),

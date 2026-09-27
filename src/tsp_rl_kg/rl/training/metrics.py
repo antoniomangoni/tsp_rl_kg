@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -17,6 +18,7 @@ CANONICAL_METRIC_KEYS = (
 
 class TrainingMetrics:
     def __init__(self, num_actions):
+        self.episode_records = []
         self.steps = []
         self.performances = []
         self.game_manager_indices = []
@@ -31,6 +33,7 @@ class TrainingMetrics:
         self.action_counts = [[] for _ in range(num_actions)]
 
     def record(self, step, metrics: dict):
+        self.episode_records.append(dict(step=int(step), **metrics))
         action_counts = metrics.get("action_counts", [0] * self.num_actions)
         padded_action_counts = [int(count) for count in action_counts[: self.num_actions]]
         if len(padded_action_counts) < self.num_actions:
@@ -110,4 +113,7 @@ class TrainingMetrics:
             )
 
         df.to_csv(output_path, index=False)
+        output_path.with_suffix(".episodes.json").write_text(
+            json.dumps(self.episode_records, indent=2)
+        )
         return str(output_path)

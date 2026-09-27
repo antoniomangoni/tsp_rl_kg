@@ -4,17 +4,27 @@ import os
 import pstats
 import random
 from enum import Enum
+from functools import partial
+from pathlib import Path
 
 import mlflow
 import numpy as np
 import torch
 from loguru import logger
+from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from tsp_rl_kg.config import TrainingConfig
 from tsp_rl_kg.graph.feature_encoder import build_feature_encoder
 from tsp_rl_kg.rl.custom_env import CustomEnv
 from tsp_rl_kg.rl.training.environment_manager import EnvironmentManager
 from tsp_rl_kg.rl.training.model_trainer import ModelTrainer
+
+
+def make_worker(manager, worker):
+    return Monitor(
+        manager.make_env(worker=worker), info_keywords=("is_success", "laps", "efficiency")
+    )
 
 
 class Trainer:
@@ -44,7 +54,7 @@ class Trainer:
         if self._closed:
             return
         self._closed = True
-        for name in ("env", "eval_env"):
+        for name in ("training_env", "env", "eval_env", "test_env"):
             env = getattr(self, name, None)
             if env is not None:
                 try:
@@ -68,6 +78,7 @@ class Trainer:
         agent_model_config = config.agent_model
         agent_model_config.disable_vision = config.ablation.disable_vision
         agent_model_config.disable_graph = config.ablation.disable_graph
+        agent_model_config.use_path_queries = config.ablation.use_path_queries
 
         self.feature_encoder = self._feature_encoder_override
         if self.feature_encoder is None:
@@ -85,31 +96,26 @@ class Trainer:
             ablation_config=config.ablation,
             kg_completeness=self.current_kg_completeness,
             seed=seed or 0,
+            reward_config=config.reward,
+            curriculum_config=config.curriculum,
+            evaluation_config=config.evaluation,
+            gamma=float(config.algorithm.hyperparameters["gamma"]),
         )
 
         logger.info("Creating environment")
         self.env: CustomEnv = self.env_manager.make_env()
-        self.env.unwrapped.simulation_manager.min_episodes_per_curriculum = (
-            config.curriculum.min_episodes_per_curriculum
+        self.eval_env = self.env_manager.make_eval_env(self.env.simulation_manager.game_managers)
+        self.training_env = (
+            self.env
+            if config.n_envs == 1
+            else SubprocVecEnv(
+                [partial(make_worker, self.env_manager, i) for i in range(config.n_envs)],
+                start_method="spawn",
+            )
         )
-        self.env.unwrapped.simulation_manager.performance_threshold = (
-            config.curriculum.performance_threshold
-        )
-        logger.info("Environment created successfully")
-
-        logger.info("Creating evaluation environment")
-        train_game_managers = self.env.unwrapped.simulation_manager.game_managers
-        self.eval_env: CustomEnv = self.env_manager.make_eval_env(train_game_managers)
-        self.eval_env.unwrapped.simulation_manager.min_episodes_per_curriculum = (
-            config.curriculum.min_episodes_per_curriculum
-        )
-        self.eval_env.unwrapped.simulation_manager.performance_threshold = (
-            config.curriculum.performance_threshold
-        )
-        logger.info("Evaluation environment created successfully")
 
         self.model_trainer = ModelTrainer(
-            self.env,
+            self.training_env,
             self.eval_env,
             self.device,
             evaluation_config=config.evaluation,
@@ -163,6 +169,12 @@ class Trainer:
         experiment_dir = os.path.join(self.results_dir, experiment_name)
         os.makedirs(experiment_dir, exist_ok=True)
         self._log_run_context(experiment_name)
+        Path(experiment_dir, "manifests.json").write_text(
+            json.dumps(self.env_manager.manifest(), indent=2)
+        )
+        Path(experiment_dir, "resolved_config.json").write_text(
+            json.dumps(self.config.to_dict(), indent=2)
+        )
 
         profiler = cProfile.Profile()
         with profiler:
@@ -186,10 +198,22 @@ class Trainer:
             self.model_trainer.get_model_artifact_name(experiment_name),
         )
         model_path = self.model_trainer.save_model(model_path)
-        mean_reward, std_reward = self.model_trainer.evaluate_model(
-            self.eval_env,
-            n_eval_episodes=self.config.evaluation.n_eval_episodes,
+        self.test_env = self.env_manager.make_test_env()
+        evaluations = {}
+        for deterministic in (True, False):
+            label = "deterministic" if deterministic else "stochastic"
+            evaluations[label] = self.model_trainer.evaluator.evaluate(
+                self.model_trainer.backend,
+                self.test_env,
+                self.config.evaluation.final_eval_episodes,
+                deterministic=deterministic,
+            )
+        Path(experiment_dir, "final_evaluation.json").write_text(json.dumps(evaluations, indent=2))
+        Path(experiment_dir, "manifests.json").write_text(
+            json.dumps(self.env_manager.manifest(), indent=2)
         )
+        mean_reward = evaluations["deterministic"]["mean_reward"]
+        std_reward = evaluations["deterministic"]["std_reward"]
 
         for label, env in (("train", self.env), ("eval", self.eval_env)):
             env.simulation_manager.save_data(
@@ -203,6 +227,7 @@ class Trainer:
         logger.info("Training and evaluation completed.")
 
         return {
+            "evaluation": evaluations,
             "mean_reward": mean_reward,
             "std_reward": std_reward,
             "config": self.config.to_dict() if hasattr(self.config, "to_dict") else self.config,

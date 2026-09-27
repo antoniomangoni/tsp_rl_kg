@@ -26,6 +26,10 @@ class WorldTemplate:
         )
 
     @property
+    def terrain_fingerprint(self) -> str:
+        return hashlib.sha256(json.dumps(self.terrain).encode()).hexdigest()
+
+    @property
     def fingerprint(self) -> str:
         payload = (self.terrain, self.entities, self.spawn, self.outposts)
         return hashlib.sha256(json.dumps(payload, separators=(",", ":")).encode()).hexdigest()

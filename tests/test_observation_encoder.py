@@ -129,6 +129,8 @@ def test_observation_space_keys(encoder: PaddedPyGObservationEncoder):
         "node_features",
         "edge_attr",
         "edge_index",
+        "status",
+        "path_queries",
         "num_nodes",
         "num_edges",
     }

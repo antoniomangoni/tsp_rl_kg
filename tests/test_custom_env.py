@@ -157,5 +157,5 @@ def test_custom_env_observation_width_tracks_feature_encoder_node_dim(tmp_path):
         feature_encoder=feature_encoder,
     )
 
-    assert env.observation_space.spaces["node_features"].shape[1] == feature_encoder.node_dim
+    assert env.observation_space.spaces["node_features"].shape[1] == feature_encoder.node_dim + 5
     env.close()

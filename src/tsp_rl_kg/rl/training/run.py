@@ -42,7 +42,7 @@ app = typer.Typer(
 # Uncomment for windows
 # os.environ['PYGAME_DETECT_AVX2'] = '1'
 MIN_EPISODES_PER_CURRICULUM = 4
-DEFAULT_KG_COMPLETENESS_VALUES = [0.25, 0.5, 0.75, 1.0]
+DEFAULT_KG_COMPLETENESS_VALUES = [0, 0.25, 0.5, 0.75, 1.0]
 
 
 def build_base_config(
@@ -51,7 +51,7 @@ def build_base_config(
     algorithm_hyperparameters: dict[str, int | float | bool | str] | None = None,
     total_timesteps: int = 100_000,
     seeds: list[int] | None = None,
-    number_of_environments: int = 3_000,
+    number_of_environments: int = 150,
     number_of_curricula: int = 30,
 ) -> TrainingConfig:
     algorithm = AlgorithmName.from_value(algorithm)
@@ -59,7 +59,9 @@ def build_base_config(
         algorithm_hyperparameters = default_algorithm_hyperparameters(algorithm)
 
     return TrainingConfig(
-        game_manager=GameManagerConfig(num_tiles=5, screen_size=20, vision_range=1, headless=True),
+        game_manager=GameManagerConfig(
+            num_tiles=12, screen_size=480, vision_range=2, headless=True
+        ),
         simulation_manager=SimulationManagerConfig(
             number_of_environments=number_of_environments,
             number_of_curricula=number_of_curricula,
@@ -104,6 +106,8 @@ def _create_ablation_study_from_external_config(config_path: Path) -> dict[str, 
     if study_config is None:
         return {}
 
+    if study_config.get("research_protocol"):
+        raise ValueError("Use tsp-study CLI or the research driver for gated research configs")
     default_base_config = build_base_config()
     base_config_data = (
         find_mapping_section(
@@ -273,7 +277,28 @@ def cli(
     configure_logging(log_dir="logs", level=log_level.upper())
     if ctx.invoked_subcommand is None:
         try:
-            run_ablation_study(config_path=config)
+            external = _load_study_config(config) if config is not None else None
+            if external and external.get("research_protocol"):
+                from tsp_rl_kg.rl.training.research import COMPLETENESS, config_for, study
+
+                supplied = TrainingConfig.from_dict(external.get("base_config", {}))
+                expected = config_for("study", n_envs=supplied.n_envs)
+                expected.total_timesteps = 1_000_000  # pilot-resolved placeholder in the template
+                if (
+                    supplied.to_dict() != expected.to_dict()
+                    or external.get("kg_completeness_values") != COMPLETENESS
+                ):
+                    raise ValueError(
+                        "Gated research preset differs from config_for; "
+                        "rerun gates after changing the protocol"
+                    )
+                # Research settings are locked in config_for and gate artifacts.
+                study(
+                    Path(external.get("research_output", "results/research")),
+                    int(external.get("base_config", {}).get("n_envs", 8)),
+                )
+            else:
+                run_ablation_study(config_path=config)
         except Exception as exc:
             logger.error(f"An error occurred during the ablation study: {str(exc)}")
             logger.error(traceback.format_exc())

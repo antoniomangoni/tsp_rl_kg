@@ -1,5 +1,3 @@
-import random
-
 import noise
 import numpy as np
 
@@ -17,6 +15,7 @@ class HeightmapGenerator:
         octaves: int,
         persistence: float,
         lacunarity: float,
+        rng=None,
     ):
         self.width = width
         self.height = height
@@ -25,7 +24,9 @@ class HeightmapGenerator:
         self.octaves = octaves
         self.persistence = persistence
         self.lacunarity = lacunarity
-        self.seed = random.randint(0, 100)
+        self.rng = rng if rng is not None else np.random.default_rng()
+        self.seed = int(self.rng.integers(0, 256))
+        self.offset = self.rng.uniform(-10000, 10000, size=2)
 
     def save_heightmap(self, file_path: str):
         np.save(file_path, self.generate())
@@ -44,13 +45,11 @@ class HeightmapGenerator:
         for x in range(self.width):
             for y in range(self.height):
                 height = noise.pnoise2(
-                    x / self.scale,
-                    y / self.scale,
+                    x / self.scale + self.offset[0],
+                    y / self.scale + self.offset[1],
                     octaves=self.octaves,
                     persistence=self.persistence,
                     lacunarity=self.lacunarity,
-                    repeatx=self.width,
-                    repeaty=self.height,
                     base=self.seed,
                 )
                 height = (height + 1) / 2  # Normalize to [0, 1]
@@ -61,7 +60,10 @@ class HeightmapGenerator:
 
     def normalize_heightmap(self, heightmap: np.ndarray, min_val: float, max_val: float):
         heightmap -= min_val
-        heightmap /= max_val - min_val
+        if max_val > min_val:
+            heightmap /= max_val - min_val
+        else:
+            heightmap.fill(0.5)
 
     @time_function
     def classify_heightmap(self, heightmap: np.ndarray) -> np.ndarray:

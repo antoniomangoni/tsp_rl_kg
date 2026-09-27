@@ -14,6 +14,18 @@ class CurriculumService:
     def __init__(self, metrics_sink: MetricsSink):
         self.metrics_sink = metrics_sink
 
+    def on_episode(self, step, record):
+        self.metrics_sink.record(step, record)
+        if mlflow.active_run():
+            mlflow.log_metrics(
+                {
+                    f"training.{key}": float(record[key])
+                    for key in ("success", "efficiency", "energy_spent", "known_tile_fraction")
+                },
+                step=step,
+            )
+        return CurriculumDecision()
+
     def on_step(
         self,
         step: int,

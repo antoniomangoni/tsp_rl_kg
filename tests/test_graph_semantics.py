@@ -30,8 +30,8 @@ def test_projection_relabels_nonzero_original_ids():
     assert projected.edge_attr.tolist() == [[13], [14]]
 
 
-def make_encoder(max_nodes=8, max_edges=12):
-    observation = PaddedPyGObservationEncoder(max_nodes, max_edges, 2, 1, (3, 4, 4))
+def make_encoder(max_nodes=8, max_edges=12, disable_graph=False):
+    observation = PaddedPyGObservationEncoder(max_nodes, max_edges, 7, 1, (3, 4, 4))
     model = HybridEncoder(
         observation.observation_space(),
         features_dim=8,
@@ -44,6 +44,7 @@ def make_encoder(max_nodes=8, max_edges=12):
             graph_fc_dims=[8],
             gat_hidden_dim=4,
             dropout=0,
+            disable_graph=disable_graph,
         ),
     )
     model.eval()
@@ -60,6 +61,8 @@ def sample(encoder, n, zero_edges=False):
         ),
         edge_attr=torch.empty((0, 1)) if zero_edges else torch.tensor([[0.0], [1.0]]),
     )
+    graph.x = torch.cat([graph.x, torch.zeros((n, 5))], dim=1)
+    graph.x[0, -3] = 1
     return encoder.encode(graph, np.zeros((3, 4, 4), dtype=np.uint8))
 
 
@@ -144,7 +147,7 @@ def test_unseen_changes_stay_remembered_and_prior_does_not_discover(headless_env
 def test_unknown_tiles_are_absent_and_local_edges_are_valid(headless_environment):
     kg = KnowledgeGraph(headless_environment, 0, completion=0)
     graph = kg.get_subgraph()
-    assert graph.num_nodes == 3  # player, current terrain, current entity slot
+    assert graph.num_nodes == 2  # player and terrain; empty entity slots are pruned
     assert graph.edge_index.max() < graph.num_nodes
 
 
@@ -204,14 +207,11 @@ def test_vision_is_independent_of_completeness_and_display(headless_environment)
 
 
 def test_disabled_graph_is_not_executed():
-    encoder, model = make_encoder()
-    model.disable_graph = True
-
-    def fail(*args, **kwargs):
-        raise AssertionError("disabled branch ran")
-
-    model.graph_processor.forward = fail
-    model(stack([sample(encoder, 2)]))
+    encoder, model = make_encoder(disable_graph=True)
+    assert model.graph_processor is None
+    obs = stack([sample(encoder, 2)])
+    obs["node_features"].fill_(float("nan"))
+    assert torch.isfinite(model(obs)).all()
 
 
 def test_environment_reset_restores_same_world_and_observations(tmp_path, monkeypatch):
@@ -243,16 +243,16 @@ def test_environment_reset_restores_same_world_and_observations(tmp_path, monkey
 def test_observations_backpropagate_with_real_environment(headless_environment):
     from stable_baselines3.common.preprocessing import preprocess_obs
 
-    kg = KnowledgeGraph(headless_environment, 1, completion=0.25, feature_encoder=OneHotEncoder())
-    vision = render_semantic_vision(headless_environment, 1, kg.visible_tiles)
-    obs_encoder = PaddedPyGObservationEncoder(
-        kg.num_possible_nodes,
-        kg.num_possible_edges,
-        kg.graph.num_node_features,
-        kg.graph.num_edge_features,
-        vision.shape,
+    from tsp_rl_kg.config import GameManagerConfig, ModelArgs, SimulationManagerConfig
+    from tsp_rl_kg.rl.custom_env import CustomEnv
+
+    env = CustomEnv(
+        GameManagerConfig(num_tiles=5, headless=True),
+        SimulationManagerConfig(number_of_environments=1),
+        ModelArgs(),
     )
-    obs = obs_encoder.encode(kg.get_subgraph(), vision)
+    obs, _ = env.reset()
+    obs_encoder = env.encoder
     space = obs_encoder.observation_space()
     assert space.contains(obs)
     model = HybridEncoder(

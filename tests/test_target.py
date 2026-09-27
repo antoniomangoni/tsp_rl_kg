@@ -108,8 +108,8 @@ class TestTSPRoute:
 class TestLeastEnergyPath:
     def test_straight_path_on_uniform_grid(self):
         tm = Target_Manager(_uniform_env(3, [(0, 0), (0, 2), (2, 0)]))
-        # (0,0)->(0,1)->(0,2): three unit-energy cells.
-        assert tm.calculate_path_energy((0, 0), (0, 2)) == 3
+        # (0,0)->(0,1)->(0,2): two entered unit-energy cells.
+        assert tm.calculate_path_energy((0, 0), (0, 2)) == 2
 
     def test_detours_around_high_energy_wall(self):
         # A wall of energy 9 blocks columns 0<->2 except at (2,1). The least-energy
@@ -120,8 +120,8 @@ class TestLeastEnergyPath:
             [1, 1, 1],
         ]
         tm = Target_Manager(_FakeEnvironment(grid, [(0, 0), (0, 2), (2, 2)]))
-        # Direct crossing would cost 1+9+1 = 11; the 7-cell detour costs 7.
-        assert tm.calculate_path_energy((0, 0), (0, 2)) == 7
+        # Direct crossing would cost 1+9+1 = 11; the detour enters 6 cells.
+        assert tm.calculate_path_energy((0, 0), (0, 2)) == 6
 
 
 # ---------------------------------------------------------------------------
@@ -135,8 +135,8 @@ class TestRouteEnergy:
         tm = Target_Manager(_uniform_env(5, outposts))
         # Optimal cycle is the rectangle: four legs of Manhattan length 4. On a
         # uniform unit grid each leg costs (distance + 1) cells, so
-        # 4 legs * (4 + 1) = 20.
-        assert tm.target_route_energy == 20
+        # 4 legs * 4 entered cells = 16.
+        assert tm.target_route_energy == 16
 
     def test_deterministic_for_same_environment(self):
         outposts = [(0, 0), (0, 4), (4, 0), (4, 4)]

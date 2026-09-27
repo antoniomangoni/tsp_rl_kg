@@ -36,3 +36,23 @@ def render_semantic_vision(environment, vision_range: int, visible_tiles=None) -
             if (x, y) == (px, py):
                 tile[0, :] = PLAYER_COLOUR
     return image.transpose(2, 0, 1)
+
+
+def compact_semantic_vision(environment, vision_range, visible_tiles=None):
+    """One symbol per tile; channel/y/x, independent of display tile size."""
+    side = 2 * vision_range + 1
+    vision = np.zeros((15, side, side), dtype=np.float32)
+    px, py = environment.player.grid_x, environment.player.grid_y
+    for dx in range(-vision_range, vision_range + 1):
+        for dy in range(-vision_range, vision_range + 1):
+            x, y = px + dx, py + dy
+            if not environment.within_bounds(x, y):
+                continue
+            if visible_tiles is not None and not visible_tiles[x, y]:
+                continue
+            row, col = dy + vision_range, dx + vision_range
+            vision[int(environment.terrain_index_grid[x, y]), row, col] = 1
+            vision[6 + int(environment.entity_index_grid[x, y]), row, col] = 1
+            vision[13, row, col] = (x, y) == (px, py)
+            vision[14, row, col] = 1
+    return vision

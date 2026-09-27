@@ -49,6 +49,8 @@ class GameManager:
         config: GameManagerConfig | None = None,
         plot: bool = False,
         feature_encoder=None,
+        rng=None,
+        template=None,
         # Legacy positional args - prefer config
         num_tiles: int | None = None,
         screen_size: int | None = None,
@@ -62,6 +64,7 @@ class GameManager:
                 screen_size=screen_size if screen_size is not None else 800,
                 vision_range=vision_range if vision_range is not None else 2,
             )
+        self.rng = rng if rng is not None else np.random.default_rng()
         self.num_tiles = self._config.num_tiles
         self.tile_size: int = self._config.screen_size // self._config.num_tiles
         self.route_energy_list = []
@@ -78,7 +81,24 @@ class GameManager:
         self.vision_range = self._config.vision_range
         self.max_steps = self._config.max_steps
         self.recorder: PlayRecorder | None = None
-        self.initialize_components()
+        if template is None:
+            for _attempt in range(100):
+                try:
+                    self.initialize_components()
+                    if len(self.environment.outpost_locations) != self._config.number_of_outposts:
+                        raise ValueError("Insufficient outposts")
+                    break
+                except ValueError as error:
+                    if "outposts" not in str(error):
+                        raise
+            else:
+                raise ValueError("Could not generate reachable outposts after 100 attempts")
+        else:
+            self.environment = template.restore(tile_size=self.tile_size, headless=self.headless)
+            self.agent_controler = Agent(self.environment, self.vision_range)
+            self.agent = self.agent_controler.agent
+            self.target_manager = Target_Manager(self.environment)
+            self.world_template = template
 
     def init_pygame(self):
         pygame.init()
@@ -95,10 +115,15 @@ class GameManager:
             octaves=3,
             persistence=0.2,
             lacunarity=2.0,
+            rng=self.rng,
         )
         heightmap = heightmap_generator.generate()
         self.environment = Environment(
-            heightmap, self.tile_size, number_of_outposts=3, headless=self.headless
+            heightmap,
+            self.tile_size,
+            number_of_outposts=self._config.number_of_outposts,
+            headless=self.headless,
+            rng=self.rng,
         )
 
         self.agent_controler = Agent(self.environment, self.vision_range)

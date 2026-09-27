@@ -38,6 +38,7 @@ max_steps_without_progress = 4
 [study.base_config.evaluation]
 eval_freq = 4
 n_eval_episodes = 1
+final_eval_episodes = 2
 
 [study.base_config.feature_encoding]
 strategy = "one_hot"

@@ -93,3 +93,22 @@ Use `configs/ablation.toml` from the repository root for a bounded pipeline
 check. The full sweep in `configs/ablation_full.toml` is intended for research
 runs. Integration coverage uses temporary local tracking and does not require
 an external MLflow service.
+
+## Closed-tour research
+
+The gated research entrypoint is `python -m tsp_rl_kg.rl.training.research` with stages
+`smoke`, `pilot`, `graph`, and `study`. All stages share `--output`; research uses eight
+subprocess workers by default. `configs/ablation_full.toml` dispatches to the locked study
+preset after checking the preceding gates. Small example configs remain ungated for
+integration testing and are not evidence of learning.
+
+Terminal records from every worker drive episode metrics and curriculum updates.
+Training uses reward-only VecNormalize; evaluation reports raw returns with frozen
+statistics. Keep `.zip`, `.vecnormalize.pkl`, and `.schema.json` checkpoint files together.
+Use `SB3TrainingBackend.load()` for validated resumption; legacy checkpoints require
+fresh training. Evaluation reports deterministic and stochastic outcomes, raw per-world
+records, and successful-tour efficiency separately from failure-inclusive efficiency.
+
+Research artifacts include terrain-disjoint template manifests, resolved configurations,
+source/dependency fingerprints, package versions, memory estimates, parameter counts,
+paired bootstrap intervals and a comparison plot. No missing seed is silently discarded.

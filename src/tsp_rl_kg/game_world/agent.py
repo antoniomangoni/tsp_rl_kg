@@ -51,7 +51,6 @@ class Agent:
             self.collect_resource(dx, dy)
             self.energy_spent += self.action_energy_cost
         elif action is ActionType.SCOUT:
-            self.scout()
             self.energy_spent += self.action_energy_cost
         elif action is ActionType.BUILD_PATH:
             self.build_path()

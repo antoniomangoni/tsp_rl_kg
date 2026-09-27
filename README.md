@@ -297,3 +297,27 @@ Maintainer-authored pull requests may merge once all required checks pass. Pull 
 ## Contact
 
 Antonio Mangoni: antoniomangoni@gmail.com
+
+### Gated closed-tour research protocol
+
+Fresh training uses observation schema 4: compact tile vision, task status, a directional
+remembered graph, and optional symbolic path queries. Episodes start at an outpost and
+terminate only after visiting every other outpost and returning. Older checkpoints require
+retraining. Reward-normalization files must accompany model checkpoints.
+
+The research driver freezes terrain-disjoint manifests and records failed attempts. Run
+these stages in order, using the same output directory:
+
+```sh
+uv run python -m tsp_rl_kg.rl.training.research smoke --output results/research
+uv run python -m tsp_rl_kg.rl.training.research pilot --output results/research
+uv run python -m tsp_rl_kg.rl.training.research graph --output results/research
+uv run python -m tsp_rl_kg.rl.training.research study --output results/research
+```
+
+The CPU smoke requires all three seeds to reach 80% success within 200k steps and 30
+minutes per seed. Pilot budgets are gated at 1M, 3M and 10M steps; graph-only navigation
+must pass before the 75-run study starts. Failed or stale gates block the study. Nightly
+CI runs the smoke and retains evidence even on failure. `--n-envs 1` selects serial
+execution for debugging; research defaults to eight workers. Passing software tests does
+not imply any of these learning gates have passed.

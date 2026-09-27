@@ -104,11 +104,10 @@ class TestSimulationManagerConfig:
 class TestRewardConfig:
     def test_defaults(self):
         cfg = RewardConfig()
-        assert cfg.new_outpost_reward == 30.0
-        assert cfg.completion_reward == 100.0
-        assert cfg.penalty_per_step == -0.5
-        assert cfg.normalisation_scale == 100.0
-        assert cfg.max_not_improvement_routes == 5
+        assert cfg.new_outpost_reward == 1.0
+        assert cfg.completion_reward == 10.0
+        assert cfg.penalty_per_step == -0.01
+        assert cfg.shaping_weight == 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -165,8 +164,8 @@ class TestAgentConfig:
 class TestCurriculumConfig:
     def test_defaults(self):
         cfg = CurriculumConfig()
-        assert cfg.min_episodes_per_curriculum == 4
-        assert cfg.performance_threshold == 0.85
+        assert cfg.min_episodes_per_curriculum == 20
+        assert cfg.performance_threshold == 0.8
 
     def test_invalid_performance_threshold(self):
         with pytest.raises(ValueError, match="performance_threshold must be in"):
@@ -185,7 +184,7 @@ class TestAgentModelConfig:
         assert "num_conv_layers" in params
         assert "conv_channels" in params
         assert "fc_dims" in params
-        assert params["num_conv_layers"] == 4
+        assert params["num_conv_layers"] == 2
 
     def test_to_graph_params(self):
         cfg = AgentModelConfig()
@@ -193,13 +192,13 @@ class TestAgentModelConfig:
         assert "num_gat_layers" in params
         assert "gat_heads" in params
         assert "fc_dims" in params
-        assert params["num_gat_layers"] == 3
+        assert params["num_gat_layers"] == 2
 
     def test_defaults(self):
         cfg = AgentModelConfig()
-        assert cfg.features_dim == 192
-        assert cfg.dropout == 0.25
-        assert cfg.gat_hidden_dim == 48
+        assert cfg.features_dim == 128
+        assert cfg.dropout == 0
+        assert cfg.gat_hidden_dim == 32
 
 
 # ---------------------------------------------------------------------------

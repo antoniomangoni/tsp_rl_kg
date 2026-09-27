@@ -5,7 +5,7 @@ from __future__ import annotations
 import gymnasium as gym
 import numpy as np
 import pytest
-from stable_baselines3.common.monitor import Monitor
+from stable_baselines3.common.vec_env import VecNormalize
 
 from tsp_rl_kg.config import AgentModelConfig, AlgorithmConfig, AlgorithmName, EvaluationConfig
 from tsp_rl_kg.rl.training.backends.sb3 import SB3TrainingBackend
@@ -20,13 +20,15 @@ class DummyDictEnv(gym.Env):
         super().__init__()
         self.observation_space = gym.spaces.Dict(
             {
+                "status": gym.spaces.Box(0, 1, shape=(11,), dtype=np.float32),
+                "path_queries": gym.spaces.Box(-1, 1, shape=(3, 6), dtype=np.float32),
                 "num_nodes": gym.spaces.Box(1, 8, shape=(1,), dtype=np.int64),
                 "num_edges": gym.spaces.Box(0, 12, shape=(1,), dtype=np.int64),
-                "vision": gym.spaces.Box(low=0.0, high=1.0, shape=(3, 32, 32), dtype=np.float32),
+                "vision": gym.spaces.Box(low=0.0, high=1.0, shape=(15, 5, 5), dtype=np.float32),
                 "node_features": gym.spaces.Box(
                     low=-1.0,
                     high=1e4,
-                    shape=(8, 4),
+                    shape=(8, 9),
                     dtype=np.float32,
                 ),
                 "edge_attr": gym.spaces.Box(
@@ -47,14 +49,19 @@ class DummyDictEnv(gym.Env):
         self._step_count = 0
 
     def _observation(self) -> dict[str, np.ndarray]:
-        return {
+        obs = {
+            "status": np.zeros(11, dtype=np.float32),
+            "path_queries": np.zeros((3, 6), dtype=np.float32),
             "num_nodes": np.array([8], dtype=np.int64),
             "num_edges": np.array([12], dtype=np.int64),
-            "vision": np.zeros((3, 32, 32), dtype=np.float32),
-            "node_features": np.zeros((8, 4), dtype=np.float32),
+            "vision": np.zeros((15, 5, 5), dtype=np.float32),
+            "node_features": np.zeros((8, 9), dtype=np.float32),
             "edge_attr": np.zeros((12, 2), dtype=np.float32),
             "edge_index": np.zeros((2, 12), dtype=np.int64),
         }
+
+        obs["node_features"][0, -3] = 1
+        return obs
 
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
@@ -90,8 +97,8 @@ def test_sb3_backend_builds_ppo_and_wraps_envs():
 
     assert backend.name == "sb3_ppo"
     assert backend.model.__class__.__name__ == "PPO"
-    assert isinstance(backend.env, Monitor)
-    assert isinstance(backend.eval_env, Monitor)
+    assert isinstance(backend.env, VecNormalize)
+    assert isinstance(backend.eval_env, VecNormalize)
 
 
 def test_sb3_backend_builds_dqn_from_algorithm_config():

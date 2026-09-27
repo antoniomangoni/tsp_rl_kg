@@ -39,10 +39,16 @@ class TestProjectionIntegration:
         kg = KnowledgeGraph(
             environment=headless_environment,
             vision_range=1,
+            completion=1,
             projection=KHopProjection(distance=w * 2),
         )
         subgraph = kg.get_subgraph()
-        assert subgraph.num_nodes == kg.graph.num_nodes
+        assert (
+            subgraph.num_nodes
+            == 1
+            + headless_environment.width * headless_environment.height
+            + int((kg.state.entities != 0).sum())
+        )
 
     def test_partial_projection_returns_subset(self, headless_environment: Environment):
         kg = KnowledgeGraph(
@@ -112,18 +118,29 @@ def test_full_graph_projection_distance_is_none():
 class TestFullGraphProjectionIntegration:
     def test_returns_all_nodes(self, headless_environment: Environment):
         proj = FullGraphProjection()
-        kg = KnowledgeGraph(environment=headless_environment, vision_range=1, projection=proj)
+        kg = KnowledgeGraph(
+            environment=headless_environment, vision_range=1, projection=proj, completion=1
+        )
         subgraph = kg.get_subgraph()
-        assert subgraph.num_nodes == kg.graph.num_nodes
+        assert (
+            subgraph.num_nodes
+            == 1
+            + headless_environment.width * headless_environment.height
+            + int((kg.state.entities != 0).sum())
+        )
 
     def test_returns_all_edges(self, headless_environment: Environment):
         proj = FullGraphProjection()
-        kg = KnowledgeGraph(environment=headless_environment, vision_range=1, projection=proj)
+        kg = KnowledgeGraph(
+            environment=headless_environment, vision_range=1, projection=proj, completion=1
+        )
         subgraph = kg.get_subgraph()
-        assert subgraph.num_edges == kg.graph.num_edges
+        assert subgraph.num_edges == kg.graph.num_edges - 2 * int((kg.state.entities == 0).sum())
 
     def test_preserves_edge_attr(self, headless_environment: Environment):
         proj = FullGraphProjection()
-        kg = KnowledgeGraph(environment=headless_environment, vision_range=1, projection=proj)
+        kg = KnowledgeGraph(
+            environment=headless_environment, vision_range=1, projection=proj, completion=1
+        )
         subgraph = kg.get_subgraph()
-        assert subgraph.edge_attr.shape == kg.graph.edge_attr.shape
+        assert subgraph.edge_attr.shape == (subgraph.num_edges, kg.graph.edge_attr.shape[1])

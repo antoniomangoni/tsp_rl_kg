@@ -18,6 +18,7 @@ class EpisodeEvaluator:
         *,
         deterministic: bool = True,
     ) -> MetricsDict:
+        records = []
         episode_rewards: list[float] = []
         episode_lengths: list[int] = []
 
@@ -30,10 +31,17 @@ class EpisodeEvaluator:
             episode_length = 0
             while not done:
                 action, _ = backend.predict(obs, deterministic=deterministic)
-                obs, reward, terminated, truncated, _ = env.step(action)
+                obs, reward, terminated, truncated, info = env.step(action)
                 episode_reward += reward
                 episode_length += 1
                 done = terminated or truncated
+            records.append(
+                dict(
+                    info.get("episode_record", {}),
+                    total_reward=episode_reward,
+                    episode_step=episode_length,
+                )
+            )
             episode_rewards.append(float(episode_reward))
             episode_lengths.append(episode_length)
 
@@ -53,7 +61,18 @@ class EpisodeEvaluator:
                 }
             )
 
+        successful = [r for r in records if r.get("success", False)]
         return {
+            "successful_tour_efficiency": (
+                float(np.mean([r["efficiency"] for r in successful])) if successful else None
+            ),
+            "failure_inclusive_efficiency": (
+                float(np.mean([r.get("efficiency", 0) for r in records])) if records else 0.0
+            ),
+            "episodes": records,
+            "success_rate": (
+                float(np.mean([r.get("success", False) for r in records])) if records else 0.0
+            ),
             "mean_reward": mean_reward,
             "std_reward": std_reward,
             "mean_episode_length": mean_episode_length,

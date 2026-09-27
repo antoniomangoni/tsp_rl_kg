@@ -11,7 +11,7 @@ class AgentModel(BaseFeaturesExtractor):
     def __init__(
         self,
         observation_space: gym.spaces.Dict,
-        features_dim: int = 192,
+        features_dim: int = 128,
         model_config: AgentModelConfig | None = None,
     ):
         super().__init__(observation_space, features_dim=features_dim)

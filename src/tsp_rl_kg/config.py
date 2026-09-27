@@ -4,7 +4,7 @@ import math
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 
-OBSERVATION_SCHEMA_VERSION = 2
+OBSERVATION_SCHEMA_VERSION = 4
 KNOWLEDGE_SEMANTICS = "initial_prior_v1"
 
 
@@ -47,6 +47,7 @@ class RewardComponent(str, Enum):
 
 @dataclass
 class GameManagerConfig:
+    number_of_outposts: int = 3
     num_tiles: int = 32
     screen_size: int = 800
     vision_range: int = 2
@@ -57,6 +58,8 @@ class GameManagerConfig:
     max_steps: int | None = None
 
     def __post_init__(self) -> None:
+        if not 2 <= self.number_of_outposts <= 6:
+            raise ValueError("number_of_outposts must be in [2, 6]")
         if self.num_tiles < 1:
             raise ValueError(f"num_tiles must be >= 1, got {self.num_tiles}")
         if self.screen_size < self.num_tiles:
@@ -106,7 +109,7 @@ class ModelConfig:
     n_steps: int = 4096
     batch_size: int = 512
     learning_rate: float = 6e-4
-    gamma: float = 0.995
+    gamma: float = 0.99
 
     def to_dict(self) -> dict:
         """Convert to dict for use as default PPO backend hyperparameters."""
@@ -126,7 +129,7 @@ def default_algorithm_hyperparameters(
     algorithm = AlgorithmName.from_value(algorithm)
 
     if algorithm == AlgorithmName.PPO:
-        return ModelConfig().to_dict()
+        return {**ModelConfig().to_dict(), "ent_coef": 0.01}
     if algorithm == AlgorithmName.DQN:
         return {
             "learning_rate": 1e-4,
@@ -202,8 +205,11 @@ class EvaluationConfig:
     n_eval_episodes: int = 10
     deterministic: bool = True
     render: bool = False
+    final_eval_episodes: int = 50
 
     def __post_init__(self) -> None:
+        if self.final_eval_episodes < 1:
+            raise ValueError("final_eval_episodes must be positive")
         if self.eval_freq < 1:
             raise ValueError(f"eval_freq must be >= 1, got {self.eval_freq}")
         if self.n_eval_episodes < 1:
@@ -252,10 +258,14 @@ class WorldModelConfig:
 
 @dataclass
 class CurriculumConfig:
-    min_episodes_per_curriculum: int = 4
-    performance_threshold: float = 0.85
+    min_episodes_per_curriculum: int = 20
+    performance_threshold: float = 0.8
+    success_rate_threshold: float = 0.8
+    window_size: int = 100
 
     def __post_init__(self) -> None:
+        if self.window_size < 1 or not 0 <= self.success_rate_threshold <= 1:
+            raise ValueError("Invalid curriculum window or success threshold")
         if self.min_episodes_per_curriculum < 1:
             raise ValueError("min_episodes_per_curriculum must be positive")
         if (
@@ -287,36 +297,21 @@ class AgentConfig:
 
 @dataclass
 class RewardConfig:
-    """All reward weights, penalties, and thresholds for the reward system."""
+    """Stationary transition reward weights; task state belongs to EpisodeState."""
 
-    # Base rewards
-    new_outpost_reward: float = 30.0
-    completion_reward: float = 100.0
-    route_improvement_reward: float = 200.0
-    better_route_than_algo_reward: float = 200.0
+    new_outpost_reward: float = 1.0
+    completion_reward: float = 10.0
+    penalty_per_step: float = -0.01
+    shaping_weight: float = 1.0
 
-    # Penalties
-    penalty_per_step: float = -0.5
-    farther_from_outpost_penalty: float = -1.0
-    circular_behavior_penalty: float = -2.0
-
-    # Positive reinforcements
-    closer_to_outpost_reward: float = 0.55
-
-    # Scaling factors
-    time_penalty_factor: float = -0.01
-    outpost_reward_increase_factor: float = 0.5
-    completion_time_bonus_factor: float = 1.0
-
-    # Route improvement tracking
-    max_not_improvement_routes: int = 5
-
-    # Normalisation
-    normalisation_scale: float = 100.0
-    # Fixed scale used to normalise each per-step reward into [-1, 1].
-    # Chosen so a full route completion maps to ~+1; per-step penalties and
-    # proximity shaping stay small but keep their sign/ordering.
-    reward_scale: float = 100.0
+    def __post_init__(self):
+        if not all(math.isfinite(v) for v in asdict(self).values()):
+            raise ValueError("Reward weights must be finite")
+        if (
+            self.penalty_per_step > 0
+            or min(self.new_outpost_reward, self.completion_reward, self.shaping_weight) < 0
+        ):
+            raise ValueError("Reward bonuses must be nonnegative and energy penalty nonpositive")
 
 
 @dataclass
@@ -337,25 +332,32 @@ class EpisodeConfig:
 @dataclass
 class AgentModelConfig:
     # VisionProcessor defaults
-    vision_num_conv_layers: int = 4
-    vision_conv_channels: list[int] = field(default_factory=lambda: [64, 128, 256, 512])
-    vision_fc_dims: list[int] = field(default_factory=lambda: [512])
+    vision_num_conv_layers: int = 2
+    vision_conv_channels: list[int] = field(default_factory=lambda: [32, 32])
+    vision_fc_dims: list[int] = field(default_factory=lambda: [64])
 
     # GraphProcessor defaults
-    graph_num_gat_layers: int = 3
-    graph_gat_heads: list[int] = field(default_factory=lambda: [4, 4, 4])
-    graph_fc_dims: list[int] = field(default_factory=lambda: [256])
-    gat_hidden_dim: int = 48
+    graph_num_gat_layers: int = 2
+    graph_gat_heads: list[int] = field(default_factory=lambda: [2, 2])
+    graph_fc_dims: list[int] = field(default_factory=lambda: [64])
+    gat_hidden_dim: int = 32
 
     # Shared
-    features_dim: int = 192
-    dropout: float = 0.25
+    features_dim: int = 128
+    dropout: float = 0.0
+    fusion_dims: list[int] = field(default_factory=lambda: [128])
+    parameter_budget: int | None = 250_000
+    use_path_queries: bool = False
 
     # Ablation flags
     disable_vision: bool = False
     disable_graph: bool = False
 
     def __post_init__(self):
+        if self.parameter_budget is not None and self.parameter_budget < 1:
+            raise ValueError("parameter_budget must be positive or None")
+        if not self.fusion_dims or any(v < 1 for v in self.fusion_dims):
+            raise ValueError("fusion_dims must contain positive widths")
         if not 1 <= self.vision_num_conv_layers <= len(self.vision_conv_channels):
             raise ValueError("vision_num_conv_layers must match available channels")
         if not 1 <= self.graph_num_gat_layers <= len(self.graph_gat_heads):
@@ -374,8 +376,8 @@ class AgentModelConfig:
             ]
         ):
             raise ValueError("Model dimensions must be positive")
-        if not math.isfinite(self.dropout) or not 0 <= self.dropout < 1:
-            raise ValueError("dropout must be finite and in [0, 1)")
+        if self.dropout != 0:
+            raise ValueError("dropout must be zero for deterministic rollout/update policies")
 
     def to_vision_params(self) -> dict:
         return {
@@ -419,6 +421,7 @@ class AblationConfig:
     disable_graph: bool = False
     disable_reward_components: list[RewardComponent] = field(default_factory=list)
     disable_curriculum: bool = False
+    use_path_queries: bool = False
 
     def __post_init__(self) -> None:
         if self.disable_vision and self.disable_graph:
@@ -441,6 +444,8 @@ class TrainingConfig:
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     curriculum: CurriculumConfig = field(default_factory=CurriculumConfig)
     episode: EpisodeConfig = field(default_factory=EpisodeConfig)
+    reward: RewardConfig = field(default_factory=RewardConfig)
+    n_envs: int = 1
     agent_model: AgentModelConfig = field(default_factory=AgentModelConfig)
     feature_encoding: FeatureEncodingConfig = field(default_factory=FeatureEncodingConfig)
     ablation: AblationConfig = field(default_factory=AblationConfig)
@@ -465,6 +470,10 @@ class TrainingConfig:
             self.evaluation = EvaluationConfig(**self.evaluation)
         if isinstance(self.curriculum, dict):
             self.curriculum = CurriculumConfig(**self.curriculum)
+        if self.n_envs < 1:
+            raise ValueError("n_envs must be positive")
+        if isinstance(self.reward, dict):
+            self.reward = RewardConfig(**self.reward)
         if isinstance(self.episode, dict):
             self.episode = EpisodeConfig(**self.episode)
         if isinstance(self.agent_model, dict):
@@ -510,6 +519,11 @@ class TrainingConfig:
     @staticmethod
     def from_dict(d: dict) -> TrainingConfig:
         """Construct from the legacy nested-dict format for backwards compatibility."""
+        if (
+            d.get("observation_schema_version", OBSERVATION_SCHEMA_VERSION)
+            != OBSERVATION_SCHEMA_VERSION
+        ):
+            raise ValueError("Observation schema v4 required; fresh training is required")
         obsolete = {
             "replay",
             "sequence",
@@ -555,6 +569,8 @@ class TrainingConfig:
             evaluation=EvaluationConfig(**evaluation_data),
             curriculum=CurriculumConfig(**curriculum_data),
             episode=EpisodeConfig(**episode_data),
+            reward=RewardConfig(**d.get("reward", {})),
+            n_envs=d.get("n_envs", 1),
             agent_model=AgentModelConfig(**agent_model_data),
             feature_encoding=FeatureEncodingConfig(**feature_encoding_data),
             ablation=AblationConfig(**ablation_data),
